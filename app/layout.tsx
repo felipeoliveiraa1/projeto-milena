@@ -17,12 +17,24 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Treino & Dieta · Milena",
   description: "Plano alimentar, treino e check-in diário",
+  applicationName: "Treino Milena",
+  appleWebApp: {
+    capable: true,
+    title: "Treino Milena",
+    statusBarStyle: "default",
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export const viewport: Viewport = {
   themeColor: "#fff7f9",
   width: "device-width",
   initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

@@ -8,6 +8,7 @@ export type DayCheck = {
   water: number;
   workout: boolean;
   supplements: Record<string, boolean>;
+  exercises: Record<string, boolean>;
 };
 
 export type WeightEntry = {
@@ -20,15 +21,17 @@ const EMPTY_DAY: DayCheck = {
   water: 0,
   workout: false,
   supplements: {},
+  exercises: {},
 };
 
 function rowToDay(row: DailyCheckRow | null | undefined): DayCheck {
-  if (!row) return { ...EMPTY_DAY };
+  if (!row) return { ...EMPTY_DAY, meals: {}, supplements: {}, exercises: {} };
   return {
     meals: row.meals ?? {},
     water: row.water ?? 0,
     workout: row.workout ?? false,
     supplements: row.supplements ?? {},
+    exercises: row.exercises ?? {},
   };
 }
 
@@ -53,6 +56,7 @@ async function upsertDay(date: string, partial: Partial<DailyCheckRow>): Promise
     water: current.water,
     workout: current.workout,
     supplements: current.supplements,
+    exercises: current.exercises,
     ...partial,
   };
   const { error } = await getSupabase().from("daily_checks").upsert(merged);
@@ -86,6 +90,15 @@ export async function setWater(value: number, date: string = todayKey()): Promis
 export async function toggleWorkout(date: string = todayKey()): Promise<DayCheck> {
   const current = await getDay(date);
   return upsertDay(date, { workout: !current.workout });
+}
+
+export async function toggleExercise(
+  exerciseId: string,
+  date: string = todayKey(),
+): Promise<DayCheck> {
+  const current = await getDay(date);
+  const exercises = { ...current.exercises, [exerciseId]: !current.exercises[exerciseId] };
+  return upsertDay(date, { exercises });
 }
 
 export async function getWeights(): Promise<WeightEntry[]> {

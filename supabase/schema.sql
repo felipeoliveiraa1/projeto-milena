@@ -3,15 +3,20 @@
 -- Cole este SQL no SQL Editor do Supabase e clique em "Run".
 -- =============================================================================
 
--- 1) Tabela de check-ins diários (refeições, água, treino, suplementos)
+-- 1) Tabela de check-ins diários (refeições, água, treino, suplementos, exercícios)
 create table if not exists daily_checks (
   date date primary key,
   meals jsonb not null default '{}'::jsonb,
   water int not null default 0,
   workout boolean not null default false,
   supplements jsonb not null default '{}'::jsonb,
+  exercises jsonb not null default '{}'::jsonb,
   updated_at timestamptz not null default now()
 );
+
+-- Migration para tabela já existente (rodar 1x se você já criou daily_checks antes)
+alter table daily_checks
+  add column if not exists exercises jsonb not null default '{}'::jsonb;
 
 -- 2) Tabela de histórico de peso
 create table if not exists weights (

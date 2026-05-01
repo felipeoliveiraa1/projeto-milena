@@ -6,6 +6,7 @@ export type DailyCheckRow = {
   water: number;
   workout: boolean;
   supplements: Record<string, boolean>;
+  exercises: Record<string, boolean>;
 };
 
 export type WeightRow = {
