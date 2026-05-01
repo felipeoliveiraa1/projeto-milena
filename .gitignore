@@ -32,6 +32,10 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+# briefing original com histórico médico/dados pessoais (repo público)
+docs/briefing-original.md
 
 # vercel
 .vercel
