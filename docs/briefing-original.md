@@ -1,0 +1,4 @@
+Ola.. Preciso que analise as informações e monte plano alimentar focado no emagrecimento, perda de gordura e ganho de massa magra definição, hoje acumulo gordura na região abdominal e nos braços.. Objetivo chegar nos 70kgSou Mulher de 39 anos, com 1,61m pesando 84kg, tenho gordura no figado, ganhei bebe a 2 meses, durante a gestação tivo pressão alta 13,8 ou 14,8 em media e também diabetes gestacional controlada apenas na alimentação, bebe nasceu 26/02/2026 eu amamentei por 40 dias, hoje não amamento mais, vou iniciar o uso de Omega 3, e Vitafer para reposição de vitamina, vou iniciar atividade fisica 40minutos diarios na academia.
+
+Informações: Eu não como feijão, lentilha e grão de bico, abacate.
+Gostaria de tomar Wey e Creatina para potencializar, se possivel
