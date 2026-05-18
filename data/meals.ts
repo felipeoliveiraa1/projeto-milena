@@ -21,6 +21,8 @@ export type Meal = {
   porQue: string;
   substituicoes?: Substituicao[];
   obrigatoria: boolean;
+  /** IDs dos itens da SHOPPING_LIST necessários para preparar a refeição */
+  ingredientes: string[];
 };
 
 export const MEALS: Meal[] = [
@@ -37,6 +39,16 @@ export const MEALS: Meal[] = [
     macros: { kcal: 320, proteina: 18, carbo: 32, gordura: 14 },
     porQue:
       "Proteína dos ovos sustenta a saciedade até o almoço e evita pico de glicose. Frutas vermelhas têm baixo índice glicêmico, ótimas para o seu histórico de diabetes gestacional e fígado.",
+    ingredientes: [
+      "pr-ovos",
+      "ca-pao-integral",
+      "ca-aveia-fina",
+      "fr-morango",
+      "fr-mirtilo",
+      "be-cafe-po",
+      "be-canela-po",
+      "go-azeite",
+    ],
     substituicoes: [
       {
         trocar: "Ovos",
@@ -78,6 +90,15 @@ export const MEALS: Meal[] = [
     macros: { kcal: 245, proteina: 14, carbo: 40, gordura: 5 },
     porQue:
       "Probióticos do iogurte ajudam intestino e imunidade no pós-parto. Chia + aveia dão fibras que regulam glicemia. A fruta acrescenta vitaminas e mantém saciedade até o almoço.",
+    ingredientes: [
+      "la-iog-natural",
+      "go-chia",
+      "ca-aveia-fina",
+      "fr-maca-gala",
+      "fr-mamao",
+      "fr-morango",
+      "fr-kiwi",
+    ],
     substituicoes: [
       {
         trocar: "Fruta",
@@ -138,6 +159,28 @@ export const MEALS: Meal[] = [
     macros: { kcal: 480, proteina: 38, carbo: 45, gordura: 15 },
     porQue:
       "Salada antes preenche o estômago com fibra e reduz a fome — orientação do médico. Proteína magra é o tijolo da massa magra. Carbo de baixo IG sustenta energia sem pico de glicose. Azeite é gordura boa essencial pro fígado.",
+    ingredientes: [
+      "fo-alface-crespa",
+      "fo-rucula",
+      "fo-agriao",
+      "le-tomate",
+      "le-pepino",
+      "te-hortela",
+      "la-iog-natural",
+      "go-azeite",
+      "fr-limao-tahiti",
+      "pr-frango-peito",
+      "pr-tilapia",
+      "pr-patinho",
+      "pr-peru-fatiado",
+      "pr-lombo",
+      "ca-arroz-integral",
+      "ca-batata-doce",
+      "le-abobrinha",
+      "le-brocolis",
+      "le-cenoura",
+      "le-berinjela",
+    ],
     substituicoes: [
       {
         trocar: "Arroz integral",
@@ -195,6 +238,7 @@ export const MEALS: Meal[] = [
     macros: { kcal: 135, proteina: 2.6, carbo: 28, gordura: 3 },
     porQue:
       "Carbo rápido da banana dá energia para o treino. Amendoim segura a glicemia e evita queda de energia no meio da série.",
+    ingredientes: ["fr-banana", "go-amendoim-pasta"],
     substituicoes: [
       {
         trocar: "Banana",
@@ -223,6 +267,7 @@ export const MEALS: Meal[] = [
     macros: { kcal: 220, proteina: 25, carbo: 22, gordura: 2 },
     porQue:
       "Janela de recuperação muscular: proteína de absorção rápida + carbo reabastecem o músculo. Creatina pós-treino ajuda força e recuperação.",
+    ingredientes: ["su-whey", "su-creatina", "fr-banana", "fr-maca-gala", "fr-morango"],
     substituicoes: [
       {
         trocar: "Whey",
@@ -259,6 +304,21 @@ export const MEALS: Meal[] = [
     macros: { kcal: 380, proteina: 32, carbo: 28, gordura: 14 },
     porQue:
       "Médico recomenda: 'quase nunca coma carbo à noite'. Salada como entrada preenche e diminui fome. Jantar leve respeita o metabolismo noturno e ajuda no fígado gorduroso. Proteína à noite = recuperação muscular durante o sono.",
+    ingredientes: [
+      "fo-alface-crespa",
+      "fo-rucula",
+      "fo-agriao",
+      "pr-tilapia",
+      "pr-frango-peito",
+      "pr-lombo",
+      "pr-ovos",
+      "ca-couve-flor",
+      "le-abobrinha",
+      "le-brocolis",
+      "le-abobora-cabotia",
+      "go-azeite",
+      "fr-limao-tahiti",
+    ],
     substituicoes: [
       {
         trocar: "Batata-doce",
@@ -293,6 +353,14 @@ export const MEALS: Meal[] = [
     macros: { kcal: 110, proteina: 10, carbo: 17, gordura: 2 },
     porQue:
       "Caseína do iogurte libera proteína lentamente durante a noite, protegendo a massa magra. Canela ajuda a regular glicemia. A fruta acrescenta fibra sem pesar.",
+    ingredientes: [
+      "la-iog-natural",
+      "be-canela-po",
+      "fr-morango",
+      "fr-maca-gala",
+      "fr-mamao",
+      "fr-kiwi",
+    ],
     substituicoes: [
       {
         trocar: "Fruta",

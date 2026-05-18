@@ -46,16 +46,23 @@ create policy "anon all weights"
   using (true)
   with check (true);
 
--- 4) Tabela única com estado da lista de compras (1 linha, items jsonb)
+-- 4) Tabela única com estado da lista de compras (1 linha)
+-- items     = ids dos ingredientes marcados como JÁ COMPRADOS
+-- selected_meals = ids das refeições selecionadas (definem o que vai na lista)
 create table if not exists shopping_state (
   id int primary key default 1,
   items jsonb not null default '{}'::jsonb,
+  selected_meals jsonb not null default '{}'::jsonb,
   updated_at timestamptz not null default now(),
   constraint shopping_state_single_row check (id = 1)
 );
 
-insert into shopping_state (id, items)
-values (1, '{}'::jsonb)
+-- Migration para quem já criou a tabela antes
+alter table shopping_state
+  add column if not exists selected_meals jsonb not null default '{}'::jsonb;
+
+insert into shopping_state (id, items, selected_meals)
+values (1, '{}'::jsonb, '{}'::jsonb)
 on conflict (id) do nothing;
 
 alter table shopping_state enable row level security;

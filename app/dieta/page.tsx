@@ -1,4 +1,17 @@
-import { Apple, Ban, Clock, Replace, Stethoscope, CheckCircle2 } from "lucide-react";
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import {
+  Apple,
+  Ban,
+  Clock,
+  Replace,
+  Stethoscope,
+  CheckCircle2,
+  ShoppingCart,
+  Check,
+} from "lucide-react";
 import {
   ALIMENTOS_EVITAR,
   MEALS,
@@ -7,8 +20,29 @@ import {
   TOTAL_MACROS,
 } from "@/data/meals";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { getShoppingState, toggleMealSelection } from "@/lib/storage";
+import { cn } from "@/lib/utils";
 
 export default function DietaPage() {
+  const [selectedMeals, setSelectedMeals] = useState<Record<string, boolean>>({});
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    getShoppingState().then((s) => {
+      setSelectedMeals(s.selectedMeals);
+      setHydrated(true);
+    });
+  }, []);
+
+  async function handleToggleMeal(mealId: string) {
+    setSelectedMeals((prev) => ({ ...prev, [mealId]: !prev[mealId] }));
+    const next = await toggleMealSelection(mealId);
+    setSelectedMeals(next.selectedMeals);
+  }
+
+  const totalSelecionadas = hydrated ? Object.values(selectedMeals).filter(Boolean).length : 0;
+
   return (
     <div className="space-y-5">
       <div>
@@ -19,6 +53,29 @@ export default function DietaPage() {
           pós-parto, fígado gorduroso e pressão.
         </p>
       </div>
+
+      {totalSelecionadas > 0 && (
+        <Card className="border-emerald-300 bg-linear-to-br from-emerald-50 to-emerald-100">
+          <CardContent className="flex items-center justify-between gap-3 p-4">
+            <div className="flex items-center gap-3">
+              <div className="rounded-full bg-emerald-500 p-2 text-white">
+                <ShoppingCart className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-emerald-900">
+                  {totalSelecionadas} {totalSelecionadas === 1 ? "refeição" : "refeições"} na lista
+                </p>
+                <p className="text-xs text-emerald-700">
+                  Os ingredientes estão sendo somados em /lista
+                </p>
+              </div>
+            </div>
+            <Button asChild size="sm" variant="soft">
+              <Link href="/lista">Ver lista</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="border-sky-200 bg-linear-to-br from-sky-50 to-emerald-50">
         <CardHeader>
@@ -56,54 +113,84 @@ export default function DietaPage() {
         </CardContent>
       </Card>
 
-      {MEALS.map((meal) => (
-        <Card key={meal.id}>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Apple className="h-5 w-5 text-rose-500" />
-              {meal.nome}
-            </CardTitle>
-            <p className="flex items-center gap-1 text-xs text-zinc-500">
-              <Clock className="h-3 w-3" />
-              {meal.hora} · {meal.macros.kcal} kcal · P {meal.macros.proteina}g · C {meal.macros.carbo}g · G {meal.macros.gordura}g
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <ul className="list-inside list-disc space-y-1 text-zinc-800">
-              {meal.alimentos.map((a) => (
-                <li key={a}>{a}</li>
-              ))}
-            </ul>
-            <div className="rounded-xl bg-amber-50 p-3 text-xs text-amber-900">
-              <strong className="block text-amber-700">Por que comer:</strong>
-              {meal.porQue}
-            </div>
-            {meal.substituicoes && (
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-rose-700">
-                  Substituições com quantidade certa
-                </p>
-                <div className="space-y-2">
-                  {meal.substituicoes.map((s, i) => (
-                    <div
-                      key={`${s.trocar}-${s.por}-${i}`}
-                      className="rounded-xl bg-rose-50 p-3"
-                    >
-                      <p className="text-sm font-semibold text-rose-900">
-                        {s.trocar} → {s.por}
-                      </p>
-                      <p className="mt-0.5 text-xs text-rose-700">{s.quantidade}</p>
-                      <p className="mt-1 text-[11px] text-zinc-600">
-                        {s.macros.kcal} kcal · P {s.macros.proteina}g · C {s.macros.carbo}g · G {s.macros.gordura}g
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
+      {MEALS.map((meal) => {
+        const selected = hydrated && !!selectedMeals[meal.id];
+        return (
+          <Card
+            key={meal.id}
+            className={cn(
+              "transition",
+              selected && "border-emerald-300 bg-emerald-50/30 ring-2 ring-emerald-200",
             )}
-          </CardContent>
-        </Card>
-      ))}
+          >
+            <CardHeader>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <CardTitle className="flex items-center gap-2">
+                    <Apple className="h-5 w-5 text-rose-500" />
+                    {meal.nome}
+                  </CardTitle>
+                  <p className="flex items-center gap-1 text-xs text-zinc-500">
+                    <Clock className="h-3 w-3" />
+                    {meal.hora} · {meal.macros.kcal} kcal · P {meal.macros.proteina}g · C {meal.macros.carbo}g · G {meal.macros.gordura}g
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant={selected ? "soft" : "outline"}
+                  onClick={() => handleToggleMeal(meal.id)}
+                  disabled={!hydrated}
+                  className="shrink-0"
+                >
+                  {selected ? (
+                    <>
+                      <Check className="h-4 w-4" /> Na lista
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingCart className="h-4 w-4" /> + Lista
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <ul className="list-inside list-disc space-y-1 text-zinc-800">
+                {meal.alimentos.map((a) => (
+                  <li key={a}>{a}</li>
+                ))}
+              </ul>
+              <div className="rounded-xl bg-amber-50 p-3 text-xs text-amber-900">
+                <strong className="block text-amber-700">Por que comer:</strong>
+                {meal.porQue}
+              </div>
+              {meal.substituicoes && (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-rose-700">
+                    Substituições com quantidade certa
+                  </p>
+                  <div className="space-y-2">
+                    {meal.substituicoes.map((s, i) => (
+                      <div
+                        key={`${s.trocar}-${s.por}-${i}`}
+                        className="rounded-xl bg-rose-50 p-3"
+                      >
+                        <p className="text-sm font-semibold text-rose-900">
+                          {s.trocar} → {s.por}
+                        </p>
+                        <p className="mt-0.5 text-xs text-rose-700">{s.quantidade}</p>
+                        <p className="mt-1 text-[11px] text-zinc-600">
+                          {s.macros.kcal} kcal · P {s.macros.proteina}g · C {s.macros.carbo}g · G {s.macros.gordura}g
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })}
 
       <Card>
         <CardHeader>

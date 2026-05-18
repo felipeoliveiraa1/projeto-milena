@@ -125,36 +125,68 @@ export async function removeWeight(date: string): Promise<WeightEntry[]> {
   return getWeights();
 }
 
-export async function getShopping(): Promise<Record<string, boolean>> {
+export type ShoppingState = {
+  items: Record<string, boolean>;
+  selectedMeals: Record<string, boolean>;
+};
+
+const EMPTY_SHOPPING: ShoppingState = { items: {}, selectedMeals: {} };
+
+export async function getShoppingState(): Promise<ShoppingState> {
   const { data, error } = await getSupabase()
     .from("shopping_state")
-    .select("items")
+    .select("items, selected_meals")
     .eq("id", 1)
     .maybeSingle();
   if (error) {
-    console.error("getShopping error", error);
-    return {};
+    console.error("getShoppingState error", error);
+    return { ...EMPTY_SHOPPING };
   }
-  return ((data?.items as Record<string, boolean> | null) ?? {}) as Record<string, boolean>;
+  return {
+    items: (data?.items as Record<string, boolean> | null) ?? {},
+    selectedMeals: (data?.selected_meals as Record<string, boolean> | null) ?? {},
+  };
 }
 
-async function setShopping(items: Record<string, boolean>): Promise<void> {
-  const { error } = await getSupabase()
-    .from("shopping_state")
-    .upsert({ id: 1, items, updated_at: new Date().toISOString() });
-  if (error) console.error("setShopping error", error);
+async function setShoppingState(
+  partial: Partial<{ items: Record<string, boolean>; selected_meals: Record<string, boolean> }>,
+): Promise<ShoppingState> {
+  const current = await getShoppingState();
+  const merged = {
+    id: 1,
+    items: partial.items ?? current.items,
+    selected_meals: partial.selected_meals ?? current.selectedMeals,
+    updated_at: new Date().toISOString(),
+  };
+  const { error } = await getSupabase().from("shopping_state").upsert(merged);
+  if (error) console.error("setShoppingState error", error);
+  return { items: merged.items, selectedMeals: merged.selected_meals };
 }
 
-export async function toggleShoppingItem(itemId: string): Promise<Record<string, boolean>> {
-  const current = await getShopping();
-  const next = { ...current, [itemId]: !current[itemId] };
-  await setShopping(next);
-  return next;
+export async function toggleShoppingItem(itemId: string): Promise<ShoppingState> {
+  const current = await getShoppingState();
+  const items = { ...current.items, [itemId]: !current.items[itemId] };
+  return setShoppingState({ items });
 }
 
-export async function clearShoppingChecked(): Promise<Record<string, boolean>> {
-  await setShopping({});
-  return {};
+export async function toggleMealSelection(mealId: string): Promise<ShoppingState> {
+  const current = await getShoppingState();
+  const selected_meals = { ...current.selectedMeals, [mealId]: !current.selectedMeals[mealId] };
+  return setShoppingState({ selected_meals });
+}
+
+export async function clearShoppingChecked(): Promise<ShoppingState> {
+  return setShoppingState({ items: {} });
+}
+
+export async function clearSelectedMeals(): Promise<ShoppingState> {
+  return setShoppingState({ selected_meals: {}, items: {} });
+}
+
+// Compat: helper antigo (lê só os items marcados como comprados)
+export async function getShopping(): Promise<Record<string, boolean>> {
+  const s = await getShoppingState();
+  return s.items;
 }
 
 export async function getStreak(): Promise<number> {
