@@ -1,5 +1,11 @@
-import { Apple, Ban, Clock, Replace } from "lucide-react";
-import { ALIMENTOS_EVITAR, MEALS, SUBSTITUICOES_GERAIS, TOTAL_MACROS } from "@/data/meals";
+import { Apple, Ban, Clock, Replace, Stethoscope, CheckCircle2 } from "lucide-react";
+import {
+  ALIMENTOS_EVITAR,
+  MEALS,
+  ORIENTACOES_MEDICO,
+  SUBSTITUICOES_GERAIS,
+  TOTAL_MACROS,
+} from "@/data/meals";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 export default function DietaPage() {
@@ -13,6 +19,27 @@ export default function DietaPage() {
           pós-parto, fígado gorduroso e pressão.
         </p>
       </div>
+
+      <Card className="border-sky-200 bg-linear-to-br from-sky-50 to-emerald-50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-sky-800">
+            <Stethoscope className="h-5 w-5" /> Orientações do médico
+          </CardTitle>
+          <CardDescription>
+            {ORIENTACOES_MEDICO.medico} · {ORIENTACOES_MEDICO.especialidade}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ul className="space-y-2 text-sm text-zinc-700">
+            {ORIENTACOES_MEDICO.pontos.map((p) => (
+              <li key={p} className="flex items-start gap-2">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-sky-500" />
+                <span>{p}</span>
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
 
       <Card className="bg-linear-to-br from-emerald-50 to-rose-50 border-emerald-200">
         <CardHeader>

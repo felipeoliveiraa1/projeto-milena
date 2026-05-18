@@ -46,7 +46,29 @@ create policy "anon all weights"
   using (true)
   with check (true);
 
--- 4) Trigger para atualizar updated_at em daily_checks
+-- 4) Tabela única com estado da lista de compras (1 linha, items jsonb)
+create table if not exists shopping_state (
+  id int primary key default 1,
+  items jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now(),
+  constraint shopping_state_single_row check (id = 1)
+);
+
+insert into shopping_state (id, items)
+values (1, '{}'::jsonb)
+on conflict (id) do nothing;
+
+alter table shopping_state enable row level security;
+
+drop policy if exists "anon all shopping_state" on shopping_state;
+create policy "anon all shopping_state"
+  on shopping_state
+  for all
+  to anon, authenticated
+  using (true)
+  with check (true);
+
+-- 5) Trigger para atualizar updated_at em daily_checks
 create or replace function set_updated_at()
 returns trigger as $$
 begin

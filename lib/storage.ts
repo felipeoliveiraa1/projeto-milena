@@ -125,6 +125,38 @@ export async function removeWeight(date: string): Promise<WeightEntry[]> {
   return getWeights();
 }
 
+export async function getShopping(): Promise<Record<string, boolean>> {
+  const { data, error } = await getSupabase()
+    .from("shopping_state")
+    .select("items")
+    .eq("id", 1)
+    .maybeSingle();
+  if (error) {
+    console.error("getShopping error", error);
+    return {};
+  }
+  return ((data?.items as Record<string, boolean> | null) ?? {}) as Record<string, boolean>;
+}
+
+async function setShopping(items: Record<string, boolean>): Promise<void> {
+  const { error } = await getSupabase()
+    .from("shopping_state")
+    .upsert({ id: 1, items, updated_at: new Date().toISOString() });
+  if (error) console.error("setShopping error", error);
+}
+
+export async function toggleShoppingItem(itemId: string): Promise<Record<string, boolean>> {
+  const current = await getShopping();
+  const next = { ...current, [itemId]: !current[itemId] };
+  await setShopping(next);
+  return next;
+}
+
+export async function clearShoppingChecked(): Promise<Record<string, boolean>> {
+  await setShopping({});
+  return {};
+}
+
 export async function getStreak(): Promise<number> {
   const today = new Date();
   const start = new Date(today);

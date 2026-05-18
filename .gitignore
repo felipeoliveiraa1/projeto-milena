@@ -34,8 +34,10 @@ yarn-error.log*
 .env*
 !.env.example
 
-# briefing original com histórico médico/dados pessoais (repo público)
+# briefing original e documentos médicos com dados pessoais (repo público)
 docs/briefing-original.md
+META SAUDÁVEL.pdf
+*.pdf
 
 # vercel
 .vercel

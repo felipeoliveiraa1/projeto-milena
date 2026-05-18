@@ -129,15 +129,15 @@ export const MEALS: Meal[] = [
     nome: "Almoço",
     hora: "13:00",
     alimentos: [
-      "130 g de proteína magra (frango, tilápia, patinho ou peito de peru)",
+      "🥗 ENTRADA OBRIGATÓRIA: 1 prato cheio de salada (alface, rúcula, agrião, tomate, pepino) — tempere com azeite, limão OU molho de iogurte com hortelã",
+      "130 g de proteína magra (frango, tilápia, patinho, peito de peru, lombo de porco)",
       "4 col. sopa de arroz integral (100 g) OU 1 batata-doce média (150 g)",
-      "Salada verde à vontade (alface, rúcula, agrião)",
       "Legumes refogados (abobrinha, brócolis, cenoura, berinjela)",
       "1 col. sopa de azeite extravirgem (10 g)",
     ],
     macros: { kcal: 480, proteina: 38, carbo: 45, gordura: 15 },
     porQue:
-      "Proteína magra é o tijolo da massa magra que você quer ganhar. Carbo de baixo IG (integral/batata-doce) sustenta energia sem pico. Azeite é gordura boa essencial pro fígado.",
+      "Salada antes preenche o estômago com fibra e reduz a fome — orientação do médico. Proteína magra é o tijolo da massa magra. Carbo de baixo IG sustenta energia sem pico de glicose. Azeite é gordura boa essencial pro fígado.",
     substituicoes: [
       {
         trocar: "Arroz integral",
@@ -250,15 +250,15 @@ export const MEALS: Meal[] = [
     nome: "Jantar",
     hora: "20:00",
     alimentos: [
-      "130 g de proteína (peixe, frango, ovos — 3 unidades)",
-      "100 g de batata-doce OU 'arroz' de couve-flor",
+      "🥗 ENTRADA OBRIGATÓRIA: 1 prato cheio de salada (alface, rúcula, agrião) com azeite e limão",
+      "130 g de proteína (peixe, frango, lombo de porco, ovos — 3 unidades)",
       "Legumes no vapor ou refogados (à vontade)",
-      "Folhas verdes",
+      "OPCIONAL: 'arroz' de couve-flor — médico recomenda evitar carbo à noite",
       "1 col. sopa de azeite (10 g)",
     ],
     macros: { kcal: 380, proteina: 32, carbo: 28, gordura: 14 },
     porQue:
-      "Jantar mais leve no carbo respeita o ritmo metabólico noturno e ajuda no fígado gorduroso. Proteína à noite = recuperação muscular durante o sono.",
+      "Médico recomenda: 'quase nunca coma carbo à noite'. Salada como entrada preenche e diminui fome. Jantar leve respeita o metabolismo noturno e ajuda no fígado gorduroso. Proteína à noite = recuperação muscular durante o sono.",
     substituicoes: [
       {
         trocar: "Batata-doce",
@@ -371,6 +371,7 @@ export const SUBSTITUICOES_GERAIS: Array<{
       { nome: "Tilápia grelhada", quantidade: "130 g", macros: { kcal: 165, proteina: 33, carbo: 0, gordura: 3 } },
       { nome: "Salmão (2x/sem)", quantidade: "130 g", macros: { kcal: 270, proteina: 30, carbo: 0, gordura: 16 } },
       { nome: "Patinho moído", quantidade: "130 g", macros: { kcal: 200, proteina: 32, carbo: 0, gordura: 8 } },
+      { nome: "Lombo de porco grelhado", quantidade: "130 g", macros: { kcal: 195, proteina: 31, carbo: 0, gordura: 7 } },
       { nome: "Peito de peru defumado", quantidade: "130 g", macros: { kcal: 170, proteina: 28, carbo: 2, gordura: 5 } },
       { nome: "Ovos", quantidade: "3 unidades", macros: { kcal: 210, proteina: 18, carbo: 1, gordura: 15 } },
       { nome: "Iogurte grego natural", quantidade: "200 g", macros: { kcal: 130, proteina: 18, carbo: 6, gordura: 4 } },
@@ -402,6 +403,23 @@ export const SUBSTITUICOES_GERAIS: Array<{
     ],
   },
 ];
+
+export const ORIENTACOES_MEDICO = {
+  medico: "Dr. Henry Adur Gebenlian — CRM/SP 70202",
+  especialidade: "Endocrinologia e Metabologia (SBEM)",
+  pontos: [
+    "Disciplina em 90% das situações — 100% poucos alcançam. Estilo de vida, não dieta passageira.",
+    "Priorizar alimentos in natura: folhas verdes, legumes, frutas, peixes, frango e lombo de porco. Diminuir carnes vermelhas e cortar embutidos.",
+    "Compra na feira/sacolão > supermercado/delivery (refeições prontas costumam ter mais calorias).",
+    "🥗 Salada como ENTRADA obrigatória em TODAS as refeições principais — mesmo no jantar e em dias frios. Tempere com azeite, limão ou molho de iogurte com hortelã. Sem molhos industrializados.",
+    "Diminua sempre a quantidade de carboidratos (arroz, massas, batatas, pães). Quase nunca à noite.",
+    "Pouca comida no prato. Se ficar com fome, a cada 2–3h faça lanchinho saudável (fruta, iogurte diet, 2 torradas integrais, barra de cereais, castanhas, amêndoas).",
+    "Frente a um doce/bolo/frito, pense em quantos minutos de academia precisaria pra queimar — se não der pra resistir, saia do ambiente.",
+    "Cortar as duas farinhas brancas: açúcar refinado e farinha de trigo (e tudo que vem delas — bolos, doces, pizzas, salgadinhos, biscoitos, refrigerantes, sucos industrializados).",
+    "Atividade física: começar com 3h/semana e ir até 5–6h. Caminhada inclinada, bike, natação, dança, luta, crossfit — qualquer coisa que dê prazer. Subir escada vale também.",
+    "Por menor que seja a perda, ela melhora saúde, autoestima e mostra que dá pra manter.",
+  ],
+};
 
 export const ALIMENTOS_EVITAR = [
   "Feijão, lentilha, grão-de-bico (preferência sua)",
