@@ -5,24 +5,34 @@ export type MealMacros = {
   gordura: number;
 };
 
+export type Componente = {
+  id: string;
+  label: string;
+  ingredientes: string[];
+  /** se for um item alternativo (ex: pão OU aveia) */
+  alternativa?: boolean;
+  /** macros do componente isolado (opcional) */
+  macros?: MealMacros;
+};
+
 export type Substituicao = {
+  id: string;
   trocar: string;
   por: string;
   quantidade: string;
   macros: MealMacros;
+  ingredientes: string[];
 };
 
 export type Meal = {
   id: string;
   nome: string;
   hora: string;
-  alimentos: string[];
+  componentes: Componente[];
   macros: MealMacros;
   porQue: string;
   substituicoes?: Substituicao[];
   obrigatoria: boolean;
-  /** IDs dos itens da SHOPPING_LIST necessários para preparar a refeição */
-  ingredientes: string[];
 };
 
 export const MEALS: Meal[] = [
@@ -30,49 +40,70 @@ export const MEALS: Meal[] = [
     id: "cafe",
     nome: "Café da manhã",
     hora: "07:00",
-    alimentos: [
-      "2 ovos mexidos no azeite (sem manteiga)",
-      "1 fatia de pão integral (50 g) OU 2 col. sopa de aveia (20 g)",
-      "1 xícara de frutas vermelhas (150 g — morango, mirtilo, framboesa)",
-      "Café preto sem açúcar (pode adoçar com canela)",
+    componentes: [
+      {
+        id: "cafe-ovos",
+        label: "2 ovos mexidos no azeite (sem manteiga)",
+        ingredientes: ["pr-ovos", "go-azeite"],
+      },
+      {
+        id: "cafe-pao",
+        label: "1 fatia de pão integral (50 g)",
+        ingredientes: ["ca-pao-integral"],
+        alternativa: true,
+      },
+      {
+        id: "cafe-aveia",
+        label: "2 col. sopa de aveia (20 g) — alternativa ao pão",
+        ingredientes: ["ca-aveia-fina"],
+        alternativa: true,
+      },
+      {
+        id: "cafe-frutas",
+        label: "1 xícara de frutas vermelhas (150 g — morango, mirtilo)",
+        ingredientes: ["fr-morango", "fr-mirtilo"],
+      },
+      {
+        id: "cafe-cafe",
+        label: "Café preto sem açúcar (pode adoçar com canela)",
+        ingredientes: ["be-cafe-po", "be-canela-po"],
+      },
     ],
     macros: { kcal: 320, proteina: 18, carbo: 32, gordura: 14 },
     porQue:
       "Proteína dos ovos sustenta a saciedade até o almoço e evita pico de glicose. Frutas vermelhas têm baixo índice glicêmico, ótimas para o seu histórico de diabetes gestacional e fígado.",
-    ingredientes: [
-      "pr-ovos",
-      "ca-pao-integral",
-      "ca-aveia-fina",
-      "fr-morango",
-      "fr-mirtilo",
-      "be-cafe-po",
-      "be-canela-po",
-      "go-azeite",
-    ],
     substituicoes: [
       {
+        id: "cafe-sub-whey",
         trocar: "Ovos",
         por: "Whey + aveia",
         quantidade: "1 scoop (30 g) + 2 col. sopa aveia (20 g)",
         macros: { kcal: 196, proteina: 27, carbo: 16, gordura: 4 },
+        ingredientes: ["su-whey", "ca-aveia-fina"],
       },
       {
+        id: "cafe-sub-tapioca",
         trocar: "Pão integral",
         por: "Tapioca pequena",
         quantidade: "2 col. sopa de goma (40 g)",
         macros: { kcal: 96, proteina: 0, carbo: 22, gordura: 0 },
+        ingredientes: ["ca-tapioca"],
       },
       {
+        id: "cafe-sub-maca",
         trocar: "Frutas vermelhas",
         por: "Maçã pequena",
         quantidade: "1 unidade (130 g)",
         macros: { kcal: 67, proteina: 0.5, carbo: 18, gordura: 0.4 },
+        ingredientes: ["fr-maca-gala"],
       },
       {
+        id: "cafe-sub-pera",
         trocar: "Frutas vermelhas",
         por: "Pera",
         quantidade: "1 unidade (180 g)",
         macros: { kcal: 100, proteina: 0.6, carbo: 25, gordura: 0.3 },
+        ingredientes: ["fr-pera"],
       },
     ],
     obrigatoria: true,
@@ -81,66 +112,79 @@ export const MEALS: Meal[] = [
     id: "lanche-manha",
     nome: "Lanche da manhã",
     hora: "10:00",
-    alimentos: [
-      "1 iogurte natural desnatado (170 g)",
-      "1 col. sopa de chia (10 g)",
-      "1 col. sopa de aveia em flocos (15 g)",
-      "1 fruta pequena (escolha entre as opções abaixo)",
+    componentes: [
+      {
+        id: "lanche-iogurte",
+        label: "1 iogurte natural desnatado (170 g)",
+        ingredientes: ["la-iog-natural"],
+      },
+      {
+        id: "lanche-chia",
+        label: "1 col. sopa de chia (10 g)",
+        ingredientes: ["go-chia"],
+      },
+      {
+        id: "lanche-aveia",
+        label: "1 col. sopa de aveia em flocos (15 g)",
+        ingredientes: ["ca-aveia-fina"],
+      },
+      {
+        id: "lanche-fruta-morango",
+        label: "Fruta: 1 xícara de frutas vermelhas (150 g)",
+        ingredientes: ["fr-morango", "fr-mirtilo"],
+      },
     ],
     macros: { kcal: 245, proteina: 14, carbo: 40, gordura: 5 },
     porQue:
       "Probióticos do iogurte ajudam intestino e imunidade no pós-parto. Chia + aveia dão fibras que regulam glicemia. A fruta acrescenta vitaminas e mantém saciedade até o almoço.",
-    ingredientes: [
-      "la-iog-natural",
-      "go-chia",
-      "ca-aveia-fina",
-      "fr-maca-gala",
-      "fr-mamao",
-      "fr-morango",
-      "fr-kiwi",
-    ],
     substituicoes: [
       {
+        id: "lanche-sub-maca",
         trocar: "Fruta",
         por: "Maçã pequena",
         quantidade: "1 unidade (130 g)",
         macros: { kcal: 67, proteina: 0.5, carbo: 18, gordura: 0.4 },
+        ingredientes: ["fr-maca-gala"],
       },
       {
+        id: "lanche-sub-mamao",
         trocar: "Fruta",
         por: "Mamão papaya",
         quantidade: "1/2 unidade (150 g)",
         macros: { kcal: 70, proteina: 1, carbo: 17, gordura: 0.4 },
+        ingredientes: ["fr-mamao"],
       },
       {
-        trocar: "Fruta",
-        por: "Frutas vermelhas",
-        quantidade: "1 xícara (150 g)",
-        macros: { kcal: 65, proteina: 1, carbo: 15, gordura: 0.4 },
-      },
-      {
+        id: "lanche-sub-kiwi",
         trocar: "Fruta",
         por: "Kiwi",
         quantidade: "2 unidades (140 g)",
         macros: { kcal: 85, proteina: 1.6, carbo: 21, gordura: 0.7 },
+        ingredientes: ["fr-kiwi"],
       },
       {
+        id: "lanche-sub-coalhada",
         trocar: "Iogurte natural",
         por: "Coalhada seca natural",
         quantidade: "170 g",
         macros: { kcal: 90, proteina: 9, carbo: 6, gordura: 3 },
+        ingredientes: ["la-coalhada"],
       },
       {
+        id: "lanche-sub-linhaca",
         trocar: "Chia",
         por: "Linhaça moída",
         quantidade: "1 col. sopa (10 g)",
         macros: { kcal: 53, proteina: 1.8, carbo: 3, gordura: 4.2 },
+        ingredientes: ["go-linhaca-d"],
       },
       {
+        id: "lanche-sub-granola",
         trocar: "Aveia",
         por: "Granola sem açúcar",
         quantidade: "1 col. sopa (15 g)",
         macros: { kcal: 70, proteina: 2, carbo: 11, gordura: 2 },
+        ingredientes: ["ca-granola"],
       },
     ],
     obrigatoria: true,
@@ -149,80 +193,120 @@ export const MEALS: Meal[] = [
     id: "almoco",
     nome: "Almoço",
     hora: "13:00",
-    alimentos: [
-      "🥗 ENTRADA OBRIGATÓRIA: 1 prato cheio de salada (alface, rúcula, agrião, tomate, pepino) — tempere com azeite, limão OU molho de iogurte com hortelã",
-      "130 g de proteína magra (frango, tilápia, patinho, peito de peru, lombo de porco)",
-      "4 col. sopa de arroz integral (100 g) OU 1 batata-doce média (150 g)",
-      "Legumes refogados (abobrinha, brócolis, cenoura, berinjela)",
-      "1 col. sopa de azeite extravirgem (10 g)",
+    componentes: [
+      {
+        id: "almoco-salada",
+        label: "🥗 ENTRADA OBRIGATÓRIA: prato cheio de salada (alface, rúcula, agrião, tomate, pepino)",
+        ingredientes: [
+          "fo-alface-crespa",
+          "fo-rucula",
+          "fo-agriao",
+          "le-tomate",
+          "le-pepino",
+        ],
+      },
+      {
+        id: "almoco-molho-iogurte",
+        label: "Molho de iogurte com hortelã (recomendação do médico)",
+        ingredientes: ["la-iog-natural", "te-hortela", "fr-limao-tahiti"],
+        alternativa: true,
+      },
+      {
+        id: "almoco-molho-azeite",
+        label: "Tempero simples: azeite + limão",
+        ingredientes: ["go-azeite", "fr-limao-tahiti"],
+        alternativa: true,
+      },
+      {
+        id: "almoco-frango",
+        label: "130 g de frango grelhado",
+        ingredientes: ["pr-frango-peito"],
+      },
+      {
+        id: "almoco-arroz",
+        label: "4 col. sopa de arroz integral (100 g)",
+        ingredientes: ["ca-arroz-integral"],
+        alternativa: true,
+      },
+      {
+        id: "almoco-batata-doce",
+        label: "1 batata-doce média (150 g) — alternativa ao arroz",
+        ingredientes: ["ca-batata-doce"],
+        alternativa: true,
+      },
+      {
+        id: "almoco-legumes",
+        label: "Legumes refogados (abobrinha, brócolis, cenoura, berinjela)",
+        ingredientes: ["le-abobrinha", "le-brocolis", "le-cenoura", "le-berinjela"],
+      },
     ],
     macros: { kcal: 480, proteina: 38, carbo: 45, gordura: 15 },
     porQue:
       "Salada antes preenche o estômago com fibra e reduz a fome — orientação do médico. Proteína magra é o tijolo da massa magra. Carbo de baixo IG sustenta energia sem pico de glicose. Azeite é gordura boa essencial pro fígado.",
-    ingredientes: [
-      "fo-alface-crespa",
-      "fo-rucula",
-      "fo-agriao",
-      "le-tomate",
-      "le-pepino",
-      "te-hortela",
-      "la-iog-natural",
-      "go-azeite",
-      "fr-limao-tahiti",
-      "pr-frango-peito",
-      "pr-tilapia",
-      "pr-patinho",
-      "pr-peru-fatiado",
-      "pr-lombo",
-      "ca-arroz-integral",
-      "ca-batata-doce",
-      "le-abobrinha",
-      "le-brocolis",
-      "le-cenoura",
-      "le-berinjela",
-    ],
     substituicoes: [
       {
-        trocar: "Arroz integral",
-        por: "Batata-doce cozida",
-        quantidade: "1 média (150 g)",
-        macros: { kcal: 130, proteina: 2.4, carbo: 30, gordura: 0.2 },
-      },
-      {
+        id: "almoco-sub-quinoa",
         trocar: "Arroz integral",
         por: "Quinoa cozida",
         quantidade: "4 col. sopa (100 g)",
         macros: { kcal: 120, proteina: 4.4, carbo: 21, gordura: 1.9 },
+        ingredientes: ["ca-quinoa"],
       },
       {
+        id: "almoco-sub-inhame",
         trocar: "Arroz integral",
         por: "Inhame cozido",
         quantidade: "100 g",
         macros: { kcal: 116, proteina: 1.5, carbo: 27, gordura: 0.2 },
+        ingredientes: ["ca-inhame"],
       },
       {
+        id: "almoco-sub-baroa",
         trocar: "Arroz integral",
         por: "Mandioquinha cozida",
         quantidade: "100 g",
         macros: { kcal: 80, proteina: 1.5, carbo: 18, gordura: 0.2 },
+        ingredientes: ["ca-baroa"],
       },
       {
+        id: "almoco-sub-tilapia",
         trocar: "Frango",
         por: "Tilápia grelhada",
         quantidade: "130 g",
         macros: { kcal: 165, proteina: 33, carbo: 0, gordura: 3 },
+        ingredientes: ["pr-tilapia"],
       },
       {
+        id: "almoco-sub-salmao",
         trocar: "Frango",
         por: "Salmão (2x/sem)",
         quantidade: "130 g",
         macros: { kcal: 270, proteina: 30, carbo: 0, gordura: 16 },
+        ingredientes: ["pr-salmao"],
       },
       {
+        id: "almoco-sub-patinho",
         trocar: "Frango",
         por: "Patinho moído",
         quantidade: "130 g",
         macros: { kcal: 200, proteina: 32, carbo: 0, gordura: 8 },
+        ingredientes: ["pr-patinho"],
+      },
+      {
+        id: "almoco-sub-lombo",
+        trocar: "Frango",
+        por: "Lombo de porco (médico)",
+        quantidade: "130 g",
+        macros: { kcal: 195, proteina: 31, carbo: 0, gordura: 7 },
+        ingredientes: ["pr-lombo"],
+      },
+      {
+        id: "almoco-sub-peru",
+        trocar: "Frango",
+        por: "Peito de peru fresco",
+        quantidade: "130 g",
+        macros: { kcal: 170, proteina: 28, carbo: 2, gordura: 5 },
+        ingredientes: ["pr-peru-fresco"],
       },
     ],
     obrigatoria: true,
@@ -231,26 +315,37 @@ export const MEALS: Meal[] = [
     id: "pre-treino",
     nome: "Pré-treino",
     hora: "1h antes do treino",
-    alimentos: [
-      "1 banana média (120 g)",
-      "1 col. chá de pasta de amendoim integral (5 g, sem açúcar)",
+    componentes: [
+      {
+        id: "pre-banana",
+        label: "1 banana média (120 g)",
+        ingredientes: ["fr-banana"],
+      },
+      {
+        id: "pre-amendoim",
+        label: "1 col. chá de pasta de amendoim integral (5 g)",
+        ingredientes: ["go-amendoim-pasta"],
+      },
     ],
     macros: { kcal: 135, proteina: 2.6, carbo: 28, gordura: 3 },
     porQue:
       "Carbo rápido da banana dá energia para o treino. Amendoim segura a glicemia e evita queda de energia no meio da série.",
-    ingredientes: ["fr-banana", "go-amendoim-pasta"],
     substituicoes: [
       {
+        id: "pre-sub-maca-caju",
         trocar: "Banana",
         por: "Maçã + castanhas-de-caju",
         quantidade: "1 maçã (130 g) + 5 castanhas (10 g)",
         macros: { kcal: 122, proteina: 2, carbo: 21, gordura: 5 },
+        ingredientes: ["fr-maca-gala", "go-caju"],
       },
       {
+        id: "pre-sub-mel",
         trocar: "Pasta de amendoim",
         por: "Mel puro",
         quantidade: "1 col. chá (7 g)",
         macros: { kcal: 21, proteina: 0, carbo: 6, gordura: 0 },
+        ingredientes: ["be-mel"],
       },
     ],
     obrigatoria: false,
@@ -259,33 +354,55 @@ export const MEALS: Meal[] = [
     id: "pos-treino",
     nome: "Pós-treino",
     hora: "logo após",
-    alimentos: [
-      "30 g de Whey Protein (1 scoop) batido com água ou leite desnatado",
-      "1 fruta (banana, maçã ou frutas vermelhas)",
-      "3–5 g de Creatina (pode misturar no Whey)",
+    componentes: [
+      {
+        id: "pos-whey",
+        label: "30 g de Whey Protein (1 scoop) batido com água ou leite desnatado",
+        ingredientes: ["su-whey", "la-leite-desnatado"],
+      },
+      {
+        id: "pos-creatina",
+        label: "3–5 g de Creatina (pode misturar no Whey)",
+        ingredientes: ["su-creatina"],
+      },
+      {
+        id: "pos-fruta-banana",
+        label: "1 banana média",
+        ingredientes: ["fr-banana"],
+        alternativa: true,
+      },
+      {
+        id: "pos-fruta-maca",
+        label: "1 maçã pequena — alternativa à banana",
+        ingredientes: ["fr-maca-gala"],
+        alternativa: true,
+      },
+      {
+        id: "pos-fruta-vermelhas",
+        label: "1 xícara de frutas vermelhas — alternativa",
+        ingredientes: ["fr-morango", "fr-mirtilo"],
+        alternativa: true,
+      },
     ],
     macros: { kcal: 220, proteina: 25, carbo: 22, gordura: 2 },
     porQue:
       "Janela de recuperação muscular: proteína de absorção rápida + carbo reabastecem o músculo. Creatina pós-treino ajuda força e recuperação.",
-    ingredientes: ["su-whey", "su-creatina", "fr-banana", "fr-maca-gala", "fr-morango"],
     substituicoes: [
       {
+        id: "pos-sub-ovos",
         trocar: "Whey",
         por: "3 claras + 1 ovo inteiro mexidos",
         quantidade: "3 claras + 1 ovo",
         macros: { kcal: 120, proteina: 17, carbo: 1, gordura: 5 },
+        ingredientes: ["pr-ovos", "pr-claras"],
       },
       {
+        id: "pos-sub-mamao",
         trocar: "Fruta",
         por: "Mamão papaya",
         quantidade: "1 fatia (150 g)",
         macros: { kcal: 65, proteina: 1, carbo: 16, gordura: 0.4 },
-      },
-      {
-        trocar: "Fruta",
-        por: "Banana",
-        quantidade: "1 média (120 g)",
-        macros: { kcal: 105, proteina: 1.3, carbo: 27, gordura: 0.4 },
+        ingredientes: ["fr-mamao"],
       },
     ],
     obrigatoria: true,
@@ -294,49 +411,71 @@ export const MEALS: Meal[] = [
     id: "jantar",
     nome: "Jantar",
     hora: "20:00",
-    alimentos: [
-      "🥗 ENTRADA OBRIGATÓRIA: 1 prato cheio de salada (alface, rúcula, agrião) com azeite e limão",
-      "130 g de proteína (peixe, frango, lombo de porco, ovos — 3 unidades)",
-      "Legumes no vapor ou refogados (à vontade)",
-      "OPCIONAL: 'arroz' de couve-flor — médico recomenda evitar carbo à noite",
-      "1 col. sopa de azeite (10 g)",
+    componentes: [
+      {
+        id: "jantar-salada",
+        label: "🥗 ENTRADA OBRIGATÓRIA: prato cheio de salada (alface, rúcula, agrião)",
+        ingredientes: ["fo-alface-crespa", "fo-rucula", "fo-agriao"],
+      },
+      {
+        id: "jantar-tempero",
+        label: "Azeite + limão pra temperar",
+        ingredientes: ["go-azeite", "fr-limao-tahiti"],
+      },
+      {
+        id: "jantar-peixe",
+        label: "130 g de peixe (tilápia, salmão)",
+        ingredientes: ["pr-tilapia"],
+        alternativa: true,
+      },
+      {
+        id: "jantar-frango",
+        label: "130 g de frango — alternativa",
+        ingredientes: ["pr-frango-peito"],
+        alternativa: true,
+      },
+      {
+        id: "jantar-lombo",
+        label: "130 g de lombo de porco — alternativa (médico)",
+        ingredientes: ["pr-lombo"],
+        alternativa: true,
+      },
+      {
+        id: "jantar-ovos",
+        label: "3 ovos — alternativa",
+        ingredientes: ["pr-ovos"],
+        alternativa: true,
+      },
+      {
+        id: "jantar-couve-flor",
+        label: "'Arroz' de couve-flor (médico recomenda evitar carbo à noite)",
+        ingredientes: ["ca-couve-flor"],
+      },
+      {
+        id: "jantar-legumes",
+        label: "Legumes refogados ou no vapor (abobrinha, brócolis, abóbora)",
+        ingredientes: ["le-abobrinha", "le-brocolis", "le-abobora-cabotia"],
+      },
     ],
     macros: { kcal: 380, proteina: 32, carbo: 28, gordura: 14 },
     porQue:
       "Médico recomenda: 'quase nunca coma carbo à noite'. Salada como entrada preenche e diminui fome. Jantar leve respeita o metabolismo noturno e ajuda no fígado gorduroso. Proteína à noite = recuperação muscular durante o sono.",
-    ingredientes: [
-      "fo-alface-crespa",
-      "fo-rucula",
-      "fo-agriao",
-      "pr-tilapia",
-      "pr-frango-peito",
-      "pr-lombo",
-      "pr-ovos",
-      "ca-couve-flor",
-      "le-abobrinha",
-      "le-brocolis",
-      "le-abobora-cabotia",
-      "go-azeite",
-      "fr-limao-tahiti",
-    ],
     substituicoes: [
       {
-        trocar: "Batata-doce",
-        por: "'Arroz' de couve-flor",
-        quantidade: "1 prato pequeno (150 g)",
-        macros: { kcal: 38, proteina: 3, carbo: 7, gordura: 0.5 },
-      },
-      {
-        trocar: "Batata-doce",
+        id: "jantar-sub-abobora",
+        trocar: "Couve-flor",
         por: "Abóbora cabotiá assada",
         quantidade: "150 g",
         macros: { kcal: 60, proteina: 2, carbo: 14, gordura: 0.2 },
+        ingredientes: ["le-abobora-cabotia"],
       },
       {
-        trocar: "Proteína",
+        id: "jantar-sub-sopa",
+        trocar: "Proteína + carbo",
         por: "Sopa de legumes batidos com frango desfiado",
-        quantidade: "1 prato fundo (350 g, com 100 g de frango)",
+        quantidade: "1 prato fundo (350 g)",
         macros: { kcal: 280, proteina: 28, carbo: 18, gordura: 8 },
+        ingredientes: ["pr-frango-peito", "le-abobrinha", "le-cenoura", "le-abobora-cabotia"],
       },
     ],
     obrigatoria: true,
@@ -345,52 +484,53 @@ export const MEALS: Meal[] = [
     id: "ceia",
     nome: "Ceia (opcional)",
     hora: "22:00",
-    alimentos: [
-      "1 iogurte natural desnatado (170 g)",
-      "1 fruta pequena (opcional)",
-      "Canela a gosto",
+    componentes: [
+      {
+        id: "ceia-iogurte",
+        label: "1 iogurte natural desnatado (170 g)",
+        ingredientes: ["la-iog-natural"],
+      },
+      {
+        id: "ceia-canela",
+        label: "Canela em pó a gosto",
+        ingredientes: ["be-canela-po"],
+      },
+      {
+        id: "ceia-fruta-morango",
+        label: "Fruta opcional: 1/2 xícara de frutas vermelhas",
+        ingredientes: ["fr-morango"],
+        alternativa: true,
+      },
+      {
+        id: "ceia-fruta-maca",
+        label: "Fruta opcional: 1/2 maçã pequena",
+        ingredientes: ["fr-maca-gala"],
+        alternativa: true,
+      },
+      {
+        id: "ceia-fruta-mamao",
+        label: "Fruta opcional: 1/2 xícara de mamão picado",
+        ingredientes: ["fr-mamao"],
+        alternativa: true,
+      },
+      {
+        id: "ceia-fruta-kiwi",
+        label: "Fruta opcional: 1 kiwi",
+        ingredientes: ["fr-kiwi"],
+        alternativa: true,
+      },
     ],
     macros: { kcal: 110, proteina: 10, carbo: 17, gordura: 2 },
     porQue:
       "Caseína do iogurte libera proteína lentamente durante a noite, protegendo a massa magra. Canela ajuda a regular glicemia. A fruta acrescenta fibra sem pesar.",
-    ingredientes: [
-      "la-iog-natural",
-      "be-canela-po",
-      "fr-morango",
-      "fr-maca-gala",
-      "fr-mamao",
-      "fr-kiwi",
-    ],
     substituicoes: [
       {
-        trocar: "Fruta",
-        por: "Frutas vermelhas",
-        quantidade: "1/2 xícara (75 g)",
-        macros: { kcal: 32, proteina: 0.5, carbo: 7, gordura: 0.2 },
-      },
-      {
-        trocar: "Fruta",
-        por: "Maçã pequena",
-        quantidade: "1/2 unidade (65 g)",
-        macros: { kcal: 33, proteina: 0.2, carbo: 9, gordura: 0.2 },
-      },
-      {
-        trocar: "Fruta",
-        por: "Mamão picado",
-        quantidade: "1/2 xícara (75 g)",
-        macros: { kcal: 32, proteina: 0.5, carbo: 8, gordura: 0.2 },
-      },
-      {
-        trocar: "Fruta",
-        por: "Kiwi",
-        quantidade: "1 unidade (70 g)",
-        macros: { kcal: 42, proteina: 0.8, carbo: 10, gordura: 0.4 },
-      },
-      {
+        id: "ceia-sub-claras",
         trocar: "Iogurte",
         por: "Claras mexidas com ervas",
         quantidade: "2 claras",
         macros: { kcal: 35, proteina: 7, carbo: 0.5, gordura: 0.1 },
+        ingredientes: ["pr-claras", "te-salsinha"],
       },
     ],
     obrigatoria: false,

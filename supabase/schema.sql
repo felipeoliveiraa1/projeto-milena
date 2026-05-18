@@ -59,10 +59,11 @@ create table if not exists shopping_state (
 
 -- Migration para quem já criou a tabela antes
 alter table shopping_state
-  add column if not exists selected_meals jsonb not null default '{}'::jsonb;
+  add column if not exists selected_meals jsonb not null default '{}'::jsonb,
+  add column if not exists selected_components jsonb not null default '{}'::jsonb;
 
-insert into shopping_state (id, items, selected_meals)
-values (1, '{}'::jsonb, '{}'::jsonb)
+insert into shopping_state (id, items)
+values (1, '{}'::jsonb)
 on conflict (id) do nothing;
 
 alter table shopping_state enable row level security;

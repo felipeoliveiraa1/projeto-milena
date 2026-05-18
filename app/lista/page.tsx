@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { MEALS } from "@/data/meals";
 import { SHOPPING_LIST } from "@/data/shopping";
 import {
-  clearSelectedMeals,
+  clearSelectedComponents,
   clearShoppingChecked,
   getShoppingState,
   toggleShoppingItem,
@@ -50,8 +50,13 @@ for (const cat of SHOPPING_LIST) {
   }
 }
 
+type SelectedDescritor = {
+  refeicao: string;
+  itemLabel: string;
+};
+
 export default function ListaPage() {
-  const [state, setState] = useState<ShoppingState>({ items: {}, selectedMeals: {} });
+  const [state, setState] = useState<ShoppingState>({ items: {}, selectedComponents: {} });
   const [hydrated, setHydrated] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -62,13 +67,41 @@ export default function ListaPage() {
     });
   }, []);
 
-  const selectedMealsList = MEALS.filter((m) => state.selectedMeals[m.id]);
+  // Resumo do que ela selecionou (componentes + substituições)
+  const selecionados: SelectedDescritor[] = useMemo(() => {
+    const out: SelectedDescritor[] = [];
+    for (const meal of MEALS) {
+      for (const c of meal.componentes) {
+        if (state.selectedComponents[c.id]) {
+          out.push({ refeicao: meal.nome, itemLabel: c.label });
+        }
+      }
+      for (const s of meal.substituicoes ?? []) {
+        if (state.selectedComponents[s.id]) {
+          out.push({
+            refeicao: meal.nome,
+            itemLabel: `${s.trocar} → ${s.por} (${s.quantidade})`,
+          });
+        }
+      }
+    }
+    return out;
+  }, [state.selectedComponents]);
 
-  // Calcula ingredientes únicos das refeições selecionadas
+  // Ingredientes únicos baseados nos componentes selecionados
   const grouped = useMemo(() => {
     const ids = new Set<string>();
-    for (const m of selectedMealsList) {
-      for (const ingId of m.ingredientes) ids.add(ingId);
+    for (const meal of MEALS) {
+      for (const c of meal.componentes) {
+        if (state.selectedComponents[c.id]) {
+          c.ingredientes.forEach((i) => ids.add(i));
+        }
+      }
+      for (const s of meal.substituicoes ?? []) {
+        if (state.selectedComponents[s.id]) {
+          s.ingredientes.forEach((i) => ids.add(i));
+        }
+      }
     }
     const byCategory = new Map<string, CatalogItem[]>();
     for (const id of ids) {
@@ -89,7 +122,7 @@ export default function ListaPage() {
         const order = SHOPPING_LIST.map((c) => c.id);
         return order.indexOf(a.categoria.id) - order.indexOf(b.categoria.id);
       });
-  }, [selectedMealsList]);
+  }, [state.selectedComponents]);
 
   const totalIngredientes = grouped.reduce((s, g) => s + g.itens.length, 0);
   const comprados = hydrated ? Object.values(state.items).filter(Boolean).length : 0;
@@ -115,9 +148,7 @@ export default function ListaPage() {
       }
       lines.push("");
     }
-    if (total === 0) {
-      return "🛒 Lista de compras: tudo já comprado! 🎉";
-    }
+    if (total === 0) return "🛒 Lista de compras: tudo já comprado! 🎉";
     lines.push(`_Total: ${total} ${total === 1 ? "item" : "itens"}_`);
     return lines.join("\n");
   }
@@ -129,7 +160,7 @@ export default function ListaPage() {
         await (navigator as Navigator).share({ title: "Lista de compras", text });
         return;
       } catch {
-        // usuário cancelou ou erro → cai pro clipboard
+        // cancelado/erro → cai pro clipboard
       }
     }
     await copiar(text);
@@ -142,23 +173,22 @@ export default function ListaPage() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      alert("Não consegui copiar. Tente de novo ou use o botão Compartilhar.");
+      alert("Não consegui copiar. Tente o botão Compartilhar.");
     }
   }
 
   function enviarWhatsApp() {
     const text = buildShareText(true);
-    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
-    window.open(url, "_blank");
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
   }
 
   async function limparTudo() {
-    if (!confirm("Limpar tudo? Vai desmarcar refeições selecionadas e itens já comprados.")) return;
-    setState(await clearSelectedMeals());
+    if (!confirm("Limpar tudo? Vai desmarcar todos os itens da dieta e os comprados.")) return;
+    setState(await clearSelectedComponents());
   }
 
   async function limparComprados() {
-    if (!confirm("Desmarcar todos os itens como 'não comprados'?")) return;
+    if (!confirm("Desmarcar todos os 'já comprados'?")) return;
     setState(await clearShoppingChecked());
   }
 
@@ -180,22 +210,22 @@ export default function ListaPage() {
         <p className="text-xs font-semibold uppercase tracking-widest text-rose-500">Mercado</p>
         <h2 className="text-2xl font-bold text-zinc-900">Lista de compras</h2>
         <p className="mt-1 text-sm text-zinc-600">
-          A lista é montada automaticamente a partir das <strong>refeições marcadas</strong> em /dieta.
-          Marque o que já comprou e compartilhe a lista do que falta.
+          Montada a partir dos <strong>itens marcados em /dieta</strong>. Marque cada ingrediente
+          conforme for comprando e compartilhe o que falta.
         </p>
       </div>
 
-      {selectedMealsList.length === 0 ? (
+      {selecionados.length === 0 ? (
         <Card className="border-rose-200 bg-rose-50/40">
           <CardContent className="space-y-3 p-6 text-center">
             <Utensils className="mx-auto h-12 w-12 text-rose-300" />
-            <p className="font-semibold text-zinc-900">Nenhuma refeição selecionada ainda</p>
+            <p className="font-semibold text-zinc-900">Nada selecionado ainda</p>
             <p className="text-sm text-zinc-600">
-              Vai em <strong>/dieta</strong> e clica em <strong>+ Lista</strong> em cada refeição
-              que quiser preparar. Os ingredientes aparecem aqui automaticamente.
+              Vai em <strong>/dieta</strong> e marque cada alimento/substituição que você vai usar.
+              Os ingredientes aparecem aqui automaticamente.
             </p>
             <Button asChild>
-              <Link href="/dieta">Escolher refeições</Link>
+              <Link href="/dieta">Montar cardápio</Link>
             </Button>
           </CardContent>
         </Card>
@@ -231,7 +261,7 @@ export default function ListaPage() {
           <Card className="border-rose-200">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-rose-700">
-                <Share2 className="h-5 w-5" /> Compartilhar com o Felipe
+                <Share2 className="h-5 w-5" /> Compartilhar
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
@@ -263,17 +293,17 @@ export default function ListaPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-rose-500" /> Refeições selecionadas
+                <Sparkles className="h-5 w-5 text-rose-500" /> Cardápio selecionado
               </CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-wrap gap-2">
-              {selectedMealsList.map((m) => (
-                <span
-                  key={m.id}
-                  className="rounded-full bg-rose-100 px-3 py-1 text-xs font-medium text-rose-800"
-                >
-                  {m.nome}
-                </span>
+            <CardContent className="space-y-1 text-xs">
+              {selecionados.map((s, i) => (
+                <div key={i} className="flex items-baseline gap-2">
+                  <span className="rounded-full bg-rose-100 px-2 py-0.5 font-semibold text-rose-800">
+                    {s.refeicao}
+                  </span>
+                  <span className="text-zinc-700">{s.itemLabel}</span>
+                </div>
               ))}
             </CardContent>
           </Card>

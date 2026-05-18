@@ -10,7 +10,7 @@ import {
   Stethoscope,
   CheckCircle2,
   ShoppingCart,
-  Check,
+  ChevronsUpDown,
 } from "lucide-react";
 import {
   ALIMENTOS_EVITAR,
@@ -18,43 +18,49 @@ import {
   ORIENTACOES_MEDICO,
   SUBSTITUICOES_GERAIS,
   TOTAL_MACROS,
+  type Meal,
 } from "@/data/meals";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { getShoppingState, toggleMealSelection } from "@/lib/storage";
+import { Checkbox } from "@/components/ui/checkbox";
+import { getShoppingState, toggleComponentSelection } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 
 export default function DietaPage() {
-  const [selectedMeals, setSelectedMeals] = useState<Record<string, boolean>>({});
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     getShoppingState().then((s) => {
-      setSelectedMeals(s.selectedMeals);
+      setSelected(s.selectedComponents);
       setHydrated(true);
     });
   }, []);
 
-  async function handleToggleMeal(mealId: string) {
-    setSelectedMeals((prev) => ({ ...prev, [mealId]: !prev[mealId] }));
-    const next = await toggleMealSelection(mealId);
-    setSelectedMeals(next.selectedMeals);
+  async function handleToggle(id: string) {
+    setSelected((prev) => ({ ...prev, [id]: !prev[id] }));
+    const next = await toggleComponentSelection(id);
+    setSelected(next.selectedComponents);
   }
 
-  const totalSelecionadas = hydrated ? Object.values(selectedMeals).filter(Boolean).length : 0;
+  const totalSelecionados = hydrated
+    ? Object.values(selected).filter(Boolean).length
+    : 0;
 
   return (
     <div className="space-y-5">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-widest text-rose-500">Plano alimentar</p>
+        <p className="text-xs font-semibold uppercase tracking-widest text-rose-500">
+          Plano alimentar
+        </p>
         <h2 className="text-2xl font-bold text-zinc-900">Sua dieta completa</h2>
         <p className="mt-1 text-sm text-zinc-600">
-          Foco em emagrecer com saúde, ganhar massa magra e definir braços/abdômen — respeitando
-          pós-parto, fígado gorduroso e pressão.
+          Marque cada item (alimento ou substituição) que você vai usar — vai montando o cardápio
+          do seu jeito. Os ingredientes aparecem em <strong>/lista</strong> automaticamente.
         </p>
       </div>
 
-      {totalSelecionadas > 0 && (
+      {totalSelecionados > 0 && (
         <Card className="border-emerald-300 bg-linear-to-br from-emerald-50 to-emerald-100">
           <CardContent className="flex items-center justify-between gap-3 p-4">
             <div className="flex items-center gap-3">
@@ -63,10 +69,11 @@ export default function DietaPage() {
               </div>
               <div>
                 <p className="text-sm font-semibold text-emerald-900">
-                  {totalSelecionadas} {totalSelecionadas === 1 ? "refeição" : "refeições"} na lista
+                  {totalSelecionados}{" "}
+                  {totalSelecionados === 1 ? "item escolhido" : "itens escolhidos"}
                 </p>
                 <p className="text-xs text-emerald-700">
-                  Os ingredientes estão sendo somados em /lista
+                  Lista de compras consolidada atualizada
                 </p>
               </div>
             </div>
@@ -100,7 +107,7 @@ export default function DietaPage() {
 
       <Card className="bg-linear-to-br from-emerald-50 to-rose-50 border-emerald-200">
         <CardHeader>
-          <CardTitle className="text-emerald-800">Total do dia</CardTitle>
+          <CardTitle className="text-emerald-800">Total do dia (de referência)</CardTitle>
           <CardDescription>Distribuídos nas 6–7 refeições abaixo</CardDescription>
         </CardHeader>
         <CardContent>
@@ -113,84 +120,15 @@ export default function DietaPage() {
         </CardContent>
       </Card>
 
-      {MEALS.map((meal) => {
-        const selected = hydrated && !!selectedMeals[meal.id];
-        return (
-          <Card
-            key={meal.id}
-            className={cn(
-              "transition",
-              selected && "border-emerald-300 bg-emerald-50/30 ring-2 ring-emerald-200",
-            )}
-          >
-            <CardHeader>
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <CardTitle className="flex items-center gap-2">
-                    <Apple className="h-5 w-5 text-rose-500" />
-                    {meal.nome}
-                  </CardTitle>
-                  <p className="flex items-center gap-1 text-xs text-zinc-500">
-                    <Clock className="h-3 w-3" />
-                    {meal.hora} · {meal.macros.kcal} kcal · P {meal.macros.proteina}g · C {meal.macros.carbo}g · G {meal.macros.gordura}g
-                  </p>
-                </div>
-                <Button
-                  size="sm"
-                  variant={selected ? "soft" : "outline"}
-                  onClick={() => handleToggleMeal(meal.id)}
-                  disabled={!hydrated}
-                  className="shrink-0"
-                >
-                  {selected ? (
-                    <>
-                      <Check className="h-4 w-4" /> Na lista
-                    </>
-                  ) : (
-                    <>
-                      <ShoppingCart className="h-4 w-4" /> + Lista
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              <ul className="list-inside list-disc space-y-1 text-zinc-800">
-                {meal.alimentos.map((a) => (
-                  <li key={a}>{a}</li>
-                ))}
-              </ul>
-              <div className="rounded-xl bg-amber-50 p-3 text-xs text-amber-900">
-                <strong className="block text-amber-700">Por que comer:</strong>
-                {meal.porQue}
-              </div>
-              {meal.substituicoes && (
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-rose-700">
-                    Substituições com quantidade certa
-                  </p>
-                  <div className="space-y-2">
-                    {meal.substituicoes.map((s, i) => (
-                      <div
-                        key={`${s.trocar}-${s.por}-${i}`}
-                        className="rounded-xl bg-rose-50 p-3"
-                      >
-                        <p className="text-sm font-semibold text-rose-900">
-                          {s.trocar} → {s.por}
-                        </p>
-                        <p className="mt-0.5 text-xs text-rose-700">{s.quantidade}</p>
-                        <p className="mt-1 text-[11px] text-zinc-600">
-                          {s.macros.kcal} kcal · P {s.macros.proteina}g · C {s.macros.carbo}g · G {s.macros.gordura}g
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        );
-      })}
+      {MEALS.map((meal) => (
+        <MealCard
+          key={meal.id}
+          meal={meal}
+          selected={selected}
+          hydrated={hydrated}
+          onToggle={handleToggle}
+        />
+      ))}
 
       <Card>
         <CardHeader>
@@ -254,6 +192,142 @@ export default function DietaPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function MealCard({
+  meal,
+  selected,
+  hydrated,
+  onToggle,
+}: {
+  meal: Meal;
+  selected: Record<string, boolean>;
+  hydrated: boolean;
+  onToggle: (id: string) => void;
+}) {
+  const totalNoCard = meal.componentes.length + (meal.substituicoes?.length ?? 0);
+  const marcadosNoCard = [
+    ...meal.componentes.map((c) => c.id),
+    ...(meal.substituicoes?.map((s) => s.id) ?? []),
+  ].filter((id) => hydrated && selected[id]).length;
+
+  return (
+    <Card
+      className={cn(
+        "transition",
+        marcadosNoCard > 0 && "border-emerald-300 ring-2 ring-emerald-200",
+      )}
+    >
+      <CardHeader>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <CardTitle className="flex items-center gap-2">
+              <Apple className="h-5 w-5 text-rose-500" />
+              {meal.nome}
+            </CardTitle>
+            <p className="flex items-center gap-1 text-xs text-zinc-500">
+              <Clock className="h-3 w-3" />
+              {meal.hora} · {meal.macros.kcal} kcal · P {meal.macros.proteina}g · C {meal.macros.carbo}g · G {meal.macros.gordura}g
+            </p>
+          </div>
+          {marcadosNoCard > 0 && (
+            <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">
+              {marcadosNoCard}/{totalNoCard}
+            </span>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3 text-sm">
+        <div className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-600">
+            Alimentos da refeição
+          </p>
+          {meal.componentes.map((c) => {
+            const checked = hydrated && !!selected[c.id];
+            return (
+              <button
+                key={c.id}
+                onClick={() => onToggle(c.id)}
+                className={cn(
+                  "flex w-full items-start gap-3 rounded-2xl border bg-white p-3 text-left transition active:scale-[0.99]",
+                  checked
+                    ? "border-emerald-200 bg-emerald-50/60"
+                    : c.alternativa
+                      ? "border-zinc-100 border-dashed"
+                      : "border-zinc-100 hover:bg-rose-50/40",
+                )}
+              >
+                <Checkbox
+                  checked={checked}
+                  onCheckedChange={() => onToggle(c.id)}
+                  className="mt-0.5"
+                />
+                <span
+                  className={cn(
+                    "flex-1 text-sm",
+                    checked ? "text-zinc-500 line-through" : "text-zinc-800",
+                    c.alternativa && !checked && "text-zinc-600 italic",
+                  )}
+                >
+                  {c.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="rounded-xl bg-amber-50 p-3 text-xs text-amber-900">
+          <strong className="block text-amber-700">Por que comer:</strong>
+          {meal.porQue}
+        </div>
+
+        {meal.substituicoes && meal.substituicoes.length > 0 && (
+          <div className="space-y-2">
+            <p className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-rose-700">
+              <ChevronsUpDown className="h-3 w-3" /> Substituições (também selecionáveis)
+            </p>
+            <div className="space-y-2">
+              {meal.substituicoes.map((s) => {
+                const checked = hydrated && !!selected[s.id];
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => onToggle(s.id)}
+                    className={cn(
+                      "flex w-full items-start gap-3 rounded-2xl border-2 p-3 text-left transition active:scale-[0.99]",
+                      checked
+                        ? "border-emerald-300 bg-emerald-50/60"
+                        : "border-rose-100 bg-rose-50/40 hover:bg-rose-50",
+                    )}
+                  >
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={() => onToggle(s.id)}
+                      className="mt-0.5"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className={cn(
+                          "text-sm font-semibold",
+                          checked ? "text-zinc-500 line-through" : "text-rose-900",
+                        )}
+                      >
+                        {s.trocar} → {s.por}
+                      </p>
+                      <p className="text-xs text-rose-700">{s.quantidade}</p>
+                      <p className="mt-1 text-[11px] text-zinc-600">
+                        {s.macros.kcal} kcal · P {s.macros.proteina}g · C {s.macros.carbo}g · G {s.macros.gordura}g
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

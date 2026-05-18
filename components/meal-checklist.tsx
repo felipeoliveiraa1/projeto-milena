@@ -82,8 +82,8 @@ export function MealChecklist() {
               {isOpen && (
                 <div className="space-y-3 px-4 pb-4 text-sm">
                   <ul className="list-inside list-disc space-y-1 text-zinc-700">
-                    {meal.alimentos.map((a) => (
-                      <li key={a}>{a}</li>
+                    {meal.componentes.map((c) => (
+                      <li key={c.id}>{c.label}</li>
                     ))}
                   </ul>
                   <div className="rounded-xl bg-amber-50 p-3 text-xs text-amber-900">
