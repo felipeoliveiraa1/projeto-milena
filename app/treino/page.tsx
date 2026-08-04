@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Dumbbell, Clock, Repeat, Info, PlayCircle, CheckCircle2 } from "lucide-react";
-import { WORKOUTS } from "@/data/workouts";
+import { Dumbbell, Clock, Repeat, Info, Wrench, Sparkles, CheckCircle2 } from "lucide-react";
+import { WORKOUTS, EQUIPAMENTOS, SEM_APARELHO } from "@/data/workouts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
+import { ExerciseVideo } from "@/components/exercise-video";
 import { diaDaSemana } from "@/lib/date";
 import { getDay, toggleExercise } from "@/lib/storage";
 import { cn } from "@/lib/utils";
@@ -51,6 +52,30 @@ export default function TreinoPage() {
           Antes de cada treino: 5 min de aquecimento.
         </p>
       </div>
+
+      <details className="group rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4">
+        <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-semibold text-emerald-900">
+          <Wrench className="h-4 w-4 text-emerald-600" />
+          Montado com os aparelhos da sua academia
+          <span className="ml-auto text-xs font-normal text-emerald-700 group-open:hidden">
+            ver
+          </span>
+        </summary>
+        <div className="mt-3 space-y-3 text-xs text-emerald-900">
+          <ul className="space-y-1">
+            {EQUIPAMENTOS.map((e) => (
+              <li key={e.nome}>
+                <strong>{e.nome}</strong> — {e.detalhe}
+              </li>
+            ))}
+          </ul>
+          <p className="rounded-xl bg-white/70 p-3 text-emerald-800">
+            Sua academia não tem {SEM_APARELHO.join(", ").toLowerCase()}. Cada um desses
+            foi trocado por um exercício equivalente — o card do exercício explica a
+            troca.
+          </p>
+        </div>
+      </details>
 
       <Tabs defaultValue={defaultTab} className="w-full">
         <TabsList>
@@ -98,9 +123,6 @@ export default function TreinoPage() {
                   {workout.exercicios.map((ex, i) => {
                     const id = exId(workout.diaSemana, i);
                     const checked = hydrated && !!checks[id];
-                    const tutorialUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(
-                      `${ex.nome} como fazer execução correta`,
-                    )}`;
                     return (
                       <div
                         key={ex.nome}
@@ -142,14 +164,17 @@ export default function TreinoPage() {
                             <p className="mt-2 flex items-start gap-1 text-xs text-zinc-600">
                               <Info className="mt-0.5 h-3 w-3 shrink-0 text-zinc-400" /> {ex.beneficio}
                             </p>
-                            <a
-                              href={tutorialUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-100"
-                            >
-                              <PlayCircle className="h-3.5 w-3.5" /> Ver tutorial no YouTube
-                            </a>
+                            <p className="mt-1.5 flex items-start gap-1 text-xs text-zinc-500">
+                              <Wrench className="mt-0.5 h-3 w-3 shrink-0 text-zinc-400" />
+                              {ex.equipamento}
+                            </p>
+                            {ex.adaptacao && (
+                              <p className="mt-2 flex items-start gap-1 rounded-xl bg-emerald-50 p-2 text-xs text-emerald-900">
+                                <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-emerald-600" />
+                                {ex.adaptacao}
+                              </p>
+                            )}
+                            <ExerciseVideo nome={ex.nome} videoId={ex.videoId} />
                           </div>
                         </div>
                       </div>
