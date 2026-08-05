@@ -79,8 +79,13 @@ export function PhotoBoard() {
       } else {
         await recarregar();
       }
-    } catch {
-      setErro("Não consegui preparar essa foto. Tente outra.");
+    } catch (e) {
+      const motivo = e instanceof Error ? e.message : "";
+      setErro(
+        motivo.includes("não suportado")
+          ? "Esse formato não abriu neste aparelho. No iPhone: Ajustes → Câmera → Formatos → Mais Compatível."
+          : "Não consegui preparar essa foto. Tente outra.",
+      );
     } finally {
       setOcupado(false);
       if (inputRef.current) inputRef.current.value = "";
@@ -154,11 +159,12 @@ export function PhotoBoard() {
             ))}
           </div>
 
+          {/* Sem `capture`: no iPhone isso abriria a câmera direto e tiraria a
+              opção de escolher uma foto que ela já tem na galeria. */}
           <input
             ref={inputRef}
             type="file"
-            accept="image/*"
-            capture="environment"
+            accept="image/*,.heic,.heif"
             className="hidden"
             onChange={(e) => {
               const arquivo = e.target.files?.[0];

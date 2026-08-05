@@ -85,33 +85,60 @@ export async function removerFoto(caminho: string): Promise<void> {
 
 /**
  * Reduz a foto antes de enviar: 1200 px no maior lado e JPEG a 78%.
- * Uma foto de celular sai de ~4 MB para ~250 KB.
+ * Uma foto de iPhone sai de ~4 MB para ~250 KB.
+ *
+ * Dois cuidados que o iPhone exige:
+ * - HEIC: o iPhone fotografa em HEIC. Como quem converte é o próprio aparelho
+ *   (o Safari decodifica e o canvas devolve JPEG), o que sobe é sempre JPEG.
+ * - Orientação: a foto do celular guarda a rotação no EXIF em vez de girar os
+ *   pixels. `createImageBitmap` com `from-image` aplica essa rotação — sem
+ *   isso, foto tirada de lado sobe deitada.
  */
-export function comprimir(arquivo: File, maxLado = 1200): Promise<Blob> {
+export async function comprimir(arquivo: File, maxLado = 1200): Promise<Blob> {
+  const fonte = await carregarImagem(arquivo);
+  const largura = "width" in fonte ? fonte.width : 0;
+  const altura = "height" in fonte ? fonte.height : 0;
+  if (!largura || !altura) throw new Error("imagem sem dimensões");
+
+  const escala = Math.min(1, maxLado / Math.max(largura, altura));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(largura * escala);
+  canvas.height = Math.round(altura * escala);
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("canvas indisponível");
+  ctx.drawImage(fonte, 0, 0, canvas.width, canvas.height);
+  if ("close" in fonte) fonte.close();
+
   return new Promise((resolve, reject) => {
-    const leitor = new FileReader();
-    leitor.onerror = () => reject(leitor.error);
-    leitor.onload = () => {
-      const img = new Image();
-      img.onerror = () => reject(new Error("imagem inválida"));
-      img.onload = () => {
-        const escala = Math.min(1, maxLado / Math.max(img.width, img.height));
-        const canvas = document.createElement("canvas");
-        canvas.width = Math.round(img.width * escala);
-        canvas.height = Math.round(img.height * escala);
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return reject(new Error("canvas indisponível"));
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        canvas.toBlob(
-          (blob) => (blob ? resolve(blob) : reject(new Error("falha ao converter"))),
-          "image/jpeg",
-          0.78,
-        );
-      };
-      img.src = leitor.result as string;
-    };
-    leitor.readAsDataURL(arquivo);
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error("falha ao converter"))),
+      "image/jpeg",
+      0.78,
+    );
   });
+}
+
+async function carregarImagem(arquivo: File): Promise<ImageBitmap | HTMLImageElement> {
+  if (typeof createImageBitmap === "function") {
+    try {
+      return await createImageBitmap(arquivo, { imageOrientation: "from-image" });
+    } catch {
+      // navegador antigo ou formato que ele não decodifica — tenta pelo <img>
+    }
+  }
+
+  const url = URL.createObjectURL(arquivo);
+  try {
+    return await new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("formato de imagem não suportado"));
+      img.src = url;
+    });
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }
 
 function novoId(): string {
