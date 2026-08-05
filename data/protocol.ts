@@ -176,7 +176,9 @@ export const ROTINA_PADRAO: RotinaBloco[] = [
   {
     id: "acompanhamento",
     titulo: "Acompanhamento",
-    periodo: "dia",
+    // À noite: registrar os sintomas do dia é fechamento, não meio da tarde.
+    // Assim o bloco aparece na tela inicial junto da rotina da noite.
+    periodo: "noite",
     itens: [
       {
         id: "r-ac-sintomas",
