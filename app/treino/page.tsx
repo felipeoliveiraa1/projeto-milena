@@ -1,9 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, Clock, Info, Repeat, ShieldAlert, Sparkles, Wrench } from "lucide-react";
-import { WORKOUTS, EQUIPAMENTOS, SEM_APARELHO } from "@/data/workouts";
-import { Card, CardContent, CardHeader, CardTitle, Eyebrow } from "@/components/ui/card";
+import {
+  CheckCircle2,
+  Clock,
+  Info,
+  Repeat,
+  ShieldAlert,
+  Sparkles,
+  Wrench,
+} from "lucide-react";
+import { EQUIPAMENTOS, PLANOS, SEM_APARELHO, planoDe } from "@/data/workouts";
+import { usePreferencias } from "@/lib/settings";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Eyebrow,
+} from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
@@ -13,8 +28,9 @@ import { useAgora } from "@/lib/now";
 import { getDay, toggleExercise } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 
-function exId(diaSemana: number, idx: number) {
-  return `${diaSemana}-${idx}`;
+/** O prefixo separa os checks de um plano dos do outro. */
+function exId(prefixo: string, diaSemana: number, idx: number) {
+  return prefixo ? `${prefixo}-${diaSemana}-${idx}` : `${diaSemana}-${idx}`;
 }
 
 export default function TreinoPage() {
@@ -24,6 +40,8 @@ export default function TreinoPage() {
   const [abaEscolhida, setAbaEscolhida] = useState<string | null>(null);
   const agora = useAgora();
   const today = agora ? diaDaSemana(agora) : null;
+  const { prefs, salvar } = usePreferencias();
+  const plano = planoDe(prefs.faseTreino);
 
   useEffect(() => {
     getDay().then((d) => {
@@ -38,7 +56,7 @@ export default function TreinoPage() {
     setChecks({ ...next.exercises });
   }
 
-  const ordered = [...WORKOUTS].sort((a, b) => {
+  const ordered = [...plano.dias].sort((a, b) => {
     const order = [1, 2, 3, 4, 5, 6, 0];
     return order.indexOf(a.diaSemana) - order.indexOf(b.diaSemana);
   });
@@ -50,31 +68,78 @@ export default function TreinoPage() {
       <header>
         <Eyebrow className="text-brand">Plano de treino</Eyebrow>
         <h2 className="font-display mt-2 text-4xl leading-none text-ink">
-          40 min por dia, 6× na semana
+          {plano.resumo}
         </h2>
         <p className="mt-3 text-sm leading-relaxed text-ink-muted">
-          Queimar gordura abdominal e tonificar braços, com glúteo de bônus. Antes de cada treino,
-          5 min de aquecimento.
+          {plano.detalhe}
         </p>
       </header>
+
+      <Card>
+        <CardHeader>
+          <Eyebrow className="text-brand">Fase do treino</Eyebrow>
+          <CardTitle className="mt-1.5">Em que pé você está</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {Object.values(PLANOS).map((op) => {
+            const ativo = op.id === plano.id;
+            return (
+              <button
+                key={op.id}
+                onClick={() => salvar({ ...prefs, faseTreino: op.id })}
+                className={cn(
+                  "w-full rounded-xl2 border p-3.5 text-left transition active:scale-[0.99]",
+                  ativo
+                    ? "border-brand bg-brand-soft/50"
+                    : "border-line bg-surface hover:bg-bone",
+                )}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p
+                    className={cn(
+                      "font-bold",
+                      ativo ? "text-brand" : "text-ink",
+                    )}
+                  >
+                    {op.nome}
+                  </p>
+                  <span className="text-xs font-semibold text-ink-muted">
+                    {op.resumo}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs leading-relaxed text-ink-muted">
+                  {op.detalhe}
+                </p>
+              </button>
+            );
+          })}
+        </CardContent>
+      </Card>
 
       <details className="group rounded-card border border-line bg-surface p-5">
         <summary className="flex cursor-pointer list-none items-center gap-2.5 text-sm font-bold text-ink">
           <Wrench className="h-4 w-4 text-brand" />
           Montado com os aparelhos da sua academia
-          <span className="ml-auto text-xs font-medium text-ink-muted group-open:hidden">ver</span>
+          <span className="ml-auto text-xs font-medium text-ink-muted group-open:hidden">
+            ver
+          </span>
         </summary>
         <div className="mt-4 space-y-3">
           <ul className="space-y-1.5">
             {EQUIPAMENTOS.map((e) => (
-              <li key={e.nome} className="text-xs leading-relaxed text-ink-muted">
-                <strong className="text-ink-soft">{e.nome}</strong> — {e.detalhe}
+              <li
+                key={e.nome}
+                className="text-xs leading-relaxed text-ink-muted"
+              >
+                <strong className="text-ink-soft">{e.nome}</strong> —{" "}
+                {e.detalhe}
               </li>
             ))}
           </ul>
           <p className="rounded-xl2 bg-bone-deep/60 p-3.5 text-xs leading-relaxed text-ink-soft">
-            Sua academia não tem {SEM_APARELHO.join(", ").toLowerCase()}. Cada um foi trocado por um
-            exercício equivalente — o card explica a troca.
+            Sua academia não tem {SEM_APARELHO.join(", ").toLowerCase()}. Cada
+            um foi trocado por um exercício equivalente — o card explica a
+            troca.
           </p>
         </div>
       </details>
@@ -91,11 +156,17 @@ export default function TreinoPage() {
         {ordered.map((workout) => {
           const total = workout.exercicios.length;
           const done = workout.exercicios.filter((_, i) =>
-            hydrated ? !!checks[exId(workout.diaSemana, i)] : false,
+            hydrated
+              ? !!checks[exId(plano.prefixo, workout.diaSemana, i)]
+              : false,
           ).length;
           const pct = total > 0 ? Math.round((done / total) * 100) : 0;
           return (
-            <TabsContent key={workout.diaSemana} value={String(workout.diaSemana)} className="space-y-3">
+            <TabsContent
+              key={workout.diaSemana}
+              value={String(workout.diaSemana)}
+              className="space-y-3"
+            >
               <Card>
                 <CardHeader>
                   <Eyebrow className="text-brand">{workout.diaNome}</Eyebrow>
@@ -125,14 +196,16 @@ export default function TreinoPage() {
                   )}
 
                   {workout.exercicios.map((ex, i) => {
-                    const id = exId(workout.diaSemana, i);
+                    const id = exId(plano.prefixo, workout.diaSemana, i);
                     const checked = hydrated && !!checks[id];
                     return (
                       <div
                         key={ex.nome}
                         className={cn(
                           "rounded-xl2 border p-4 transition",
-                          checked ? "border-brand/20 bg-brand-soft/40" : "border-line bg-surface",
+                          checked
+                            ? "border-brand/20 bg-brand-soft/40"
+                            : "border-line bg-surface",
                         )}
                       >
                         <div className="flex items-start gap-3">
@@ -149,7 +222,9 @@ export default function TreinoPage() {
                             <p
                               className={cn(
                                 "mt-1 font-bold",
-                                checked ? "text-ink-muted line-through" : "text-ink",
+                                checked
+                                  ? "text-ink-muted line-through"
+                                  : "text-ink",
                               )}
                             >
                               {ex.nome}
@@ -157,7 +232,8 @@ export default function TreinoPage() {
 
                             <div className="mt-2.5 flex flex-wrap gap-1.5">
                               <span className="flex items-center gap-1 rounded-full bg-brand-soft px-2.5 py-1 text-[0.6875rem] font-bold text-brand">
-                                <Repeat className="h-3 w-3" /> {ex.series} séries
+                                <Repeat className="h-3 w-3" /> {ex.series}{" "}
+                                séries
                               </span>
                               <span className="rounded-full bg-clay-soft px-2.5 py-1 text-[0.6875rem] font-bold text-clay-deep">
                                 {ex.reps} reps
@@ -168,7 +244,8 @@ export default function TreinoPage() {
                             </div>
 
                             <p className="mt-2.5 flex items-start gap-1.5 text-xs leading-relaxed text-ink-muted">
-                              <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {ex.beneficio}
+                              <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />{" "}
+                              {ex.beneficio}
                             </p>
                             <p className="mt-1.5 flex items-start gap-1.5 text-xs text-ink-muted">
                               <Wrench className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -190,7 +267,10 @@ export default function TreinoPage() {
                               </p>
                             )}
 
-                            <ExerciseVideo nome={ex.nome} videoId={ex.videoId} />
+                            <ExerciseVideo
+                              nome={ex.nome}
+                              videoId={ex.videoId}
+                            />
                           </div>
                         </div>
                       </div>
@@ -209,7 +289,9 @@ export default function TreinoPage() {
                   {hydrated && total > 0 && done === total && (
                     <div className="flex items-center gap-2.5 rounded-xl2 bg-brand p-4 text-bone">
                       <CheckCircle2 className="h-5 w-5" />
-                      <span className="text-sm font-bold">Treino completo. Muito bem! 💪</span>
+                      <span className="text-sm font-bold">
+                        Treino completo. Muito bem! 💪
+                      </span>
                     </div>
                   )}
                 </CardContent>

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { getSupabase } from "./supabase";
+import type { FaseTreino } from "@/data/workouts";
 
 /**
  * Preferências que a Milena ajusta pelo próprio app, sem depender de deploy.
@@ -18,6 +19,8 @@ export type Preferencias = {
   pesoMeta: number;
   /** Duração do ciclo do protocolo, em dias. */
   cicloDias: number;
+  /** Qual plano de treino está valendo. */
+  faseTreino: FaseTreino;
 };
 
 export const PREFERENCIAS_PADRAO: Preferencias = {
@@ -27,6 +30,9 @@ export const PREFERENCIAS_PADRAO: Preferencias = {
   pesoInicial: 84,
   pesoMeta: 70,
   cicloDias: 15,
+  // Começa pela adaptação: ela não gosta de academia, e o plano completo de
+  // cara é o caminho mais curto para largar.
+  faseTreino: "adaptacao",
 };
 
 const CHAVE_LOCAL = "desinflama-preferencias";
@@ -45,6 +51,10 @@ function normaliza(valor: unknown): Preferencias | null {
     pesoInicial: numeroValido(p.pesoInicial, 30, 250, PREFERENCIAS_PADRAO.pesoInicial),
     pesoMeta: numeroValido(p.pesoMeta, 30, 250, PREFERENCIAS_PADRAO.pesoMeta),
     cicloDias: Math.round(numeroValido(p.cicloDias, 1, 365, PREFERENCIAS_PADRAO.cicloDias)),
+    faseTreino:
+      p.faseTreino === "completo" || p.faseTreino === "adaptacao"
+        ? p.faseTreino
+        : PREFERENCIAS_PADRAO.faseTreino,
   };
 }
 

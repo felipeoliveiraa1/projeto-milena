@@ -1,3 +1,5 @@
+import { TREINO_ADAPTACAO } from "./workouts-adaptacao";
+
 export type Exercise = {
   nome: string;
   series: string;
@@ -442,3 +444,44 @@ export const WORKOUTS: WorkoutDay[] = [
       "Domingo é descanso. Se sentir muito disposta, faça só caminhada — não vá pra academia. Recuperação faz parte do resultado.",
   },
 ];
+
+/* -------------------------------------------------------------------------- */
+/* Planos disponíveis                                                         */
+/* -------------------------------------------------------------------------- */
+
+export type FaseTreino = "adaptacao" | "completo";
+
+export type Plano = {
+  id: FaseTreino;
+  nome: string;
+  resumo: string;
+  detalhe: string;
+  dias: WorkoutDay[];
+  /** Prefixo dos ids de check, para um plano não marcar o exercício do outro. */
+  prefixo: string;
+};
+
+export const PLANOS: Record<FaseTreino, Plano> = {
+  adaptacao: {
+    id: "adaptacao",
+    nome: "Adaptação",
+    resumo: "3 idas por semana · 25 min",
+    detalhe:
+      "Para começar sem odiar academia: máquinas e movimentos simples, 2 séries com carga leve, e caminhada nos outros dias. O objetivo aqui é criar o hábito, não suar.",
+    dias: TREINO_ADAPTACAO,
+    prefixo: "a",
+  },
+  completo: {
+    id: "completo",
+    nome: "Completo",
+    resumo: "6 dias por semana · 40 min",
+    detalhe:
+      "O plano cheio: superior, inferior, HIIT e core, com barra, halteres e a estação. Vale quando as 3 idas da adaptação já parecerem fáceis.",
+    dias: WORKOUTS,
+    prefixo: "",
+  },
+};
+
+export function planoDe(fase: FaseTreino): Plano {
+  return PLANOS[fase] ?? PLANOS.adaptacao;
+}

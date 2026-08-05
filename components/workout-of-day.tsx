@@ -5,14 +5,19 @@ import Link from "next/link";
 import { ArrowRight, CheckCircle2, Dumbbell } from "lucide-react";
 import { Card, CardContent, Eyebrow } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { WORKOUTS } from "@/data/workouts";
+import { planoDe } from "@/data/workouts";
+import { usePreferencias } from "@/lib/settings";
 import { getDay, toggleWorkout } from "@/lib/storage";
 import { diaDaSemana } from "@/lib/date";
 import { useDia } from "@/components/day-context";
 
 export function WorkoutOfDay() {
-  const [carga, setCarga] = useState<{ data: string; feito: boolean } | null>(null);
+  const [carga, setCarga] = useState<{ data: string; feito: boolean } | null>(
+    null,
+  );
   const { data } = useDia();
+  const { prefs } = usePreferencias();
+  const plano = planoDe(prefs.faseTreino);
   const day = diaDaSemana(new Date(data + "T00:00:00"));
 
   useEffect(() => {
@@ -22,7 +27,7 @@ export function WorkoutOfDay() {
   const hydrated = carga?.data === data;
   const done = hydrated && carga.feito;
 
-  const workout = WORKOUTS.find((w) => w.diaSemana === day) ?? WORKOUTS[0];
+  const workout = plano.dias.find((w) => w.diaSemana === day) ?? plano.dias[0];
   const descanso = workout.exercicios.length <= 2;
 
   return (
@@ -30,11 +35,19 @@ export function WorkoutOfDay() {
       <CardContent className="space-y-4 p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <Eyebrow className="text-brand">Treino · {workout.diaNome}</Eyebrow>
-            <p className="font-display mt-1.5 text-xl leading-tight text-ink">{workout.foco}</p>
+            <Eyebrow className="text-brand">
+              {plano.nome} · {workout.diaNome}
+            </Eyebrow>
+            <p className="font-display mt-1.5 text-xl leading-tight text-ink">
+              {workout.foco}
+            </p>
             <p className="mt-1 text-sm text-ink-muted">
-              {workout.exercicios.length} exercícios
-              {!descanso && " · cerca de 40 min"}
+              {workout.exercicios.length}{" "}
+              {workout.exercicios.length === 1 ? "exercício" : "exercícios"}
+              {!descanso &&
+                (plano.id === "adaptacao"
+                  ? " · cerca de 25 min"
+                  : " · cerca de 40 min")}
             </p>
           </div>
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand-soft text-brand">
