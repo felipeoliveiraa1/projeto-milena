@@ -1,58 +1,88 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Camera, ImageOff, Lock, Trash2 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Eyebrow } from "@/components/ui/card";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Camera, CloudUpload, ImageOff, Lock, Trash2 } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Eyebrow,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   comprimir,
+  enviarFotosLocais,
+  fotosLocais,
   listarFotos,
-  novoIdFoto,
   removerFoto,
   salvarFoto,
+  type Angulo,
   type Foto,
 } from "@/lib/photos";
-import { todayKey, dataCurta } from "@/lib/date";
+import { useDia } from "@/components/day-context";
+import { dataCurta } from "@/lib/date";
 import { cn } from "@/lib/utils";
 
-const ANGULOS = [
+const ANGULOS: { valor: Angulo; rotulo: string }[] = [
   { valor: "frente", rotulo: "Frente" },
   { valor: "lado", rotulo: "Lado" },
   { valor: "costas", rotulo: "Costas" },
-] as const;
+];
 
 export function PhotoBoard() {
   const [fotos, setFotos] = useState<Foto[]>([]);
   const [carregando, setCarregando] = useState(true);
-  const [angulo, setAngulo] = useState<Foto["angulo"]>("frente");
-  const [salvando, setSalvando] = useState(false);
+  const [angulo, setAngulo] = useState<Angulo>("frente");
+  const [ocupado, setOcupado] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [pendentes, setPendentes] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { data } = useDia();
+
+  const recarregar = useCallback(async () => {
+    try {
+      setFotos(await listarFotos());
+      setErro(null);
+    } catch {
+      setErro("Não consegui carregar o álbum agora.");
+    } finally {
+      setCarregando(false);
+    }
+  }, []);
 
   useEffect(() => {
+    let ativo = true;
     listarFotos()
-      .then(setFotos)
-      .catch(() => setErro("Não consegui abrir o álbum neste navegador."))
-      .finally(() => setCarregando(false));
+      .then((lista) => ativo && setFotos(lista))
+      .catch(() => ativo && setErro("Não consegui carregar o álbum agora."))
+      .finally(() => ativo && setCarregando(false));
+    fotosLocais().then((locais) => ativo && setPendentes(locais.length));
+    return () => {
+      ativo = false;
+    };
   }, []);
 
   async function adicionar(arquivo: File) {
-    setSalvando(true);
+    setOcupado(true);
     setErro(null);
     try {
       const imagem = await comprimir(arquivo);
-      await salvarFoto({
-        id: novoIdFoto(),
-        date: todayKey(),
-        angulo,
-        imagem,
-        criadaEm: Date.now(),
-      });
-      setFotos(await listarFotos());
+      const { erro: falha } = await salvarFoto(imagem, angulo, data);
+      if (falha) {
+        setErro(
+          falha.toLowerCase().includes("bucket")
+            ? "O bucket 'progresso' ainda não existe no Supabase."
+            : falha,
+        );
+      } else {
+        await recarregar();
+      }
     } catch {
-      setErro("Não consegui guardar essa foto. Tente outra.");
+      setErro("Não consegui preparar essa foto. Tente outra.");
     } finally {
-      setSalvando(false);
+      setOcupado(false);
       if (inputRef.current) inputRef.current.value = "";
     }
   }
@@ -63,16 +93,40 @@ export function PhotoBoard() {
 
   return (
     <div className="space-y-5">
-      <Card className="border-plum/20 bg-plum-soft/30">
+      <Card className="border-brand/20 bg-brand-soft/40">
         <CardContent className="flex items-start gap-3 p-4">
-          <Lock className="mt-0.5 h-4 w-4 shrink-0 text-plum" />
+          <Lock className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
           <p className="text-xs leading-relaxed text-ink-soft">
-            As fotos ficam <strong className="text-ink">só neste aparelho</strong>. O app não tem
-            login, então nada de foto vai para a nuvem — se trocar de celular ou limpar os dados do
-            navegador, elas se perdem.
+            As fotos ficam em um espaço <strong className="text-ink">privado</strong>, que só abre
+            para quem entra com login. Cada imagem é exibida por um endereço temporário.
           </p>
         </CardContent>
       </Card>
+
+      {pendentes > 0 && (
+        <Card className="border-gold/30 bg-gold-soft/60">
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+            <p className="text-xs leading-relaxed text-gold">
+              {pendentes} {pendentes === 1 ? "foto guardada" : "fotos guardadas"} neste aparelho de
+              antes do login. Quer enviar para a nuvem?
+            </p>
+            <Button
+              size="sm"
+              disabled={ocupado}
+              onClick={async () => {
+                setOcupado(true);
+                const { enviadas, falhas } = await enviarFotosLocais();
+                setPendentes((p) => p - enviadas);
+                if (falhas > 0) setErro(`${falhas} não subiram. Tente de novo.`);
+                await recarregar();
+                setOcupado(false);
+              }}
+            >
+              <CloudUpload className="h-4 w-4" /> Enviar
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -111,18 +165,16 @@ export function PhotoBoard() {
               if (arquivo) adicionar(arquivo);
             }}
           />
-          <Button
-            onClick={() => inputRef.current?.click()}
-            disabled={salvando}
-            className="w-full"
-          >
+          <Button onClick={() => inputRef.current?.click()} disabled={ocupado} className="w-full">
             <Camera className="h-4 w-4" />
-            {salvando ? "Guardando..." : `Adicionar foto de ${angulo}`}
+            {ocupado ? "Enviando..." : `Adicionar foto de ${angulo}`}
           </Button>
+          <p className="text-center text-xs text-ink-muted tabular">
+            Vai para o dia {dataCurta(new Date(data + "T00:00:00"))}
+          </p>
 
-          {erro && <p className="text-xs text-danger">{erro}</p>}
+          {erro && <p className="text-xs font-semibold text-danger">{erro}</p>}
 
-          {/* Comparação ------------------------------------------------- */}
           {primeira && ultima && (
             <div>
               <Eyebrow className="mb-2 text-ink-muted">Comparação</Eyebrow>
@@ -133,7 +185,6 @@ export function PhotoBoard() {
             </div>
           )}
 
-          {/* Galeria ---------------------------------------------------- */}
           {carregando ? (
             <p className="text-sm text-ink-muted">Carregando...</p>
           ) : doAngulo.length === 0 ? (
@@ -143,15 +194,16 @@ export function PhotoBoard() {
             </div>
           ) : (
             <div>
-              <Eyebrow className="mb-2 text-ink-muted">
-                Todas · {doAngulo.length}
-              </Eyebrow>
+              <Eyebrow className="mb-2 text-ink-muted">Todas · {doAngulo.length}</Eyebrow>
               <div className="grid grid-cols-3 gap-2">
                 {doAngulo.map((f) => (
-                  <figure key={f.id} className="group relative overflow-hidden rounded-xl2 border border-line">
+                  <figure
+                    key={f.caminho}
+                    className="relative overflow-hidden rounded-xl2 border border-line"
+                  >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={f.imagem}
+                      src={f.url}
                       alt={`Foto de ${f.angulo} em ${dataCurta(new Date(f.date + "T00:00:00"))}`}
                       className="aspect-3/4 w-full object-cover"
                     />
@@ -161,8 +213,8 @@ export function PhotoBoard() {
                     <button
                       onClick={async () => {
                         if (!confirm("Apagar esta foto?")) return;
-                        await removerFoto(f.id);
-                        setFotos(await listarFotos());
+                        await removerFoto(f.caminho);
+                        await recarregar();
                       }}
                       aria-label="Apagar foto"
                       className="absolute top-1.5 right-1.5 rounded-full bg-ink/70 p-1.5 text-bone transition hover:bg-danger"
@@ -184,7 +236,7 @@ function Comparacao({ foto, rotulo }: { foto: Foto; rotulo: string }) {
   return (
     <figure className="overflow-hidden rounded-xl2 border border-line">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={foto.imagem} alt={rotulo} className="aspect-3/4 w-full object-cover" />
+      <img src={foto.url} alt={rotulo} className="aspect-3/4 w-full object-cover" />
       <figcaption className="bg-bone-deep px-2.5 py-1.5">
         <p className="text-[0.625rem] font-bold tracking-wide text-ink-muted uppercase">{rotulo}</p>
         <p className="text-xs font-semibold text-ink tabular">

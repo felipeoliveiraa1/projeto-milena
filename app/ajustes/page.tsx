@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   Droplet,
   ListChecks,
+  LogOut,
   Plus,
   RotateCcw,
   Scale,
@@ -25,10 +26,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { usePreferencias, type Preferencias } from "@/lib/settings";
+import { emailDaSessao, sair, useSessao } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 export default function AjustesPage() {
   const { prefs, origem, salvar, restaurar } = usePreferencias();
+  const { sessao } = useSessao();
   const [rascunho, setRascunho] = useState<Preferencias | null>(null);
   const [salvo, setSalvo] = useState(false);
 
@@ -205,6 +208,22 @@ export default function AjustesPage() {
             <Link href="/rotina">
               Editar a rotina <ArrowRight className="h-4 w-4" />
             </Link>
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Conta -------------------------------------------------------------- */}
+      <Card>
+        <CardHeader>
+          <Eyebrow className="text-ink-muted">Conta</Eyebrow>
+          <CardTitle className="mt-1.5">Acesso</CardTitle>
+          <CardDescription>
+            {sessao ? emailDaSessao(sessao) : "—"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button variant="outline" className="w-full" onClick={() => sair()}>
+            <LogOut className="h-4 w-4" /> Sair desta conta
           </Button>
         </CardContent>
       </Card>

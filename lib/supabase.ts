@@ -38,6 +38,14 @@ export function getSupabase(): SupabaseClient {
       "Configure NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY em .env.local",
     );
   }
-  client = createClient(url, key, { auth: { persistSession: false } });
+  client = createClient(url, key, {
+    auth: {
+      // A sessão fica guardada no aparelho: ela entra uma vez e o app
+      // continua aberto nas próximas vezes, inclusive no modo PWA.
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: false,
+    },
+  });
   return client;
 }
