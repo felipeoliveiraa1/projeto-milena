@@ -21,6 +21,7 @@ import {
   type Angulo,
   type Foto,
 } from "@/lib/photos";
+import { getWeights, type WeightEntry } from "@/lib/storage";
 import { useDia } from "@/components/day-context";
 import { dataCurta } from "@/lib/date";
 import { cn } from "@/lib/utils";
@@ -38,6 +39,9 @@ export function PhotoBoard() {
   const [ocupado, setOcupado] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [pendentes, setPendentes] = useState(0);
+  const [pesos, setPesos] = useState<WeightEntry[]>([]);
+  /** Qual foto ocupa o lado "depois". Sem escolha, é a mais recente. */
+  const [depoisEscolhido, setDepoisEscolhido] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { data } = useDia();
 
@@ -59,6 +63,7 @@ export function PhotoBoard() {
       .catch(() => ativo && setErro("Não consegui carregar o álbum agora."))
       .finally(() => ativo && setCarregando(false));
     fotosLocais().then((locais) => ativo && setPendentes(locais.length));
+    getWeights().then((lista) => ativo && setPesos(lista));
     return () => {
       ativo = false;
     };
@@ -94,7 +99,31 @@ export function PhotoBoard() {
 
   const doAngulo = fotos.filter((f) => f.angulo === angulo);
   const primeira = doAngulo[0];
-  const ultima = doAngulo.length > 1 ? doAngulo[doAngulo.length - 1] : undefined;
+  const escolhida = doAngulo.find((f) => f.caminho === depoisEscolhido);
+  const ultima =
+    doAngulo.length > 1
+      ? (escolhida ?? doAngulo[doAngulo.length - 1])
+      : undefined;
+
+  const diasEntre =
+    primeira && ultima
+      ? Math.round(
+          (new Date(ultima.date + "T00:00:00").getTime() -
+            new Date(primeira.date + "T00:00:00").getTime()) /
+            86400000,
+        )
+      : 0;
+
+  /** Peso registrado na data da foto, ou o último antes dela. */
+  function pesoEm(iso: string): number | null {
+    const ate = pesos.filter((p) => p.date <= iso);
+    return ate.length > 0 ? ate[ate.length - 1].weight : null;
+  }
+
+  const pesoAntes = primeira ? pesoEm(primeira.date) : null;
+  const pesoDepois = ultima ? pesoEm(ultima.date) : null;
+  const deltaPeso =
+    pesoAntes !== null && pesoDepois !== null ? pesoDepois - pesoAntes : null;
 
   return (
     <div className="space-y-5">
@@ -102,8 +131,9 @@ export function PhotoBoard() {
         <CardContent className="flex items-start gap-3 p-4">
           <Lock className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
           <p className="text-xs leading-relaxed text-ink-soft">
-            As fotos ficam em um espaço <strong className="text-ink">privado</strong>, que só abre
-            para quem entra com login. Cada imagem é exibida por um endereço temporário.
+            As fotos ficam em um espaço{" "}
+            <strong className="text-ink">privado</strong>, que só abre para quem
+            entra com login. Cada imagem é exibida por um endereço temporário.
           </p>
         </CardContent>
       </Card>
@@ -112,8 +142,9 @@ export function PhotoBoard() {
         <Card className="border-gold/30 bg-gold-soft/60">
           <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
             <p className="text-xs leading-relaxed text-gold">
-              {pendentes} {pendentes === 1 ? "foto guardada" : "fotos guardadas"} neste aparelho de
-              antes do login. Quer enviar para a nuvem?
+              {pendentes}{" "}
+              {pendentes === 1 ? "foto guardada" : "fotos guardadas"} neste
+              aparelho de antes do login. Quer enviar para a nuvem?
             </p>
             <Button
               size="sm"
@@ -122,7 +153,8 @@ export function PhotoBoard() {
                 setOcupado(true);
                 const { enviadas, falhas } = await enviarFotosLocais();
                 setPendentes((p) => p - enviadas);
-                if (falhas > 0) setErro(`${falhas} não subiram. Tente de novo.`);
+                if (falhas > 0)
+                  setErro(`${falhas} não subiram. Tente de novo.`);
                 await recarregar();
                 setOcupado(false);
               }}
@@ -138,7 +170,8 @@ export function PhotoBoard() {
           <Eyebrow className="text-plum">Álbum</Eyebrow>
           <CardTitle className="mt-1.5">Antes e depois</CardTitle>
           <CardDescription>
-            Mesma roupa, mesma luz e mesma distância — é o que faz a comparação valer.
+            Mesma roupa, mesma luz e mesma distância — é o que faz a comparação
+            valer.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -171,7 +204,11 @@ export function PhotoBoard() {
               if (arquivo) adicionar(arquivo);
             }}
           />
-          <Button onClick={() => inputRef.current?.click()} disabled={ocupado} className="w-full">
+          <Button
+            onClick={() => inputRef.current?.click()}
+            disabled={ocupado}
+            className="w-full"
+          >
             <Camera className="h-4 w-4" />
             {ocupado ? "Enviando..." : `Adicionar foto de ${angulo}`}
           </Button>
@@ -181,14 +218,45 @@ export function PhotoBoard() {
 
           {erro && <p className="text-xs font-semibold text-danger">{erro}</p>}
 
-          {primeira && ultima && (
-            <div>
-              <Eyebrow className="mb-2 text-ink-muted">Comparação</Eyebrow>
-              <div className="grid grid-cols-2 gap-2">
-                <Comparacao foto={primeira} rotulo="Primeira" />
-                <Comparacao foto={ultima} rotulo="Mais recente" />
+          {primeira && ultima ? (
+            <div className="rounded-xl2 border border-brand/20 bg-brand-soft/30 p-3.5">
+              <div className="mb-2.5 flex flex-wrap items-baseline justify-between gap-2">
+                <Eyebrow className="text-brand">Antes e depois</Eyebrow>
+                <span className="text-xs font-semibold text-ink-soft tabular">
+                  {diasEntre} {diasEntre === 1 ? "dia" : "dias"} de diferença
+                </span>
               </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <Comparacao foto={primeira} rotulo="Antes" peso={pesoAntes} />
+                <Comparacao foto={ultima} rotulo="Depois" peso={pesoDepois} />
+              </div>
+
+              {deltaPeso !== null && deltaPeso !== 0 && (
+                <p
+                  className={cn(
+                    "mt-2.5 text-center text-sm font-bold tabular",
+                    deltaPeso < 0 ? "text-brand" : "text-clay",
+                  )}
+                >
+                  {deltaPeso > 0 ? "+" : ""}
+                  {deltaPeso.toFixed(1).replace(".", ",")} kg no período
+                </p>
+              )}
+
+              {doAngulo.length > 2 && (
+                <p className="mt-2 text-center text-[0.6875rem] text-ink-muted">
+                  Toque em qualquer foto abaixo para colocá-la no lado “depois”.
+                </p>
+              )}
             </div>
+          ) : (
+            primeira && (
+              <p className="rounded-xl2 border border-dashed border-line px-3.5 py-3 text-center text-xs leading-relaxed text-ink-muted">
+                Assim que você subir a próxima foto de {angulo}, o antes e
+                depois aparece aqui sozinho.
+              </p>
+            )
           )}
 
           {carregando ? (
@@ -196,23 +264,39 @@ export function PhotoBoard() {
           ) : doAngulo.length === 0 ? (
             <div className="flex flex-col items-center gap-2 rounded-xl2 border border-dashed border-line py-10 text-center">
               <ImageOff className="h-6 w-6 text-ink-muted" />
-              <p className="text-sm text-ink-muted">Nenhuma foto de {angulo} ainda.</p>
+              <p className="text-sm text-ink-muted">
+                Nenhuma foto de {angulo} ainda.
+              </p>
             </div>
           ) : (
             <div>
-              <Eyebrow className="mb-2 text-ink-muted">Todas · {doAngulo.length}</Eyebrow>
+              <Eyebrow className="mb-2 text-ink-muted">
+                Todas · {doAngulo.length}
+              </Eyebrow>
               <div className="grid grid-cols-3 gap-2">
                 {doAngulo.map((f) => (
                   <figure
                     key={f.caminho}
-                    className="relative overflow-hidden rounded-xl2 border border-line"
+                    className={cn(
+                      "relative overflow-hidden rounded-xl2 border transition",
+                      ultima?.caminho === f.caminho
+                        ? "border-brand ring-2 ring-brand/30"
+                        : "border-line",
+                    )}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={f.url}
-                      alt={`Foto de ${f.angulo} em ${dataCurta(new Date(f.date + "T00:00:00"))}`}
-                      className="aspect-3/4 w-full object-cover"
-                    />
+                    <button
+                      type="button"
+                      onClick={() => setDepoisEscolhido(f.caminho)}
+                      className="block w-full"
+                      aria-label={`Usar a foto de ${dataCurta(new Date(f.date + "T00:00:00"))} como depois`}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={f.url}
+                        alt={`Foto de ${f.angulo} em ${dataCurta(new Date(f.date + "T00:00:00"))}`}
+                        className="aspect-3/4 w-full object-cover"
+                      />
+                    </button>
                     <figcaption className="absolute inset-x-0 bottom-0 bg-ink/70 px-2 py-1 text-[0.625rem] font-semibold text-bone tabular">
                       {dataCurta(new Date(f.date + "T00:00:00"))}
                     </figcaption>
@@ -238,16 +322,35 @@ export function PhotoBoard() {
   );
 }
 
-function Comparacao({ foto, rotulo }: { foto: Foto; rotulo: string }) {
+function Comparacao({
+  foto,
+  rotulo,
+  peso,
+}: {
+  foto: Foto;
+  rotulo: string;
+  peso: number | null;
+}) {
   return (
-    <figure className="overflow-hidden rounded-xl2 border border-line">
+    <figure className="overflow-hidden rounded-xl2 border border-line bg-surface">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={foto.url} alt={rotulo} className="aspect-3/4 w-full object-cover" />
-      <figcaption className="bg-bone-deep px-2.5 py-1.5">
-        <p className="text-[0.625rem] font-bold tracking-wide text-ink-muted uppercase">{rotulo}</p>
+      <img
+        src={foto.url}
+        alt={rotulo}
+        className="aspect-3/4 w-full object-cover"
+      />
+      <figcaption className="px-2.5 py-2">
+        <p className="text-[0.625rem] font-bold tracking-wide text-ink-muted uppercase">
+          {rotulo}
+        </p>
         <p className="text-xs font-semibold text-ink tabular">
           {dataCurta(new Date(foto.date + "T00:00:00"))}
         </p>
+        {peso !== null && (
+          <p className="text-[0.6875rem] text-ink-muted tabular">
+            {peso.toFixed(1).replace(".", ",")} kg
+          </p>
+        )}
       </figcaption>
     </figure>
   );
