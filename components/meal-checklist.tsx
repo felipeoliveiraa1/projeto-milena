@@ -1,31 +1,31 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronDown, Clock, Info, Utensils } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { cardapioDoDia, type Refeicao, type TipoItem } from "@/data/meals";
 import { ORDEM_CONSUMO } from "@/data/protocol";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, Eyebrow } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getDay, toggleMeal } from "@/lib/storage";
 import { todayKey } from "@/lib/date";
 import { useProtocolo } from "@/lib/protocol";
 import { cn } from "@/lib/utils";
 
-const CORES_TIPO: Record<TipoItem, string> = {
-  proteina: "bg-rose-100 text-rose-700",
-  carbo: "bg-amber-100 text-amber-800",
-  vegetal: "bg-emerald-100 text-emerald-800",
-  fruta: "bg-pink-100 text-pink-700",
-  gordura: "bg-orange-100 text-orange-800",
-  bebida: "bg-sky-100 text-sky-800",
+export const CORES_TIPO: Record<TipoItem, string> = {
+  proteina: "bg-clay-soft text-clay-deep",
+  carbo: "bg-gold-soft text-gold",
+  vegetal: "bg-brand-soft text-brand",
+  fruta: "bg-plum-soft text-plum",
+  gordura: "bg-bone-deep text-ink-soft",
+  bebida: "bg-line-soft text-ink-soft",
 };
 
-const ROTULO_TIPO: Record<TipoItem, string> = {
+export const ROTULO_TIPO: Record<TipoItem, string> = {
   proteina: "proteína",
   carbo: "carbo",
   vegetal: "vegetal",
   fruta: "fruta",
-  gordura: "gordura boa",
+  gordura: "gordura",
   bebida: "bebida",
 };
 
@@ -50,25 +50,32 @@ export function MealChecklist() {
   }
 
   const cardapio = cardapioDoDia(dia);
+  const feitas = hydrated ? cardapio.refeicoes.filter((r) => checks[r.id]).length : 0;
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Utensils className="h-5 w-5 text-rose-500" />
-          Refeições de hoje
-        </CardTitle>
-        <p className="text-xs text-zinc-500">
-          Cardápio do dia {dia} do protocolo. São opções — coma com fome e pare na saciedade.
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <Eyebrow className="text-clay">Cardápio · dia {dia}</Eyebrow>
+            <CardTitle className="mt-1.5">Refeições de hoje</CardTitle>
+          </div>
+          <p className="font-display shrink-0 text-2xl leading-none text-ink tabular">
+            {feitas}
+            <span className="text-ink-muted">/{cardapio.refeicoes.length}</span>
+          </p>
+        </div>
+        <p className="text-sm text-ink-muted">
+          São opções — coma com fome e pare na saciedade.
         </p>
       </CardHeader>
+
       <CardContent className="space-y-2">
-        <div className="flex flex-wrap items-center gap-1 rounded-xl bg-emerald-50 px-3 py-2 text-[11px] text-emerald-900">
-          <Info className="mr-1 h-3 w-3 text-emerald-600" />
+        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 rounded-xl2 bg-brand-soft/60 px-3.5 py-2.5 text-[0.6875rem] font-semibold text-brand">
           {ORDEM_CONSUMO.map((o, i) => (
-            <span key={o.o} className="flex items-center gap-1">
-              {i > 0 && <span className="text-emerald-400">→</span>}
-              <span className="font-semibold">{o.o}</span>
+            <span key={o.o} className="flex items-center gap-1.5">
+              {i > 0 && <span className="text-brand/40">→</span>}
+              <span>{o.o}</span>
             </span>
           ))}
         </div>
@@ -76,16 +83,16 @@ export function MealChecklist() {
         {cardapio.refeicoes.map((refeicao) => {
           const checked = hydrated && !!checks[refeicao.id];
           const isOpen = open === refeicao.id;
-          const proteinas = refeicao.itens.filter((i) => i.tipo === "proteina");
+          const proteina = refeicao.itens.find((i) => i.tipo === "proteina");
           return (
             <div
               key={refeicao.id}
               className={cn(
-                "rounded-2xl border transition",
-                checked ? "border-rose-200 bg-rose-50/60" : "border-zinc-100 bg-white",
+                "rounded-xl2 border transition",
+                checked ? "border-brand/20 bg-brand-soft/50" : "border-line bg-surface",
               )}
             >
-              <div className="flex items-center gap-3 p-3">
+              <div className="flex items-center gap-3 p-3.5">
                 <Checkbox
                   checked={checked}
                   onCheckedChange={() => handleToggle(refeicao)}
@@ -98,47 +105,45 @@ export function MealChecklist() {
                   <div className="min-w-0">
                     <p
                       className={cn(
-                        "font-medium",
-                        checked ? "text-zinc-400 line-through" : "text-zinc-900",
+                        "font-semibold",
+                        checked ? "text-ink-muted line-through" : "text-ink",
                       )}
                     >
                       {refeicao.nome}
                     </p>
-                    <p className="flex items-center gap-1 truncate text-xs text-zinc-500">
-                      <Clock className="h-3 w-3 shrink-0" />
-                      {refeicao.hora}
-                      {proteinas.length > 0 && (
-                        <span className="truncate"> · {proteinas[0].label.split(":")[0]}</span>
-                      )}
+                    <p className="truncate text-xs text-ink-muted">
+                      <span className="tabular">{refeicao.hora}</span>
+                      {proteina && ` · ${proteina.label.split(":")[0]}`}
                     </p>
                   </div>
                   <ChevronDown
                     className={cn(
-                      "h-4 w-4 shrink-0 text-zinc-400 transition",
+                      "h-4 w-4 shrink-0 text-ink-muted transition",
                       isOpen && "rotate-180",
                     )}
                   />
                 </button>
               </div>
+
               {isOpen && (
-                <div className="space-y-2 px-4 pb-4 text-sm">
+                <div className="animate-rise space-y-2 border-t border-line/70 px-4 py-3.5">
                   {refeicao.itens.map((it) => (
                     <div key={it.id} className="flex items-start gap-2">
                       <span
                         className={cn(
-                          "mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                          "mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-[0.625rem] font-bold",
                           CORES_TIPO[it.tipo],
                         )}
                       >
                         {ROTULO_TIPO[it.tipo]}
                       </span>
-                      <span className="text-zinc-700">{it.label}</span>
+                      <span className="text-sm leading-relaxed text-ink-soft">{it.label}</span>
                     </div>
                   ))}
                   {refeicao.nota && (
-                    <div className="rounded-xl bg-amber-50 p-3 text-xs text-amber-900">
+                    <p className="rounded-xl2 bg-gold-soft px-3 py-2.5 text-xs leading-relaxed text-gold">
                       {refeicao.nota}
-                    </div>
+                    </p>
                   )}
                 </div>
               )}

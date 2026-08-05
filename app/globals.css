@@ -1,29 +1,198 @@
 @import "tailwindcss";
 
-:root {
-  --background: #fff7f9;
-  --foreground: #1c1419;
+/* ==========================================================================
+   Sistema visual — "Mais leve, mais forte"
+   Base bone quente, verde profundo como marca, terracota e ameixa como
+   acentos de domínio. Tipografia editorial: serifada no display, geométrica
+   na interface.
+   ========================================================================== */
+
+@theme {
+  /* superfícies */
+  --color-bone: #fbf7f2;
+  --color-bone-deep: #f2ebe1;
+  --color-surface: #ffffff;
+  --color-line: #e9dfd2;
+  --color-line-soft: #f2ebe1;
+
+  /* tinta */
+  --color-ink: #191512;
+  --color-ink-soft: #574d44;
+  --color-ink-muted: #8b7f72;
+
+  /* marca — verde profundo */
+  --color-brand: #14503f;
+  --color-brand-deep: #0d3a2d;
+  --color-brand-mid: #2f7a63;
+  --color-brand-soft: #e4ede9;
+
+  /* acento — terracota (nutrição) */
+  --color-clay: #c0623a;
+  --color-clay-deep: #9c4c2b;
+  --color-clay-soft: #f9eae1;
+
+  /* acento — ameixa (protocolo e rotina) */
+  --color-plum: #5d3f57;
+  --color-plum-soft: #f1e9ef;
+
+  /* apoio */
+  --color-gold: #a8760f;
+  --color-gold-soft: #f8f0dc;
+  --color-danger: #a63a28;
+  --color-danger-soft: #f9e7e3;
+
+  /* tipografia */
+  --font-display: var(--font-instrument-serif), Georgia, serif;
+  --font-sans: var(--font-jakarta), system-ui, sans-serif;
+
+  /* forma */
+  --radius-xl2: 1.25rem;
+  --radius-card: 1.5rem;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+html {
+  background-color: var(--color-bone);
+  /* grão sutil por cima do gradiente — dá textura de papel sem pesar */
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.28'/%3E%3C/svg%3E"),
+    radial-gradient(120% 80% at 50% 0%, #ffffff 0%, var(--color-bone) 42%, var(--color-bone-deep) 100%);
+  background-attachment: fixed;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: linear-gradient(180deg, #fff7f9 0%, #fdf4ed 100%);
-  color: var(--foreground);
+  color: var(--color-ink);
   min-height: 100vh;
-  font-family: var(--font-sans), system-ui, sans-serif;
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv01";
+  -webkit-font-smoothing: antialiased;
 }
+
+/* Números tabulares deixam contadores e pesos estáveis ao atualizar. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+/* Rótulo de seção: caixa alta miúda e espaçada. */
+.eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* ---------- movimento ---------------------------------------------------- */
 
 @keyframes pop {
   0% { transform: scale(1); }
-  50% { transform: scale(1.15); }
+  50% { transform: scale(1.16); }
   100% { transform: scale(1); }
 }
-.animate-pop {
-  animation: pop 0.25s ease;
+.animate-pop { animation: pop 0.25s ease; }
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
 }
+.animate-rise {
+  animation: rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes sheen {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-rise,
+  .animate-pop {
+    animation: none;
+  }
+}
+
+/* ---------- abertura do app ---------------------------------------------- */
+
+@keyframes splash-mark {
+  0% { opacity: 0; transform: scale(0.82) translateY(6px); }
+  60% { opacity: 1; transform: scale(1.04); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.animate-splash-mark {
+  animation: splash-mark 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes splash-text {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.animate-splash-text {
+  animation: splash-text 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both;
+}
+
+/* ---------- troca de telas ------------------------------------------------
+   Só o conteúdo da página anima. Cabeçalho e dock ficam parados, o que dá a
+   sensação de app nativo em vez de recarregar a tela inteira.
+   -------------------------------------------------------------------------- */
+
+@keyframes page-out {
+  to { opacity: 0; transform: translateY(-6px); filter: blur(2px); }
+}
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(12px); filter: blur(2px); }
+  to { opacity: 1; transform: none; filter: blur(0); }
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+
+::view-transition-old(page) {
+  animation: 150ms ease-in both page-out;
+}
+::view-transition-new(page) {
+  animation: 320ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both page-in;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(page),
+  ::view-transition-new(page) {
+    animation: none;
+  }
+  .animate-splash-mark,
+  .animate-splash-text {
+    animation: none;
+  }
+}
+
+/* Escada de entrada: cada filho direto entra um pouco depois do anterior. */
+.stagger > * {
+  animation: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.stagger > *:nth-child(1) { animation-delay: 0.02s; }
+.stagger > *:nth-child(2) { animation-delay: 0.07s; }
+.stagger > *:nth-child(3) { animation-delay: 0.12s; }
+.stagger > *:nth-child(4) { animation-delay: 0.17s; }
+.stagger > *:nth-child(5) { animation-delay: 0.22s; }
+.stagger > *:nth-child(6) { animation-delay: 0.27s; }
+.stagger > *:nth-child(n + 7) { animation-delay: 0.3s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .stagger > * { animation: none; }
+}
+
+/* ---------- detalhes ------------------------------------------------------ */
+
+::selection {
+  background: var(--color-brand);
+  color: #fff;
+}
+
+/* Barra de abas rolável sem a barra feia no desktop. */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }

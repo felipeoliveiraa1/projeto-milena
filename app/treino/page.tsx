@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Dumbbell, Clock, Repeat, Info, Wrench, Sparkles, CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Clock, Info, Repeat, Sparkles, Wrench } from "lucide-react";
 import { WORKOUTS, EQUIPAMENTOS, SEM_APARELHO } from "@/data/workouts";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, Eyebrow } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
@@ -46,36 +46,35 @@ export default function TreinoPage() {
   const abaAtual = abaEscolhida ?? String(today ?? 1);
 
   return (
-    <div className="space-y-5">
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-widest text-rose-500">Plano de treino</p>
-        <h2 className="text-2xl font-bold text-zinc-900">40 min por dia · 6x semana</h2>
-        <p className="mt-1 text-sm text-zinc-600">
-          Foco em queimar gordura abdominal e tonificar braços, com glúteo de bônus.
-          Antes de cada treino: 5 min de aquecimento.
+    <div className="stagger space-y-5">
+      <header>
+        <Eyebrow className="text-brand">Plano de treino</Eyebrow>
+        <h2 className="font-display mt-2 text-4xl leading-none text-ink">
+          40 min por dia, 6× na semana
+        </h2>
+        <p className="mt-3 text-sm leading-relaxed text-ink-muted">
+          Queimar gordura abdominal e tonificar braços, com glúteo de bônus. Antes de cada treino,
+          5 min de aquecimento.
         </p>
-      </div>
+      </header>
 
-      <details className="group rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4">
-        <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-semibold text-emerald-900">
-          <Wrench className="h-4 w-4 text-emerald-600" />
+      <details className="group rounded-card border border-line bg-surface p-5">
+        <summary className="flex cursor-pointer list-none items-center gap-2.5 text-sm font-bold text-ink">
+          <Wrench className="h-4 w-4 text-brand" />
           Montado com os aparelhos da sua academia
-          <span className="ml-auto text-xs font-normal text-emerald-700 group-open:hidden">
-            ver
-          </span>
+          <span className="ml-auto text-xs font-medium text-ink-muted group-open:hidden">ver</span>
         </summary>
-        <div className="mt-3 space-y-3 text-xs text-emerald-900">
-          <ul className="space-y-1">
+        <div className="mt-4 space-y-3">
+          <ul className="space-y-1.5">
             {EQUIPAMENTOS.map((e) => (
-              <li key={e.nome}>
-                <strong>{e.nome}</strong> — {e.detalhe}
+              <li key={e.nome} className="text-xs leading-relaxed text-ink-muted">
+                <strong className="text-ink-soft">{e.nome}</strong> — {e.detalhe}
               </li>
             ))}
           </ul>
-          <p className="rounded-xl bg-white/70 p-3 text-emerald-800">
-            Sua academia não tem {SEM_APARELHO.join(", ").toLowerCase()}. Cada um desses
-            foi trocado por um exercício equivalente — o card do exercício explica a
-            troca.
+          <p className="rounded-xl2 bg-bone-deep/60 p-3.5 text-xs leading-relaxed text-ink-soft">
+            Sua academia não tem {SEM_APARELHO.join(", ").toLowerCase()}. Cada um foi trocado por um
+            exercício equivalente — o card explica a troca.
           </p>
         </div>
       </details>
@@ -96,33 +95,35 @@ export default function TreinoPage() {
           ).length;
           const pct = total > 0 ? Math.round((done / total) * 100) : 0;
           return (
-            <TabsContent key={workout.diaSemana} value={String(workout.diaSemana)}>
+            <TabsContent key={workout.diaSemana} value={String(workout.diaSemana)} className="space-y-3">
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Dumbbell className="h-5 w-5 text-rose-500" />
-                    {workout.diaNome} · {workout.curto}
+                  <Eyebrow className="text-brand">{workout.diaNome}</Eyebrow>
+                  <CardTitle className="font-display mt-1 text-2xl leading-tight">
+                    {workout.foco}
                   </CardTitle>
-                  <p className="text-sm text-zinc-600">{workout.foco}</p>
                   {total > 0 && (
-                    <div className="mt-2 space-y-1">
-                      <div className="flex items-center justify-between text-xs text-zinc-500">
+                    <div className="mt-3 space-y-1.5">
+                      <div className="flex items-center justify-between text-xs text-ink-muted">
                         <span>Progresso do treino</span>
-                        <span className="font-semibold text-rose-700">
+                        <span className="font-bold text-ink tabular">
                           {done}/{total} · {pct}%
                         </span>
                       </div>
-                      <Progress value={pct} indicatorClassName="bg-rose-500" />
+                      <Progress value={pct} />
                     </div>
                   )}
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {workout.aquecimento && (
-                    <div className="rounded-xl bg-orange-50 p-3 text-xs text-orange-900">
-                      <strong className="block text-orange-700">Aquecimento</strong>
-                      {workout.aquecimento}
+                    <div className="rounded-xl2 bg-gold-soft p-3.5">
+                      <Eyebrow className="text-gold">Aquecimento</Eyebrow>
+                      <p className="mt-1 text-xs leading-relaxed text-gold">
+                        {workout.aquecimento}
+                      </p>
                     </div>
                   )}
+
                   {workout.exercicios.map((ex, i) => {
                     const id = exId(workout.diaSemana, i);
                     const checked = hydrated && !!checks[id];
@@ -130,10 +131,8 @@ export default function TreinoPage() {
                       <div
                         key={ex.nome}
                         className={cn(
-                          "rounded-2xl border p-4 transition",
-                          checked
-                            ? "border-rose-200 bg-rose-50/60"
-                            : "border-zinc-100 bg-white",
+                          "rounded-xl2 border p-4 transition",
+                          checked ? "border-brand/20 bg-brand-soft/40" : "border-line bg-surface",
                         )}
                       >
                         <div className="flex items-start gap-3">
@@ -144,55 +143,64 @@ export default function TreinoPage() {
                             className="mt-1"
                           />
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs font-bold text-rose-500">EXERCÍCIO {i + 1}</p>
+                            <p className="text-[0.625rem] font-bold tracking-widest text-ink-muted uppercase">
+                              Exercício {i + 1}
+                            </p>
                             <p
                               className={cn(
-                                "mt-0.5 font-semibold",
-                                checked ? "text-zinc-400 line-through" : "text-zinc-900",
+                                "mt-1 font-bold",
+                                checked ? "text-ink-muted line-through" : "text-ink",
                               )}
                             >
                               {ex.nome}
                             </p>
-                            <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                              <span className="flex items-center gap-1 rounded-full bg-rose-100 px-2 py-1 text-rose-700">
+
+                            <div className="mt-2.5 flex flex-wrap gap-1.5">
+                              <span className="flex items-center gap-1 rounded-full bg-brand-soft px-2.5 py-1 text-[0.6875rem] font-bold text-brand">
                                 <Repeat className="h-3 w-3" /> {ex.series} séries
                               </span>
-                              <span className="flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-amber-800">
+                              <span className="rounded-full bg-clay-soft px-2.5 py-1 text-[0.6875rem] font-bold text-clay-deep">
                                 {ex.reps} reps
                               </span>
-                              <span className="flex items-center gap-1 rounded-full bg-sky-100 px-2 py-1 text-sky-800">
+                              <span className="flex items-center gap-1 rounded-full bg-line-soft px-2.5 py-1 text-[0.6875rem] font-bold text-ink-soft">
                                 <Clock className="h-3 w-3" /> {ex.descanso}
                               </span>
                             </div>
-                            <p className="mt-2 flex items-start gap-1 text-xs text-zinc-600">
-                              <Info className="mt-0.5 h-3 w-3 shrink-0 text-zinc-400" /> {ex.beneficio}
+
+                            <p className="mt-2.5 flex items-start gap-1.5 text-xs leading-relaxed text-ink-muted">
+                              <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {ex.beneficio}
                             </p>
-                            <p className="mt-1.5 flex items-start gap-1 text-xs text-zinc-500">
-                              <Wrench className="mt-0.5 h-3 w-3 shrink-0 text-zinc-400" />
+                            <p className="mt-1.5 flex items-start gap-1.5 text-xs text-ink-muted">
+                              <Wrench className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                               {ex.equipamento}
                             </p>
                             {ex.adaptacao && (
-                              <p className="mt-2 flex items-start gap-1 rounded-xl bg-emerald-50 p-2 text-xs text-emerald-900">
-                                <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-emerald-600" />
+                              <p className="mt-2.5 flex items-start gap-2 rounded-xl bg-brand-soft/60 p-3 text-xs leading-relaxed text-brand">
+                                <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                                 {ex.adaptacao}
                               </p>
                             )}
+
                             <ExerciseVideo nome={ex.nome} videoId={ex.videoId} />
                           </div>
                         </div>
                       </div>
                     );
                   })}
+
                   {workout.observacao && (
-                    <div className="rounded-xl bg-rose-50 p-3 text-xs text-rose-900">
-                      <strong className="block text-rose-700">Atenção:</strong>
-                      {workout.observacao}
+                    <div className="rounded-xl2 bg-danger-soft/60 p-3.5">
+                      <Eyebrow className="text-danger">Atenção</Eyebrow>
+                      <p className="mt-1 text-xs leading-relaxed text-danger">
+                        {workout.observacao}
+                      </p>
                     </div>
                   )}
+
                   {hydrated && total > 0 && done === total && (
-                    <div className="flex items-center gap-2 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">
+                    <div className="flex items-center gap-2.5 rounded-xl2 bg-brand p-4 text-bone">
                       <CheckCircle2 className="h-5 w-5" />
-                      <span className="font-medium">Treino completo! Bom trabalho 💪</span>
+                      <span className="text-sm font-bold">Treino completo. Muito bem! 💪</span>
                     </div>
                   )}
                 </CardContent>

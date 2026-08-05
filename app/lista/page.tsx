@@ -10,11 +10,17 @@ import {
   MessageCircle,
   Refrigerator,
   Share2,
-  ShoppingCart,
   Snowflake,
   Utensils,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Eyebrow,
+} from "@/components/ui/card";
 import { CheckRow } from "@/components/check-row";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -34,9 +40,9 @@ import { cn } from "@/lib/utils";
 const ICONE_PREPARO = { snow: Snowflake, fridge: Refrigerator, flame: Flame };
 
 const COR_PREPARO = {
-  congelar: "border-sky-200 bg-linear-to-br from-sky-50 to-white",
-  refrigerar: "border-emerald-200 bg-linear-to-br from-emerald-50 to-white",
-  hora: "border-orange-200 bg-linear-to-br from-orange-50 to-white",
+  congelar: "text-brand-mid",
+  refrigerar: "text-brand",
+  hora: "text-clay",
 };
 
 export default function ListaPage() {
@@ -51,13 +57,12 @@ export default function ListaPage() {
     });
   }, []);
 
-  /** Quantos itens do cardápio ela marcou em cada dia. */
-  const porDia = useMemo(
+  /** Quais dias do cardápio entraram na lista. */
+  const dias = useMemo(
     () =>
-      CARDAPIO.map((d) => {
-        const ids = d.refeicoes.flatMap((r) => r.itens.map((i) => i.id));
-        return { dia: d.dia, total: ids.length, marcados: ids.filter((i) => state.selectedComponents[i]).length };
-      }).filter((d) => d.marcados > 0),
+      CARDAPIO.filter((d) =>
+        d.refeicoes.some((r) => r.itens.some((i) => state.selectedComponents[i.id])),
+      ).map((d) => d.dia),
     [state.selectedComponents],
   );
 
@@ -77,7 +82,7 @@ export default function ListaPage() {
     }
     if (temSelecao) ESSENCIAIS.forEach((i) => ids.add(i));
 
-    const byCategory = new Map<string, ReturnType<typeof CATALOGO.get>[]>();
+    const byCategory = new Map<string, NonNullable<ReturnType<typeof CATALOGO.get>>[]>();
     for (const id of ids) {
       const item = CATALOGO.get(id);
       if (!item) continue;
@@ -88,9 +93,7 @@ export default function ListaPage() {
     return Array.from(byCategory.entries())
       .map(([catId, itens]) => ({
         categoria: SHOPPING_LIST.find((c) => c.id === catId)!,
-        itens: itens
-          .filter((i): i is NonNullable<typeof i> => Boolean(i))
-          .sort((a, b) => a.nome.localeCompare(b.nome)),
+        itens: itens.sort((a, b) => a.nome.localeCompare(b.nome)),
       }))
       .sort((a, b) => ordem.indexOf(a.categoria.id) - ordem.indexOf(b.categoria.id));
   }, [state.selectedComponents]);
@@ -100,7 +103,6 @@ export default function ListaPage() {
     (s, g) => s + g.itens.filter((i) => state.items[i.id]).length,
     0,
   );
-  const restantes = totalIngredientes - comprados;
   const pct = totalIngredientes > 0 ? Math.round((comprados / totalIngredientes) * 100) : 0;
 
   async function handleToggle(id: string) {
@@ -151,34 +153,40 @@ export default function ListaPage() {
   }
 
   return (
-    <div className="space-y-5">
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-widest text-rose-500">Mercado e cozinha</p>
-        <h2 className="text-2xl font-bold text-zinc-900">Lista e preparo</h2>
-        <p className="mt-1 text-sm text-zinc-600">
-          A lista sai do que você marcou em <strong>/dieta</strong>. O preparo diz o que congelar,
-          o que só refrigerar e o que fazer na hora.
+    <div className="stagger space-y-5">
+      <header>
+        <Eyebrow className="text-brand">Mercado e cozinha</Eyebrow>
+        <h2 className="font-display mt-2 text-4xl leading-none text-ink">Lista e preparo</h2>
+        <p className="mt-3 text-sm leading-relaxed text-ink-muted">
+          A lista sai do que você marcou na dieta. O preparo diz o que congelar, o que só
+          refrigerar e o que fazer na hora.
         </p>
-      </div>
+      </header>
 
       <Tabs defaultValue="compras" className="w-full">
         <TabsList>
-          <TabsTrigger value="compras">Compras</TabsTrigger>
-          <TabsTrigger value="preparo">Preparo</TabsTrigger>
+          <TabsTrigger value="compras" className="flex-1">
+            Compras
+          </TabsTrigger>
+          <TabsTrigger value="preparo" className="flex-1">
+            Preparo
+          </TabsTrigger>
         </TabsList>
 
         {/* ---------------------------------------------------------------- */}
         <TabsContent value="compras" className="space-y-5">
           {!hydrated ? (
-            <p className="text-sm text-zinc-500">Carregando...</p>
+            <p className="text-sm text-ink-muted">Carregando...</p>
           ) : totalIngredientes === 0 ? (
-            <Card className="border-rose-200 bg-rose-50/40">
-              <CardContent className="space-y-3 p-6 text-center">
-                <Utensils className="mx-auto h-12 w-12 text-rose-300" />
-                <p className="font-semibold text-zinc-900">Nada selecionado ainda</p>
-                <p className="text-sm text-zinc-600">
-                  Vá em <strong>/dieta</strong> e marque os dias que você vai fazer. Dá para
-                  selecionar a semana inteira de uma vez.
+            <Card>
+              <CardContent className="space-y-4 p-8 text-center">
+                <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-bone-deep text-ink-muted">
+                  <Utensils className="h-6 w-6" />
+                </span>
+                <p className="font-display text-2xl text-ink">Lista vazia</p>
+                <p className="text-sm leading-relaxed text-ink-muted">
+                  Escolha os dias na aba Dieta — dá para marcar a semana inteira de uma vez — e os
+                  ingredientes aparecem aqui.
                 </p>
                 <Button asChild>
                   <Link href="/dieta">Escolher os dias</Link>
@@ -187,20 +195,20 @@ export default function ListaPage() {
             </Card>
           ) : (
             <>
-              <Card className="border-emerald-200 bg-linear-to-br from-emerald-50 to-rose-50">
-                <CardContent className="space-y-3 p-5">
-                  <div className="flex items-center justify-between gap-3">
+              <Card>
+                <CardContent className="space-y-4 p-5">
+                  <div className="flex items-end justify-between gap-3">
                     <div>
-                      <p className="text-xs uppercase tracking-wide text-emerald-700">Progresso</p>
-                      <p className="text-2xl font-bold text-zinc-900">
+                      <Eyebrow className="text-ink-muted">Progresso</Eyebrow>
+                      <p className="font-display mt-1 text-4xl leading-none text-ink tabular">
                         {comprados}
-                        <span className="text-base font-medium text-zinc-500">
-                          {" "}/ {totalIngredientes} itens
-                        </span>
+                        <span className="text-xl text-ink-muted">/{totalIngredientes}</span>
                       </p>
-                      <p className="text-xs text-zinc-600">{restantes} faltam comprar</p>
+                      <p className="mt-1 text-xs text-ink-muted">
+                        {totalIngredientes - comprados} faltam comprar
+                      </p>
                     </div>
-                    <div className="flex flex-col gap-2">
+                    <div className="flex gap-2">
                       <Button
                         size="sm"
                         variant="outline"
@@ -210,81 +218,72 @@ export default function ListaPage() {
                         }}
                         disabled={comprados === 0}
                       >
-                        <Eraser className="h-4 w-4" /> Desmarcar
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={async () => {
-                          if (!confirm("Limpar tudo? Desmarca os dias escolhidos e os comprados."))
-                            return;
-                          setState(await clearSelectedComponents());
-                        }}
-                      >
-                        Limpar tudo
+                        <Eraser className="h-3.5 w-3.5" /> Desmarcar
                       </Button>
                     </div>
                   </div>
-                  <Progress value={pct} indicatorClassName="bg-emerald-500" />
-                  {porDia.length > 0 && (
-                    <p className="text-xs text-emerald-800">
-                      Dias no carrinho:{" "}
-                      <strong>{porDia.map((d) => d.dia).join(", ")}</strong>
+                  <Progress value={pct} />
+                  {dias.length > 0 && (
+                    <p className="text-xs text-ink-muted">
+                      Dias no carrinho: <strong className="text-ink">{dias.join(", ")}</strong>
                     </p>
                   )}
-                </CardContent>
-              </Card>
-
-              <Card className="border-rose-200">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-rose-700">
-                    <Share2 className="h-5 w-5" /> Compartilhar
-                  </CardTitle>
-                  <CardDescription>Envia só o que ainda não foi comprado.</CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-wrap gap-2">
-                  <Button
-                    onClick={() =>
-                      window.open(
-                        `https://wa.me/?text=${encodeURIComponent(buildShareText())}`,
-                        "_blank",
-                      )
-                    }
-                    className="bg-emerald-500 hover:bg-emerald-600"
-                  >
-                    <MessageCircle className="h-4 w-4" /> WhatsApp
-                  </Button>
-                  <Button onClick={compartilhar} variant="outline">
-                    <Share2 className="h-4 w-4" /> Compartilhar
-                  </Button>
-                  <Button onClick={() => copiar()} variant="ghost">
-                    {copied ? (
-                      <>
-                        <Check className="h-4 w-4 text-emerald-500" /> Copiado!
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="h-4 w-4" /> Copiar
-                      </>
-                    )}
-                  </Button>
+                  <div className="flex flex-wrap gap-2 border-t border-line pt-4">
+                    <Button
+                      onClick={() =>
+                        window.open(
+                          `https://wa.me/?text=${encodeURIComponent(buildShareText())}`,
+                          "_blank",
+                        )
+                      }
+                    >
+                      <MessageCircle className="h-4 w-4" /> WhatsApp
+                    </Button>
+                    <Button onClick={compartilhar} variant="outline">
+                      <Share2 className="h-4 w-4" /> Compartilhar
+                    </Button>
+                    <Button onClick={() => copiar()} variant="ghost">
+                      {copied ? (
+                        <>
+                          <Check className="h-4 w-4 text-brand" /> Copiado
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-4 w-4" /> Copiar
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="text-ink-muted"
+                      onClick={async () => {
+                        if (!confirm("Limpar tudo? Desmarca os dias escolhidos e os comprados."))
+                          return;
+                        setState(await clearSelectedComponents());
+                      }}
+                    >
+                      Limpar tudo
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
 
               {grouped.map(({ categoria, itens }) => {
                 const feitos = itens.filter((i) => state.items[i.id]).length;
+                const completa = feitos === itens.length;
                 return (
-                  <Card key={categoria.id} className={cn("bg-linear-to-br border-2", categoria.cor)}>
+                  <Card key={categoria.id} className={cn(completa && "opacity-60")}>
                     <CardHeader>
-                      <CardTitle className="flex items-center justify-between gap-2">
-                        <span className="flex items-center gap-2">
-                          <span className="text-xl">{categoria.icone}</span>
-                          <span>{categoria.nome}</span>
+                      <div className="flex items-center justify-between gap-2">
+                        <CardTitle className="flex items-center gap-2.5">
+                          <span className="text-lg">{categoria.icone}</span>
+                          {categoria.nome}
+                        </CardTitle>
+                        <span className="shrink-0 text-sm font-bold text-ink tabular">
+                          {feitos}
+                          <span className="text-ink-muted">/{itens.length}</span>
                         </span>
-                        <span className="text-xs font-semibold text-zinc-600">
-                          {feitos}/{itens.length}
-                        </span>
-                      </CardTitle>
+                      </div>
                     </CardHeader>
                     <CardContent className="space-y-2">
                       {itens.map((item) => {
@@ -295,24 +294,18 @@ export default function ListaPage() {
                             checked={checked}
                             onToggle={() => handleToggle(item.id)}
                             label={item.nome}
-                            className={cn(
-                              "bg-white/80",
-                              checked
-                                ? "border-emerald-200 bg-emerald-50/60"
-                                : "border-zinc-100 hover:bg-white",
-                            )}
                           >
                             <p
                               className={cn(
-                                "font-medium",
-                                checked ? "text-zinc-400 line-through" : "text-zinc-900",
+                                "text-sm font-semibold",
+                                checked ? "text-ink-muted line-through" : "text-ink",
                               )}
                             >
                               {item.nome}
                             </p>
-                            <p className="text-xs text-zinc-500">{item.quantidade}</p>
+                            <p className="text-xs text-ink-muted">{item.quantidade}</p>
                             {item.nota && (
-                              <p className="mt-1 rounded-lg bg-amber-50 px-2 py-1 text-[11px] text-amber-900">
+                              <p className="mt-1.5 rounded-lg bg-gold-soft px-2.5 py-1.5 text-[0.6875rem] leading-relaxed text-gold">
                                 {item.nota}
                               </p>
                             )}
@@ -326,15 +319,15 @@ export default function ListaPage() {
             </>
           )}
 
-          <Card className="border-sky-200 bg-sky-50/50">
-            <CardContent className="space-y-2 p-4 text-sm text-sky-900">
-              <p className="flex items-center gap-2 font-semibold">
-                <ShoppingCart className="h-4 w-4" /> Na hora de comprar
-              </p>
-              <ul className="ml-4 list-disc space-y-1 text-xs text-zinc-700">
+          <Card className="bg-bone-deep/40">
+            <CardContent className="space-y-2.5 p-5">
+              <Eyebrow className="text-ink-soft">Na hora de comprar</Eyebrow>
+              <ul className="space-y-1.5 text-xs leading-relaxed text-ink-soft">
                 <li>Feira e sacolão antes do supermercado.</li>
                 <li>Rótulo curto: se tem muita coisa escrita, não vai pro carrinho.</li>
-                <li>Aveia só com selo <strong>sem glúten</strong>.</li>
+                <li>
+                  Aveia só com selo <strong>sem glúten</strong>.
+                </li>
                 <li>Atum em óleo, nunca ao molho de tomate — e escorra todo o óleo.</li>
                 <li>Quanto mais cor no carrinho, melhor o prato.</li>
               </ul>
@@ -344,19 +337,20 @@ export default function ListaPage() {
 
         {/* ---------------------------------------------------------------- */}
         <TabsContent value="preparo" className="space-y-5">
-          <Card className="border-violet-200 bg-linear-to-br from-violet-50 to-white">
+          <Card className="border-brand/20 bg-brand-soft/40">
             <CardHeader>
-              <CardTitle className="text-violet-900">{ESTRATEGIA.titulo}</CardTitle>
-              <CardDescription>{ESTRATEGIA.texto}</CardDescription>
+              <Eyebrow className="text-brand">Estratégia</Eyebrow>
+              <CardTitle className="mt-1.5">{ESTRATEGIA.titulo}</CardTitle>
+              <CardDescription className="text-ink-soft">{ESTRATEGIA.texto}</CardDescription>
             </CardHeader>
             <CardContent>
-              <ol className="space-y-2 text-sm">
+              <ol className="space-y-2.5">
                 {ESTRATEGIA.passos.map((p, i) => (
-                  <li key={p} className="flex items-start gap-2">
-                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-500 text-[11px] font-bold text-white">
+                  <li key={p} className="flex items-start gap-3">
+                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand text-[0.6875rem] font-bold text-bone">
                       {i + 1}
                     </span>
-                    <span className="text-zinc-700">{p}</span>
+                    <span className="text-sm leading-relaxed text-ink-soft">{p}</span>
                   </li>
                 ))}
               </ol>
@@ -366,31 +360,36 @@ export default function ListaPage() {
           {PREPARO.map((grupo) => {
             const Icone = ICONE_PREPARO[grupo.icone];
             return (
-              <Card key={grupo.id} className={cn("border-2", COR_PREPARO[grupo.id])}>
+              <Card key={grupo.id}>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Icone className="h-5 w-5 text-zinc-600" />
-                    {grupo.titulo}
-                    <span className="ml-auto text-xs font-semibold text-zinc-500">
+                  <div className="flex items-center justify-between gap-2">
+                    <CardTitle className="flex items-center gap-2">
+                      <Icone className={cn("h-4.5 w-4.5", COR_PREPARO[grupo.id])} />
+                      {grupo.titulo}
+                    </CardTitle>
+                    <span className="shrink-0 text-sm font-bold text-ink-muted tabular">
                       {grupo.itens.length}
                     </span>
-                  </CardTitle>
+                  </div>
                   <CardDescription>{grupo.descricao}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {grupo.itens.map((it) => (
-                    <div key={it.id} className="rounded-2xl bg-white/80 p-3">
+                    <div
+                      key={it.id}
+                      className="rounded-xl2 border border-line bg-bone/40 p-3.5"
+                    >
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-medium text-zinc-900">{it.nome}</p>
+                        <p className="text-sm font-bold text-ink">{it.nome}</p>
                         {it.validade && (
-                          <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-semibold text-zinc-600">
+                          <span className="rounded-full bg-line-soft px-2 py-0.5 text-[0.625rem] font-bold text-ink-muted">
                             {it.validade}
                           </span>
                         )}
                       </div>
-                      <p className="mt-1 text-xs text-zinc-600">{it.como}</p>
+                      <p className="mt-1 text-xs leading-relaxed text-ink-muted">{it.como}</p>
                       {it.alerta && (
-                        <p className="mt-2 rounded-lg bg-amber-50 px-2 py-1 text-[11px] text-amber-900">
+                        <p className="mt-2 rounded-lg bg-gold-soft px-2.5 py-1.5 text-[0.6875rem] leading-relaxed text-gold">
                           {it.alerta}
                         </p>
                       )}

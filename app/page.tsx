@@ -7,7 +7,7 @@ import { WeightQuickInput } from "@/components/weight-quick-input";
 
 export default function HomePage() {
   return (
-    <div className="space-y-4">
+    <div className="stagger space-y-4">
       <DailySummary />
       <RoutineNow />
       <MealChecklist />

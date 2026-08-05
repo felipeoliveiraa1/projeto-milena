@@ -2,25 +2,30 @@
 
 import { useEffect, useState } from "react";
 import {
-  CalendarDays,
+  Activity,
   CheckCircle2,
-  Clock,
   ListChecks,
   Moon,
+  NotebookPen,
   Pencil,
   Pill,
   ShieldAlert,
   Sun,
   Sunrise,
-  Activity,
-  NotebookPen,
 } from "lucide-react";
 import { PROTOCOLO, ROTINA, SEGURANCA, TOTAL_ITENS_ROTINA } from "@/data/protocol";
 import { SUPPLEMENTS, SUPLEMENTOS_SUSPENSOS } from "@/data/supplements";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Eyebrow,
+} from "@/components/ui/card";
 import { CheckRow } from "@/components/check-row";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Progress } from "@/components/ui/progress";
+import { Ring } from "@/components/ui/ring";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getDay, toggleRotina, toggleSupplement } from "@/lib/storage";
@@ -37,9 +42,9 @@ const ICONE_BLOCO = {
 } as const;
 
 const BADGE_STATUS = {
-  protocolo: { texto: "Combina com o protocolo", classe: "bg-emerald-100 text-emerald-800" },
-  prescricao: { texto: "Prescrição médica", classe: "bg-sky-100 text-sky-800" },
-  opcional: { texto: "Opcional", classe: "bg-zinc-100 text-zinc-600" },
+  protocolo: { texto: "Combina com o protocolo", classe: "bg-brand-soft text-brand" },
+  prescricao: { texto: "Prescrição médica", classe: "bg-plum-soft text-plum" },
+  opcional: { texto: "Opcional", classe: "bg-line-soft text-ink-muted" },
 };
 
 export default function RotinaPage() {
@@ -83,82 +88,82 @@ export default function RotinaPage() {
   const pctGeral = Math.round((totalFeitos / TOTAL_ITENS_ROTINA) * 100);
 
   return (
-    <div className="space-y-5">
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-widest text-violet-500">
-          Protocolo {PROTOCOLO.nome}
-        </p>
-        <h2 className="text-2xl font-bold text-zinc-900">Rotina do dia</h2>
-        <p className="mt-1 text-sm text-zinc-600">{PROTOCOLO.resumo}</p>
-      </div>
+    <div className="stagger space-y-5">
+      <header>
+        <Eyebrow className="text-plum">Protocolo {PROTOCOLO.nome}</Eyebrow>
+        <h2 className="font-display mt-2 text-4xl leading-none text-ink">Rotina do dia</h2>
+        <p className="mt-3 text-sm leading-relaxed text-ink-muted">{PROTOCOLO.resumo}</p>
+      </header>
 
-      <Card className="border-violet-200 bg-linear-to-br from-violet-50 to-rose-50">
-        <CardContent className="space-y-4 p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="flex items-center gap-1 text-xs uppercase tracking-wide text-violet-700">
-                <CalendarDays className="h-3 w-3" /> Ciclo de {PROTOCOLO.duracaoDias} dias
-              </p>
-              <p className="text-2xl font-bold text-zinc-900">
+      <Card className="border-plum/15 bg-plum-soft/40">
+        <CardContent className="p-5">
+          <div className="flex items-center gap-5">
+            <Ring
+              value={hydrated ? pctGeral : 0}
+              size={92}
+              stroke={8}
+              trackClassName="text-plum/15"
+              barClassName="text-plum"
+            >
+              <span className="font-display text-xl leading-none text-plum tabular">
+                {hydrated ? pctGeral : 0}%
+              </span>
+            </Ring>
+
+            <div className="min-w-0 flex-1">
+              <p className="eyebrow text-plum/70">Ciclo de {PROTOCOLO.duracaoDias} dias</p>
+              <p className="font-display mt-1 text-3xl leading-none text-ink">
                 {!status
                   ? "—"
                   : status.naoComecou
-                    ? "Ainda não começou"
+                    ? "A começar"
                     : status.concluido
-                      ? "Ciclo concluído"
+                      ? "Concluído"
                       : `Dia ${status.dia}`}
                 {status && !status.naoComecou && !status.concluido && (
-                  <span className="text-base font-medium text-zinc-500"> de {status.total}</span>
+                  <span className="text-lg text-ink-muted"> de {status.total}</span>
                 )}
               </p>
-              {status?.concluido && (
-                <p className="text-xs text-violet-700">
-                  Terminou há {status.diasDepoisDoFim}{" "}
-                  {status.diasDepoisDoFim === 1 ? "dia" : "dias"}. O cardápio recomeçou do dia 1.
-                </p>
-              )}
-            </div>
-            <div className="text-right">
-              <p className="text-xs text-zinc-500">Rotina de hoje</p>
-              <p className="text-2xl font-bold text-violet-700">
-                {hydrated ? `${pctGeral}%` : "—"}
-              </p>
-              <p className="text-[10px] text-zinc-500">
-                {totalFeitos}/{TOTAL_ITENS_ROTINA} itens
+              <p className="mt-1.5 text-xs text-ink-muted tabular">
+                {totalFeitos}/{TOTAL_ITENS_ROTINA} itens da rotina hoje
               </p>
             </div>
           </div>
 
-          {status && !status.naoComecou && !status.concluido && (
-            <Progress value={status.pct} indicatorClassName="bg-violet-500" />
+          {status?.concluido && (
+            <p className="mt-4 rounded-xl2 bg-surface/70 p-3 text-xs text-ink-soft">
+              Terminou há {status.diasDepoisDoFim}{" "}
+              {status.diasDepoisDoFim === 1 ? "dia" : "dias"}. O cardápio recomeçou do dia 1.
+            </p>
           )}
 
-          {editandoData ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <Input
-                type="date"
-                value={novaData}
-                max={todayKey()}
-                onChange={(e) => setRascunhoData(e.target.value)}
-                className="max-w-45"
-              />
-              <Button size="sm" onClick={salvarData}>
-                Salvar
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => setEditandoData(false)}>
-                Cancelar
-              </Button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setEditandoData(true)}
-              className="inline-flex items-center gap-1 text-xs font-medium text-violet-700 hover:text-violet-900"
-            >
-              <Pencil className="h-3 w-3" />
-              Comecei em{" "}
-              {status ? status.inicio.split("-").reverse().join("/") : "—"} · ajustar
-            </button>
-          )}
+          <div className="mt-4 border-t border-plum/10 pt-4">
+            {editandoData ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <Input
+                  type="date"
+                  value={novaData}
+                  max={todayKey()}
+                  onChange={(e) => setRascunhoData(e.target.value)}
+                  className="max-w-45"
+                />
+                <Button size="sm" onClick={salvarData}>
+                  Salvar
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setEditandoData(false)}>
+                  Cancelar
+                </Button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setEditandoData(true)}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-plum transition hover:text-ink"
+              >
+                <Pencil className="h-3 w-3" />
+                Comecei em {status ? status.inicio.split("-").reverse().join("/") : "—"} · ajustar
+              </button>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -166,19 +171,27 @@ export default function RotinaPage() {
         const Icone = ICONE_BLOCO[bloco.id as keyof typeof ICONE_BLOCO] ?? ListChecks;
         const feitos = hydrated ? bloco.itens.filter((i) => checks[i.id]).length : 0;
         const completo = feitos === bloco.itens.length && bloco.itens.length > 0;
+        const pct = Math.round((feitos / bloco.itens.length) * 100);
         return (
-          <Card key={bloco.id} className={cn(completo && "border-violet-300 ring-2 ring-violet-100")}>
+          <Card key={bloco.id} className={cn(completo && "border-plum/30")}>
             <CardHeader>
               <div className="flex items-start justify-between gap-3">
                 <CardTitle className="flex items-center gap-2">
-                  <Icone className="h-5 w-5 text-violet-500" />
+                  <Icone className="h-4.5 w-4.5 text-plum" />
                   {bloco.titulo}
                 </CardTitle>
-                <span className="shrink-0 rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold text-violet-800">
-                  {feitos}/{bloco.itens.length}
+                <span className="shrink-0 text-sm font-bold text-ink tabular">
+                  {feitos}
+                  <span className="text-ink-muted">/{bloco.itens.length}</span>
                 </span>
               </div>
               {bloco.nota && <CardDescription>{bloco.nota}</CardDescription>}
+              <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-line-soft">
+                <div
+                  className="h-full rounded-full bg-plum transition-[width] duration-500 ease-out"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
             </CardHeader>
             <CardContent className="space-y-2">
               {bloco.itens.map((it) => {
@@ -189,20 +202,20 @@ export default function RotinaPage() {
                     checked={checked}
                     onToggle={() => handleRotina(it.id)}
                     label={it.texto}
-                    className={
-                      checked ? "border-violet-200 bg-violet-50" : "border-zinc-100 bg-white"
-                    }
+                    className={checked ? "border-plum/20 bg-plum-soft/60" : undefined}
                   >
                     <span
                       className={cn(
-                        "block text-sm",
-                        checked ? "text-zinc-400 line-through" : "text-zinc-800",
+                        "block text-sm font-medium",
+                        checked ? "text-ink-muted line-through" : "text-ink",
                       )}
                     >
                       {it.texto}
                     </span>
                     {it.detalhe && (
-                      <span className="mt-0.5 block text-[11px] text-zinc-500">{it.detalhe}</span>
+                      <span className="mt-0.5 block text-xs leading-relaxed text-ink-muted">
+                        {it.detalhe}
+                      </span>
                     )}
                   </CheckRow>
                 );
@@ -212,57 +225,54 @@ export default function RotinaPage() {
         );
       })}
 
-      <div>
-        <h3 className="text-lg font-bold text-zinc-900">Suplementos</h3>
-        <p className="text-sm text-zinc-600">
-          Marque conforme tomar. O limão e o própolis estão na rotina da manhã, ali em cima.
+      <header className="pt-2">
+        <Eyebrow className="text-ink-muted">Farmácia</Eyebrow>
+        <h3 className="font-display mt-2 text-3xl leading-none text-ink">Suplementos</h3>
+        <p className="mt-2 text-sm text-ink-muted">
+          O limão e o própolis estão na rotina da manhã, ali em cima.
         </p>
-      </div>
+      </header>
 
       {SUPPLEMENTS.map((s) => {
         const checked = hydrated && !!checks[s.id];
         const badge = BADGE_STATUS[s.status];
         return (
-          <Card key={s.id}>
+          <Card key={s.id} className={cn(checked && "border-brand/25")}>
             <CardHeader>
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
                   <CardTitle className="flex items-center gap-2">
-                    <Pill className="h-5 w-5 text-rose-500" />
+                    <Pill className="h-4.5 w-4.5 text-clay" />
                     {s.nome}
                   </CardTitle>
-                  <CardDescription className="mt-1 flex flex-wrap items-center gap-1">
-                    {s.dose} ·
-                    <span className="inline-flex items-center gap-1">
-                      <Clock className="h-3 w-3" /> {s.horario}
-                    </span>
-                  </CardDescription>
+                  <p className="mt-1 text-sm text-ink-muted">
+                    {s.dose} · {s.horario}
+                  </p>
                   <span
                     className={cn(
-                      "mt-2 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                      "mt-2.5 inline-block rounded-full px-2.5 py-1 text-[0.625rem] font-bold",
                       badge.classe,
                     )}
                   >
                     {badge.texto}
                   </span>
                 </div>
-                <div className="flex shrink-0 flex-col items-center gap-1 text-xs text-zinc-500">
+                <div className="flex shrink-0 flex-col items-center gap-1.5 text-[0.625rem] font-semibold tracking-wide text-ink-muted uppercase">
                   <Checkbox
                     checked={checked}
                     onCheckedChange={() => handleSuplemento(s.id)}
                     aria-label={`Marcar ${s.nome}`}
                   />
-                  <span>{checked ? "Tomado" : "Tomar"}</span>
+                  <span>{checked ? "tomado" : "tomar"}</span>
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              <p className="text-zinc-700">{s.funcao}</p>
+            <CardContent className="space-y-3">
+              <p className="text-sm leading-relaxed text-ink-soft">{s.funcao}</p>
               {s.observacao && (
-                <div className="flex gap-2 rounded-xl bg-amber-50 p-3 text-xs text-amber-900">
-                  <CheckCircle2 className="h-4 w-4 shrink-0 text-amber-600" />
-                  <span>{s.observacao}</span>
-                </div>
+                <p className="rounded-xl2 bg-gold-soft p-3.5 text-xs leading-relaxed text-gold">
+                  {s.observacao}
+                </p>
               )}
             </CardContent>
           </Card>
@@ -270,27 +280,25 @@ export default function RotinaPage() {
       })}
 
       {SUPLEMENTOS_SUSPENSOS.map((s) => (
-        <Card key={s.nome} className="border-zinc-200 bg-zinc-50">
-          <CardContent className="space-y-1 p-4">
-            <p className="text-sm font-semibold text-zinc-700">
-              {s.nome} — fora durante os 15 dias
-            </p>
-            <p className="text-xs text-zinc-600">{s.porque}</p>
+        <Card key={s.nome} className="border-dashed bg-bone-deep/40">
+          <CardContent className="space-y-1.5 p-5">
+            <p className="text-sm font-bold text-ink-soft">{s.nome} — fora durante os 15 dias</p>
+            <p className="text-xs leading-relaxed text-ink-muted">{s.porque}</p>
           </CardContent>
         </Card>
       ))}
 
-      <Card className="border-red-200 bg-red-50/60">
+      <Card className="border-danger/20 bg-danger-soft/50">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-red-800">
-            <ShieldAlert className="h-5 w-5" /> Regras de segurança
+          <CardTitle className="flex items-center gap-2 text-danger">
+            <ShieldAlert className="h-4.5 w-4.5" /> Regras de segurança
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <ul className="space-y-2 text-sm text-red-900">
+          <ul className="space-y-2.5">
             {SEGURANCA.map((s) => (
-              <li key={s} className="flex items-start gap-2">
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-red-400" />
+              <li key={s} className="flex items-start gap-2.5 text-sm leading-relaxed text-ink-soft">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
                 <span>{s}</span>
               </li>
             ))}

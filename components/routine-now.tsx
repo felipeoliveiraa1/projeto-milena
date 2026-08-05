@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronRight, ListChecks, Moon, Sun, Sunrise } from "lucide-react";
+import { ArrowRight, Moon, Sun, Sunrise } from "lucide-react";
 import { ROTINA } from "@/data/protocol";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, Eyebrow } from "@/components/ui/card";
 import { CheckRow } from "@/components/check-row";
-import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { getDay, toggleRotina } from "@/lib/storage";
 import { usePeriodoAgora } from "@/lib/protocol";
@@ -44,24 +43,32 @@ export function RoutineNow() {
   const { texto, Icone } = TITULO[periodo];
 
   return (
-    <Card className="border-violet-200 bg-linear-to-br from-violet-50 to-white">
+    <Card>
       <CardHeader>
         <div className="flex items-start justify-between gap-3">
           <div>
-            <CardTitle className="flex items-center gap-2">
-              <Icone className="h-5 w-5 text-violet-500" />
+            <Eyebrow className="text-plum">Protocolo</Eyebrow>
+            <CardTitle className="mt-1.5 flex items-center gap-2">
+              <Icone className="h-4.5 w-4.5 text-plum" />
               {texto}
             </CardTitle>
-            <p className="text-xs text-zinc-500">Protocolo Desinflama-se</p>
           </div>
-          <span className="shrink-0 rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold text-violet-800">
-            {feitos}/{itens.length}
-          </span>
+          <div className="text-right">
+            <p className="font-display text-2xl leading-none text-ink tabular">
+              {feitos}
+              <span className="text-ink-muted">/{itens.length}</span>
+            </p>
+            <p className="text-[0.625rem] tracking-wide text-ink-muted uppercase">feitos</p>
+          </div>
         </div>
-        <div className="mt-2">
-          <Progress value={pct} indicatorClassName="bg-violet-500" />
+        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-line-soft">
+          <div
+            className="h-full rounded-full bg-plum transition-[width] duration-500 ease-out"
+            style={{ width: `${pct}%` }}
+          />
         </div>
       </CardHeader>
+
       <CardContent className="space-y-2">
         {itens.map((it) => {
           const checked = hydrated && !!checks[it.id];
@@ -71,28 +78,27 @@ export function RoutineNow() {
               checked={checked}
               onToggle={() => handleToggle(it.id)}
               label={it.texto}
-              className={
-                checked ? "border-violet-200 bg-violet-50" : "border-zinc-100 bg-white"
-              }
+              className={checked ? "border-plum/20 bg-plum-soft/60" : undefined}
             >
               <span
                 className={cn(
-                  "block text-sm",
-                  checked ? "text-zinc-400 line-through" : "text-zinc-800",
+                  "block text-sm font-medium",
+                  checked ? "text-ink-muted line-through" : "text-ink",
                 )}
               >
                 {it.texto}
               </span>
               {it.detalhe && (
-                <span className="mt-0.5 block text-[11px] text-zinc-500">{it.detalhe}</span>
+                <span className="mt-0.5 block text-xs leading-relaxed text-ink-muted">
+                  {it.detalhe}
+                </span>
               )}
             </CheckRow>
           );
         })}
-        <Button asChild variant="outline" className="w-full">
+        <Button asChild variant="ghost" className="w-full">
           <Link href="/rotina">
-            <ListChecks className="h-4 w-4" /> Ver a rotina completa
-            <ChevronRight className="h-4 w-4" />
+            Ver a rotina completa <ArrowRight className="h-4 w-4" />
           </Link>
         </Button>
       </CardContent>

@@ -17,6 +17,15 @@ import { dataCurta } from "@/lib/date";
 const PESO_INICIAL = 84;
 const META = 70;
 
+/* Cores do sistema — mantidas em sincronia com app/globals.css. */
+const COR = {
+  linha: "#14503f",
+  meta: "#c0623a",
+  grade: "#e9dfd2",
+  texto: "#8b7f72",
+  superficie: "#ffffff",
+};
+
 export function WeightChart({ entries }: { entries: WeightEntry[] }) {
   const data = useMemo(() => {
     const first: { date: string; weight: number }[] = [];
@@ -34,7 +43,7 @@ export function WeightChart({ entries }: { entries: WeightEntry[] }) {
 
   if (data.length < 2) {
     return (
-      <div className="rounded-2xl bg-rose-50/60 p-6 text-center text-sm text-zinc-500">
+      <div className="rounded-xl2 border border-line bg-bone/50 p-8 text-center text-sm text-ink-muted">
         Registre pelo menos 2 pesos para ver o gráfico.
       </div>
     );
@@ -43,34 +52,52 @@ export function WeightChart({ entries }: { entries: WeightEntry[] }) {
   return (
     <div className="h-72 w-full">
       <ResponsiveContainer>
-        <LineChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#fde4eb" />
-          <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#71717a" }} />
+        <LineChart data={data} margin={{ top: 12, right: 12, left: -12, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="2 6" stroke={COR.grade} vertical={false} />
+          <XAxis
+            dataKey="date"
+            tick={{ fontSize: 11, fill: COR.texto }}
+            axisLine={{ stroke: COR.grade }}
+            tickLine={false}
+          />
           <YAxis
-            tick={{ fontSize: 11, fill: "#71717a" }}
+            tick={{ fontSize: 11, fill: COR.texto }}
+            axisLine={false}
+            tickLine={false}
             domain={[META - 2, "dataMax + 2"]}
           />
           <Tooltip
+            cursor={{ stroke: COR.grade }}
             contentStyle={{
-              borderRadius: 12,
-              border: "1px solid #fecdd3",
+              borderRadius: 14,
+              border: `1px solid ${COR.grade}`,
+              background: COR.superficie,
               fontSize: 12,
+              boxShadow: "0 12px 28px -18px rgba(25,21,18,0.4)",
             }}
-            formatter={(value) => [`${Number(value).toFixed(1)} kg`, "Peso"]}
+            labelStyle={{ color: COR.texto, fontWeight: 600 }}
+            formatter={(value) => [`${Number(value).toFixed(1).replace(".", ",")} kg`, "Peso"]}
           />
           <ReferenceLine
             y={META}
-            stroke="#10b981"
+            stroke={COR.meta}
             strokeDasharray="4 4"
-            label={{ value: "Meta 70 kg", fontSize: 10, fill: "#059669", position: "right" }}
+            label={{
+              value: `Meta ${META} kg`,
+              fontSize: 10,
+              fontWeight: 700,
+              fill: COR.meta,
+              // dentro do gráfico: em "right" o rótulo era cortado na borda
+              position: "insideTopRight",
+            }}
           />
           <Line
             type="monotone"
             dataKey="weight"
-            stroke="#f43f5e"
-            strokeWidth={3}
-            dot={{ r: 4, fill: "#f43f5e" }}
-            activeDot={{ r: 6 }}
+            stroke={COR.linha}
+            strokeWidth={2.5}
+            dot={{ r: 3.5, fill: COR.linha, strokeWidth: 0 }}
+            activeDot={{ r: 6, fill: COR.linha, stroke: COR.superficie, strokeWidth: 3 }}
           />
         </LineChart>
       </ResponsiveContainer>

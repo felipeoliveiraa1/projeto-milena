@@ -25,9 +25,9 @@ export const PROTOCOLO = {
 /* -------------------------------------------------------------------------- */
 
 export const MONTAGEM_PRATO = [
-  { fracao: "½ prato", item: "Verduras e legumes", cor: "bg-emerald-500" },
-  { fracao: "¼ prato", item: "Proteína", cor: "bg-rose-500" },
-  { fracao: "¼ prato", item: "Carboidrato", cor: "bg-amber-500" },
+  { fracao: "½ prato", item: "Verduras e legumes", cor: "bg-brand" },
+  { fracao: "¼ prato", item: "Proteína", cor: "bg-clay" },
+  { fracao: "¼ prato", item: "Carboidrato", cor: "bg-gold" },
 ];
 
 export const ORDEM_CONSUMO = [

@@ -1,35 +1,39 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { ViewTransition } from "react";
+import { Instrument_Serif, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { NavBar } from "@/components/nav-bar";
 import { MedicalDisclaimer } from "@/components/medical-disclaimer";
+import { BrandMark, Wordmark } from "@/components/brand";
+import { HeaderStatus } from "@/components/header-status";
+import { Splash } from "@/components/splash";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const display = Instrument_Serif({
+  variable: "--font-instrument-serif",
   subsets: ["latin"],
+  weight: "400",
+  style: ["normal", "italic"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const sans = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "Treino & Dieta · Milena",
-  description: "Plano alimentar, treino e check-in diário",
-  applicationName: "Treino Milena",
+  title: "Milena · mais leve, mais forte",
+  description: "Protocolo Desinflama-se, treino e check-in diário",
+  applicationName: "Milena",
   appleWebApp: {
     capable: true,
-    title: "Treino Milena",
+    title: "Milena",
     statusBarStyle: "default",
   },
-  formatDetection: {
-    telephone: false,
-  },
+  formatDetection: { telephone: false },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#fff7f9",
+  themeColor: "#fbf7f2",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -43,26 +47,33 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${display.variable} ${sans.variable} h-full antialiased`}
     >
       <body className="min-h-full" suppressHydrationWarning>
-        <header className="border-b border-rose-100 bg-white/60 backdrop-blur">
-          <div className="mx-auto max-w-3xl px-4 py-4 md:px-6">
-            <p className="text-xs font-semibold uppercase tracking-widest text-rose-500">
-              Plano da Milena
-            </p>
-            <h1 className="text-lg font-semibold text-zinc-900">
-              Mais leve, mais forte
-            </h1>
+        <Splash />
+
+        <header className="sticky top-0 z-40 border-b border-line/70 bg-bone/80 backdrop-blur-xl">
+          <div className="mx-auto flex max-w-3xl items-center gap-3 px-5 py-3.5 md:px-6">
+            <BrandMark className="h-10 w-10" />
+            <Wordmark />
+            <div className="ml-auto">
+              <HeaderStatus />
+            </div>
           </div>
-          <div className="hidden md:block">
+          <div className="hidden border-t border-line/70 md:block">
             <NavBar />
           </div>
         </header>
-        <main className="mx-auto max-w-3xl px-4 pb-32 pt-6 md:px-6 md:pb-10">
-          {children}
-          <MedicalDisclaimer />
-        </main>
+
+        {/* Só o conteúdo da página participa da transição — o cabeçalho e o
+            dock ficam parados, como em app nativo. */}
+        <ViewTransition name="page">
+          <main className="mx-auto max-w-3xl px-5 pb-36 pt-6 md:px-6 md:pb-12">
+            {children}
+            <MedicalDisclaimer />
+          </main>
+        </ViewTransition>
+
         <div className="md:hidden">
           <NavBar />
         </div>

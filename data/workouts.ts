@@ -17,7 +17,6 @@ export type WorkoutDay = {
   diaNome: string;
   foco: string;
   curto: string;
-  cor: string;
   aquecimento?: string;
   exercicios: Exercise[];
   observacao?: string;
@@ -55,7 +54,6 @@ export const WORKOUTS: WorkoutDay[] = [
     diaNome: "Segunda",
     foco: "Inferior A — Glúteos e posterior",
     curto: "Glúteos / Posterior",
-    cor: "from-pink-100 to-rose-200 border-rose-300",
     aquecimento: "5 min de bike ou elíptico em ritmo leve",
     exercicios: [
       {
@@ -116,7 +114,6 @@ export const WORKOUTS: WorkoutDay[] = [
     diaNome: "Terça",
     foco: "Superior A — Peito, tríceps e ombro",
     curto: "Peito / Tríceps / Ombro",
-    cor: "from-sky-100 to-cyan-200 border-cyan-300",
     aquecimento: "5 min de elíptico + rotação de ombros",
     exercicios: [
       {
@@ -175,7 +172,6 @@ export const WORKOUTS: WorkoutDay[] = [
     diaNome: "Quarta",
     foco: "Cardio HIIT + Core",
     curto: "HIIT + Abdômen",
-    cor: "from-amber-100 to-orange-200 border-orange-300",
     aquecimento: "5 min de caminhada na esteira",
     exercicios: [
       {
@@ -233,7 +229,6 @@ export const WORKOUTS: WorkoutDay[] = [
     diaNome: "Quinta",
     foco: "Inferior B — Quadríceps e glúteos",
     curto: "Quadríceps / Glúteos",
-    cor: "from-pink-100 to-rose-200 border-rose-300",
     aquecimento: "5 min de bike + 10 agachamentos livres sem peso",
     exercicios: [
       {
@@ -294,7 +289,6 @@ export const WORKOUTS: WorkoutDay[] = [
     diaNome: "Sexta",
     foco: "Superior B — Costas, bíceps e ombro posterior",
     curto: "Costas / Bíceps",
-    cor: "from-sky-100 to-cyan-200 border-cyan-300",
     aquecimento: "5 min de elíptico + soltura de coluna",
     exercicios: [
       {
@@ -351,7 +345,6 @@ export const WORKOUTS: WorkoutDay[] = [
     diaNome: "Sábado",
     foco: "Cardio LISS + Core e braços",
     curto: "Cardio leve + Braços",
-    cor: "from-amber-100 to-orange-200 border-orange-300",
     aquecimento: "—",
     exercicios: [
       {
@@ -397,7 +390,6 @@ export const WORKOUTS: WorkoutDay[] = [
     diaNome: "Domingo",
     foco: "Descanso ativo",
     curto: "Descanso",
-    cor: "from-zinc-100 to-zinc-200 border-zinc-300",
     exercicios: [
       {
         nome: "Caminhada leve ao ar livre",

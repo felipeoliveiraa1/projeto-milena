@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ExternalLink, PlayCircle, X } from "lucide-react";
+import { ExternalLink, Play, X } from "lucide-react";
 
 /**
  * Player embutido do tutorial do exercício. O iframe só é montado depois do
@@ -20,9 +20,9 @@ export function ExerciseVideo({ nome, videoId }: { nome: string; videoId?: strin
         href={buscaUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-100"
+        className="mt-3 inline-flex items-center gap-2 rounded-full bg-ink px-3.5 py-2 text-xs font-bold text-bone transition hover:bg-ink/90"
       >
-        <PlayCircle className="h-3.5 w-3.5" /> Buscar tutorial no YouTube
+        <Play className="h-3.5 w-3.5 fill-bone" /> Buscar tutorial
       </a>
     );
   }
@@ -33,7 +33,7 @@ export function ExerciseVideo({ nome, videoId }: { nome: string; videoId?: strin
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-100"
+        className="inline-flex items-center gap-2 rounded-full bg-ink px-3.5 py-2 text-xs font-bold text-bone transition hover:bg-ink/90 active:scale-[0.98]"
       >
         {open ? (
           <>
@@ -41,14 +41,14 @@ export function ExerciseVideo({ nome, videoId }: { nome: string; videoId?: strin
           </>
         ) : (
           <>
-            <PlayCircle className="h-3.5 w-3.5" /> Como fazer (vídeo)
+            <Play className="h-3.5 w-3.5 fill-bone" /> Como fazer
           </>
         )}
       </button>
 
       {open && (
-        <div className="mt-2 space-y-2">
-          <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-black">
+        <div className="animate-rise mt-3 space-y-2">
+          <div className="relative aspect-video w-full overflow-hidden rounded-xl2 bg-ink">
             <iframe
               src={`https://www.youtube-nocookie.com/embed/${videoId}?rel=0&playsinline=1&modestbranding=1`}
               title={`Como fazer: ${nome}`}
@@ -62,7 +62,7 @@ export function ExerciseVideo({ nome, videoId }: { nome: string; videoId?: strin
             href={`https://www.youtube.com/watch?v=${videoId}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-rose-600"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink-muted transition hover:text-ink"
           >
             <ExternalLink className="h-3 w-3" /> Abrir no YouTube
           </a>

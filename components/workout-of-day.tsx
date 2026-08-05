@@ -2,14 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Dumbbell, ChevronRight, CheckCircle2 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowRight, CheckCircle2, Dumbbell } from "lucide-react";
+import { Card, CardContent, Eyebrow } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { WORKOUTS } from "@/data/workouts";
 import { getDay, toggleWorkout } from "@/lib/storage";
 import { diaDaSemana } from "@/lib/date";
 import { useAgora } from "@/lib/now";
-import { cn } from "@/lib/utils";
 
 export function WorkoutOfDay() {
   const [done, setDone] = useState(false);
@@ -25,26 +24,28 @@ export function WorkoutOfDay() {
   }, []);
 
   const workout = WORKOUTS.find((w) => w.diaSemana === day) ?? WORKOUTS[0];
+  const descanso = workout.exercicios.length <= 2;
 
   return (
-    <Card className={cn("bg-linear-to-br border-2", workout.cor)}>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Dumbbell className="h-5 w-5 text-rose-700" />
-          Treino de hoje
-        </CardTitle>
-        <p className="text-xs font-semibold uppercase tracking-wide text-rose-700/80">
-          {workout.diaNome}
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <p className="text-lg font-semibold text-zinc-900">{workout.foco}</p>
-        <p className="text-sm text-zinc-700">
-          {workout.exercicios.length} exercícios · cerca de 40 min
-        </p>
+    <Card className="overflow-hidden">
+      <CardContent className="space-y-4 p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <Eyebrow className="text-brand">Treino · {workout.diaNome}</Eyebrow>
+            <p className="font-display mt-1.5 text-xl leading-tight text-ink">{workout.foco}</p>
+            <p className="mt-1 text-sm text-ink-muted">
+              {workout.exercicios.length} exercícios
+              {!descanso && " · cerca de 40 min"}
+            </p>
+          </div>
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand-soft text-brand">
+            <Dumbbell className="h-5 w-5" />
+          </span>
+        </div>
+
         <div className="flex flex-col gap-2 sm:flex-row">
           <Button
-            variant={done ? "soft" : "default"}
+            variant={done ? "secondary" : "default"}
             onClick={async () => {
               setDone((v) => !v);
               const next = await toggleWorkout();
@@ -55,7 +56,7 @@ export function WorkoutOfDay() {
           >
             {done ? (
               <>
-                <CheckCircle2 className="h-4 w-4" /> Treino feito hoje
+                <CheckCircle2 className="h-4 w-4" /> Treino feito
               </>
             ) : (
               "Marcar treino feito"
@@ -63,7 +64,7 @@ export function WorkoutOfDay() {
           </Button>
           <Button asChild variant="outline" className="flex-1">
             <Link href="/treino">
-              Ver exercícios <ChevronRight className="h-4 w-4" />
+              Ver exercícios <ArrowRight className="h-4 w-4" />
             </Link>
           </Button>
         </div>

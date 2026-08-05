@@ -29,7 +29,10 @@ export function CheckRow({
     <div
       onClick={onToggle}
       className={cn(
-        "flex w-full cursor-pointer items-start gap-3 rounded-2xl border p-3 text-left transition active:scale-[0.99]",
+        "flex w-full cursor-pointer items-start gap-3 rounded-xl2 border p-3.5 text-left transition active:scale-[0.99]",
+        checked
+          ? "border-brand/20 bg-brand-soft/50"
+          : "border-line bg-surface hover:border-line hover:bg-bone",
         className,
       )}
     >

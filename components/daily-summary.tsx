@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Flame, Sparkles } from "lucide-react";
+import { Dumbbell, Droplet, Flame, Utensils } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { Ring } from "@/components/ui/ring";
 import { PROTOCOLO, ROTINA_IDS, TOTAL_ITENS_ROTINA } from "@/data/protocol";
 import { getDay, getStreak } from "@/lib/storage";
 import { dataExtenso } from "@/lib/date";
@@ -13,13 +13,19 @@ import { useAgora } from "@/lib/now";
 /** Peso de cada frente no "plano de hoje" — soma 1. */
 const PESOS = { refeicoes: 0.3, agua: 0.15, treino: 0.2, rotina: 0.35 };
 
+function saudacao(hora: number): string {
+  if (hora < 12) return "Bom dia";
+  if (hora < 18) return "Boa tarde";
+  return "Boa noite";
+}
+
 export function DailySummary() {
   const [pct, setPct] = useState(0);
   const [streak, setStreak] = useState(0);
+  const [parciais, setParciais] = useState({ refeicoes: 0, agua: 0, treino: false, rotina: 0 });
   const [hydrated, setHydrated] = useState(false);
   const agora = useAgora();
   const status = useProtocolo();
-  const today = agora ? dataExtenso(agora) : "";
 
   useEffect(() => {
     Promise.all([getDay(), getStreak()])
@@ -32,66 +38,109 @@ export function DailySummary() {
           PESOS.treino * (day.workout ? 1 : 0) +
           PESOS.rotina * Math.min(rotina / TOTAL_ITENS_ROTINA, 1);
         setPct(Math.round(score * 100));
+        setParciais({
+          refeicoes,
+          agua: Math.min(day.water, 2),
+          treino: day.workout,
+          rotina,
+        });
         setStreak(streakValue);
         setHydrated(true);
       })
       .catch(() => setHydrated(true));
   }, []);
 
+  const legenda = !status
+    ? ""
+    : status.naoComecou
+      ? `${PROTOCOLO.nome} começa em breve`
+      : status.concluido
+        ? `${PROTOCOLO.nome} · ciclo concluído`
+        : `${PROTOCOLO.nome} · dia ${status.dia} de ${status.total}`;
+
   return (
-    <Card className="bg-linear-to-br from-rose-100 to-orange-100 border-rose-200">
-      <CardContent className="space-y-4 p-6">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-widest text-rose-600">
-              {hydrated ? today : "—"}
-            </p>
-            <h2 className="mt-1 text-2xl font-bold text-zinc-900">Bom dia, Milena!</h2>
-            {status && (
-              <p className="mt-1 text-sm font-medium text-rose-800">
-                {status.naoComecou
-                  ? `${PROTOCOLO.nome} começa em breve`
-                  : status.concluido
-                    ? `${PROTOCOLO.nome} · ciclo de ${status.total} dias concluído 🎉`
-                    : `${PROTOCOLO.nome} · dia ${status.dia} de ${status.total}`}
-              </p>
-            )}
+    <Card className="overflow-hidden border-brand-deep bg-brand-deep text-bone">
+      <CardContent className="space-y-5 p-6">
+        <div className="flex items-start justify-between gap-5">
+          <div className="min-w-0 pt-1">
+            <p className="eyebrow text-bone/50">{agora ? dataExtenso(agora) : " "}</p>
+            <h2 className="font-display mt-1.5 text-[2rem] leading-none text-bone">
+              {agora ? saudacao(agora.getHours()) : "Olá"},<br />
+              <span className="italic">Milena</span>
+            </h2>
+            <p className="mt-3 text-sm text-bone/70">{legenda || " "}</p>
           </div>
-          <div className="shrink-0 rounded-2xl bg-white/70 px-3 py-2 text-center shadow-sm">
-            <p className="flex items-center gap-1 text-xs text-rose-700">
-              <Flame className="h-3 w-3" /> Sequência
-            </p>
-            <p className="text-2xl font-bold text-rose-700">{hydrated ? streak : 0}</p>
-            <p className="text-[10px] text-zinc-500">dias</p>
-          </div>
+
+          <Ring
+            value={hydrated ? pct : 0}
+            size={104}
+            stroke={8}
+            trackClassName="text-bone/15"
+            barClassName="text-bone"
+          >
+            <span className="font-display text-2xl leading-none text-bone tabular">
+              {hydrated ? pct : 0}%
+            </span>
+            <span className="mt-1 text-[0.625rem] font-semibold tracking-wider text-bone/50 uppercase">
+              do dia
+            </span>
+          </Ring>
+        </div>
+
+        <div className="grid grid-cols-4 gap-2">
+          <Mini icone={<Utensils className="h-3.5 w-3.5" />} valor={`${parciais.refeicoes}/4`} rotulo="refeições" />
+          <Mini icone={<Droplet className="h-3.5 w-3.5" />} valor={`${parciais.agua}/2`} rotulo="água" />
+          <Mini
+            icone={<Dumbbell className="h-3.5 w-3.5" />}
+            valor={parciais.treino ? "feito" : "—"}
+            rotulo="treino"
+          />
+          <Mini
+            icone={<Flame className="h-3.5 w-3.5" />}
+            valor={`${streak}`}
+            rotulo={streak === 1 ? "dia seguido" : "dias seguidos"}
+          />
         </div>
 
         {status && !status.naoComecou && !status.concluido && (
-          <div className="space-y-1">
-            <div className="flex items-center justify-between text-xs text-rose-800">
-              <span>Protocolo</span>
-              <span className="font-semibold">
-                {status.dia}/{status.total} dias
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-[0.6875rem] font-semibold tracking-wide text-bone/60 uppercase">
+              <span>Ciclo do protocolo</span>
+              <span className="tabular">
+                {status.dia}/{status.total}
               </span>
             </div>
-            <Progress value={status.pct} indicatorClassName="bg-emerald-500" />
+            <div className="flex gap-1">
+              {Array.from({ length: status.total }).map((_, i) => (
+                <span
+                  key={i}
+                  className={`h-1.5 flex-1 rounded-full transition ${
+                    i < status.dia ? "bg-bone" : "bg-bone/20"
+                  }`}
+                />
+              ))}
+            </div>
           </div>
         )}
-
-        <div className="space-y-1">
-          <div className="flex items-center justify-between text-sm">
-            <span className="flex items-center gap-1 font-medium text-rose-800">
-              <Sparkles className="h-4 w-4" />
-              Plano de hoje
-            </span>
-            <span className="font-semibold text-rose-700">{pct}%</span>
-          </div>
-          <Progress value={pct} indicatorClassName="bg-rose-500" />
-          <p className="text-[11px] text-rose-700/80">
-            Refeições, água, treino e rotina do protocolo.
-          </p>
-        </div>
       </CardContent>
     </Card>
+  );
+}
+
+function Mini({
+  icone,
+  valor,
+  rotulo,
+}: {
+  icone: React.ReactNode;
+  valor: string;
+  rotulo: string;
+}) {
+  return (
+    <div className="rounded-2xl bg-bone/10 px-3 py-2.5">
+      <span className="flex items-center gap-1 text-bone/50">{icone}</span>
+      <p className="mt-1 text-sm font-bold text-bone tabular">{valor}</p>
+      <p className="text-[0.625rem] leading-tight text-bone/50">{rotulo}</p>
+    </div>
   );
 }

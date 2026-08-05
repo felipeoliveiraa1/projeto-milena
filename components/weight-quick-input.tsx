@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Scale, Plus } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Plus } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, Eyebrow } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -38,30 +38,32 @@ export function WeightQuickInput() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Scale className="h-5 w-5 text-emerald-500" />
-          Peso
-        </CardTitle>
+        <Eyebrow className="text-ink-muted">Balança</Eyebrow>
+        <CardTitle className="mt-1.5">Peso</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="flex items-end justify-between">
-          <div>
-            <p className="text-xs text-zinc-500">Atual</p>
-            <p className="text-3xl font-bold text-zinc-900">
-              {ref.toFixed(1)}<span className="text-base font-medium text-zinc-500"> kg</span>
-            </p>
-          </div>
+      <CardContent className="space-y-4">
+        <div className="flex items-end justify-between gap-4">
+          <p className="font-display text-5xl leading-none text-ink tabular">
+            {ref.toFixed(1).replace(".", ",")}
+            <span className="text-xl text-ink-muted"> kg</span>
+          </p>
           <div className="text-right">
-            <p className="text-xs text-zinc-500">Meta</p>
-            <p className="text-xl font-semibold text-emerald-600">{META} kg</p>
+            <p className="text-[0.625rem] tracking-wide text-ink-muted uppercase">Meta</p>
+            <p className="font-display text-2xl leading-none text-brand tabular">{META} kg</p>
           </div>
         </div>
-        <Progress value={pctMeta} indicatorClassName="bg-emerald-400" />
-        <p className="text-xs text-zinc-500">
-          {perdido > 0
-            ? `Você já eliminou ${perdido.toFixed(1)} kg — faltam ${(ref - META).toFixed(1)} kg.`
-            : "Registre seu peso hoje para começar a acompanhar."}
-        </p>
+
+        <div className="space-y-2">
+          <Progress value={pctMeta} />
+          <p className="text-xs text-ink-muted">
+            {perdido > 0
+              ? `Já eliminou ${perdido.toFixed(1).replace(".", ",")} kg — faltam ${(ref - META)
+                  .toFixed(1)
+                  .replace(".", ",")} kg.`
+              : "Registre seu peso hoje para começar a acompanhar."}
+          </p>
+        </div>
+
         <div className="flex gap-2">
           <Input
             inputMode="decimal"

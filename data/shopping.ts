@@ -20,7 +20,6 @@ export type ShoppingCategory = {
   id: string;
   nome: string;
   icone: string;
-  cor: string;
   itens: ShoppingItem[];
 };
 
@@ -29,7 +28,6 @@ export const SHOPPING_LIST: ShoppingCategory[] = [
     id: "proteinas",
     nome: "Proteínas",
     icone: "🍗",
-    cor: "from-rose-50 to-rose-100 border-rose-200",
     itens: [
       { id: "pr-frango-peito", nome: "Peito de frango", quantidade: "1,5 kg" },
       { id: "pr-frango-moido", nome: "Frango moído (para hambúrguer caseiro)", quantidade: "500 g" },
@@ -49,7 +47,6 @@ export const SHOPPING_LIST: ShoppingCategory[] = [
     id: "carbos",
     nome: "Carboidratos",
     icone: "🍠",
-    cor: "from-amber-50 to-amber-100 border-amber-200",
     itens: [
       { id: "ca-arroz-integral", nome: "Arroz integral", quantidade: "1 kg" },
       { id: "ca-batata-doce", nome: "Batata-doce", quantidade: "1,5 kg" },
@@ -78,7 +75,6 @@ export const SHOPPING_LIST: ShoppingCategory[] = [
     id: "leguminosa",
     nome: "Leguminosa",
     icone: "🫘",
-    cor: "from-amber-50 to-orange-100 border-orange-200",
     itens: [
       {
         id: "lg-grao-bico",
@@ -92,7 +88,6 @@ export const SHOPPING_LIST: ShoppingCategory[] = [
     id: "folhas",
     nome: "Folhas",
     icone: "🥬",
-    cor: "from-emerald-50 to-emerald-100 border-emerald-200",
     itens: [
       { id: "fo-alface", nome: "Alface (crespa ou americana)", quantidade: "2 pés" },
       { id: "fo-rucula", nome: "Rúcula", quantidade: "2 maços" },
@@ -105,7 +100,6 @@ export const SHOPPING_LIST: ShoppingCategory[] = [
     id: "legumes",
     nome: "Legumes",
     icone: "🥦",
-    cor: "from-emerald-50 to-emerald-100 border-emerald-200",
     itens: [
       { id: "le-abobrinha", nome: "Abobrinha italiana", quantidade: "4 unidades" },
       { id: "le-brocolis", nome: "Brócolis", quantidade: "2 maços" },
@@ -125,7 +119,6 @@ export const SHOPPING_LIST: ShoppingCategory[] = [
     id: "frutas",
     nome: "Frutas",
     icone: "🍎",
-    cor: "from-rose-50 to-rose-100 border-rose-200",
     itens: [
       { id: "fr-banana", nome: "Banana", quantidade: "1 dúzia" },
       { id: "fr-mamao", nome: "Mamão papaya", quantidade: "2 unidades" },
@@ -143,7 +136,6 @@ export const SHOPPING_LIST: ShoppingCategory[] = [
     id: "gorduras",
     nome: "Gorduras boas e sementes",
     icone: "🌰",
-    cor: "from-amber-50 to-amber-100 border-amber-200",
     itens: [
       { id: "go-azeite", nome: "Azeite extravirgem", quantidade: "500 ml", essencial: true },
       { id: "go-chia", nome: "Chia", quantidade: "200 g", essencial: true },
@@ -158,7 +150,6 @@ export const SHOPPING_LIST: ShoppingCategory[] = [
     id: "temperos",
     nome: "Temperos e ervas",
     icone: "🌿",
-    cor: "from-emerald-50 to-emerald-100 border-emerald-200",
     itens: [
       { id: "te-alho", nome: "Alho", quantidade: "2 cabeças", essencial: true },
       { id: "te-cebola", nome: "Cebola", quantidade: "6 unidades", essencial: true },
@@ -180,7 +171,6 @@ export const SHOPPING_LIST: ShoppingCategory[] = [
     id: "despensa",
     nome: "Despensa — industrializados aprovados",
     icone: "🏷️",
-    cor: "from-sky-50 to-sky-100 border-sky-200",
     itens: [
       {
         id: "in-leite-amendoas",
@@ -207,7 +197,6 @@ export const SHOPPING_LIST: ShoppingCategory[] = [
     id: "bebidas",
     nome: "Bebidas e rituais",
     icone: "☕",
-    cor: "from-orange-50 to-orange-100 border-orange-200",
     itens: [
       { id: "be-cafe", nome: "Café em pó", quantidade: "500 g", essencial: true },
       { id: "be-cha-verde", nome: "Chá verde", quantidade: "1 caixa" },
@@ -225,7 +214,6 @@ export const SHOPPING_LIST: ShoppingCategory[] = [
     id: "farmacia",
     nome: "Farmácia",
     icone: "💊",
-    cor: "from-rose-50 to-rose-100 border-rose-200",
     itens: [
       { id: "su-omega3", nome: "Ômega 3 (mín. 500 mg de EPA+DHA por cápsula)", quantidade: "60 caps" },
       { id: "su-vitafer", nome: "Vitafer", quantidade: "conforme receita", nota: "Prescrição médica — não suspender." },
@@ -236,7 +224,7 @@ export const SHOPPING_LIST: ShoppingCategory[] = [
 
 export const CATALOGO = new Map(
   SHOPPING_LIST.flatMap((c) =>
-    c.itens.map((i) => [i.id, { ...i, categoriaId: c.id, categoria: c.nome, icone: c.icone, cor: c.cor }] as const),
+    c.itens.map((i) => [i.id, { ...i, categoriaId: c.id, categoria: c.nome, icone: c.icone }] as const),
   ),
 );
 
