@@ -3,11 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  Check,
   ChevronDown,
   Droplet,
   Dumbbell,
   Flame,
   ListChecks,
+  Minus,
   NotebookPen,
   Pencil,
   Utensils,
@@ -16,6 +18,8 @@ import { Card, CardContent, CardHeader, Eyebrow } from "@/components/ui/card";
 import { Ring } from "@/components/ui/ring";
 import { Button } from "@/components/ui/button";
 import { cardapioDoDia } from "@/data/meals";
+import type { RotinaBloco } from "@/data/protocol";
+import { SUPPLEMENTS } from "@/data/supplements";
 import { getPeriodo, getTextoDoDia, type DayCheck } from "@/lib/storage";
 import { formatarAgua, resumoDoDia } from "@/lib/score";
 import { useInicio, useProtocolo } from "@/lib/protocol";
@@ -36,7 +40,10 @@ export default function HistoricoPage() {
   const { definir } = useDia();
   const router = useRouter();
 
-  const idsRotina = useMemo(() => blocos.flatMap((b) => b.itens.map((i) => i.id)), [blocos]);
+  const idsRotina = useMemo(
+    () => blocos.flatMap((b) => b.itens.map((i) => i.id)),
+    [blocos],
+  );
 
   useEffect(() => {
     getPeriodo(inicio, todayKey())
@@ -61,7 +68,10 @@ export default function HistoricoPage() {
     () =>
       linha.map((item) => ({
         ...item,
-        resumo: resumoDoDia(dias[item.data], { metaAgua: prefs.aguaMetaMl, idsRotina }),
+        resumo: resumoDoDia(dias[item.data], {
+          metaAgua: prefs.aguaMetaMl,
+          idsRotina,
+        }),
       })),
     [linha, dias, prefs.aguaMetaMl, idsRotina],
   );
@@ -69,20 +79,28 @@ export default function HistoricoPage() {
   const comRegistro = resumos.filter((r) => r.resumo.temRegistro);
   const media =
     comRegistro.length > 0
-      ? Math.round(comRegistro.reduce((s, r) => s + r.resumo.pct, 0) / comRegistro.length)
+      ? Math.round(
+          comRegistro.reduce((s, r) => s + r.resumo.pct, 0) /
+            comRegistro.length,
+        )
       : 0;
   const treinos = comRegistro.filter((r) => r.resumo.treino).length;
   const aguaTotal = comRegistro.reduce((s, r) => s + r.resumo.agua, 0);
-  const refeicoesTotal = comRegistro.reduce((s, r) => s + r.resumo.refeicoes, 0);
+  const refeicoesTotal = comRegistro.reduce(
+    (s, r) => s + r.resumo.refeicoes,
+    0,
+  );
 
   return (
     <div className="stagger space-y-5">
       <header>
         <Eyebrow className="text-brand">Histórico</Eyebrow>
-        <h2 className="font-display mt-2 text-4xl leading-none text-ink">Até aqui</h2>
+        <h2 className="font-display mt-2 text-4xl leading-none text-ink">
+          Até aqui
+        </h2>
         <p className="mt-3 text-sm leading-relaxed text-ink-muted">
-          Cada dia desde o começo do protocolo. Toque em um dia para ver o que foi feito — e para
-          completar o que ficou faltando.
+          Cada dia desde o começo do protocolo. Toque em um dia para ver o que
+          foi feito — e para completar o que ficou faltando.
         </p>
       </header>
 
@@ -96,23 +114,39 @@ export default function HistoricoPage() {
               trackClassName="text-bone/15"
               barClassName="text-bone"
             >
-              <span className="font-display text-2xl leading-none text-bone tabular">{media}%</span>
+              <span className="font-display text-2xl leading-none text-bone tabular">
+                {media}%
+              </span>
             </Ring>
             <div className="min-w-0 flex-1">
               <p className="eyebrow text-bone/50">Média de adesão</p>
               <p className="font-display mt-1 text-3xl leading-none text-bone tabular">
                 {comRegistro.length}
                 <span className="text-lg text-bone/60">
-                  {comRegistro.length === 1 ? " dia registrado" : " dias registrados"}
+                  {comRegistro.length === 1
+                    ? " dia registrado"
+                    : " dias registrados"}
                 </span>
               </p>
             </div>
           </div>
 
           <div className="mt-5 grid grid-cols-3 gap-2">
-            <Mini icone={<Utensils className="h-3.5 w-3.5" />} valor={`${refeicoesTotal}`} rotulo="refeições" />
-            <Mini icone={<Droplet className="h-3.5 w-3.5" />} valor={formatarAgua(aguaTotal)} rotulo="de água" />
-            <Mini icone={<Dumbbell className="h-3.5 w-3.5" />} valor={`${treinos}`} rotulo="treinos" />
+            <Mini
+              icone={<Utensils className="h-3.5 w-3.5" />}
+              valor={`${refeicoesTotal}`}
+              rotulo="refeições"
+            />
+            <Mini
+              icone={<Droplet className="h-3.5 w-3.5" />}
+              valor={formatarAgua(aguaTotal)}
+              rotulo="de água"
+            />
+            <Mini
+              icone={<Dumbbell className="h-3.5 w-3.5" />}
+              valor={`${treinos}`}
+              rotulo="treinos"
+            />
           </div>
         </CardContent>
       </Card>
@@ -122,7 +156,9 @@ export default function HistoricoPage() {
       ) : resumos.length === 0 ? (
         <Card>
           <CardContent className="p-8 text-center">
-            <p className="font-display text-2xl text-ink">O protocolo ainda não começou</p>
+            <p className="font-display text-2xl text-ink">
+              O protocolo ainda não começou
+            </p>
             <p className="mt-2 text-sm text-ink-muted">
               A data de início fica na aba Rotina.
             </p>
@@ -134,7 +170,10 @@ export default function HistoricoPage() {
           const estaAberto = aberto === data;
           const ehHoje = data === todayKey();
           return (
-            <Card key={data} className={cn(!resumo.temRegistro && "border-dashed")}>
+            <Card
+              key={data}
+              className={cn(!resumo.temRegistro && "border-dashed")}
+            >
               <CardHeader>
                 <button
                   className="flex w-full items-center gap-4 text-left"
@@ -174,13 +213,16 @@ export default function HistoricoPage() {
                         <Utensils className="h-3 w-3" /> {resumo.refeicoes}/4
                       </span>
                       <span className="flex items-center gap-1">
-                        <Droplet className="h-3 w-3" /> {formatarAgua(resumo.agua)}
+                        <Droplet className="h-3 w-3" />{" "}
+                        {formatarAgua(resumo.agua)}
                       </span>
                       <span className="flex items-center gap-1">
-                        <Dumbbell className="h-3 w-3" /> {resumo.treino ? "sim" : "—"}
+                        <Dumbbell className="h-3 w-3" />{" "}
+                        {resumo.treino ? "sim" : "—"}
                       </span>
                       <span className="flex items-center gap-1">
-                        <ListChecks className="h-3 w-3" /> {resumo.rotina}/{resumo.rotinaTotal}
+                        <ListChecks className="h-3 w-3" /> {resumo.rotina}/
+                        {resumo.rotinaTotal}
                       </span>
                     </div>
                   </div>
@@ -196,7 +238,7 @@ export default function HistoricoPage() {
 
               {estaAberto && (
                 <CardContent className="animate-rise space-y-3 border-t border-line/70 pt-4">
-                  <Detalhe dia={dia} numero={numero} idsRotina={idsRotina} />
+                  <Detalhe dia={dia} numero={numero} blocos={blocos} />
                   <Button
                     variant="outline"
                     className="w-full"
@@ -206,7 +248,9 @@ export default function HistoricoPage() {
                     }}
                   >
                     <Pencil className="h-4 w-4" />
-                    {resumo.temRegistro ? "Completar esse dia" : "Preencher esse dia"}
+                    {resumo.temRegistro
+                      ? "Completar esse dia"
+                      : "Preencher esse dia"}
                   </Button>
                 </CardContent>
               )}
@@ -221,11 +265,11 @@ export default function HistoricoPage() {
 function Detalhe({
   dia,
   numero,
-  idsRotina,
+  blocos,
 }: {
   dia: DayCheck | undefined;
   numero: number;
-  idsRotina: string[];
+  blocos: RotinaBloco[];
 }) {
   if (!dia) {
     return <p className="text-sm text-ink-muted">Nenhum registro nesse dia.</p>;
@@ -234,31 +278,48 @@ function Detalhe({
   const cardapio = cardapioDoDia(numero);
   const sintomas = getTextoDoDia(dia, "r-ac-sintomas");
   const gratidao = getTextoDoDia(dia, "r-n-gratidao");
-  const rotinaFeitos = idsRotina.filter((id) => dia.supplements[id] === true).length;
+  const idsRotina = blocos.flatMap((b) => b.itens.map((i) => i.id));
+  const rotinaFeitos = idsRotina.filter(
+    (id) => dia.supplements[id] === true,
+  ).length;
+  const suplementosFeitos = SUPPLEMENTS.filter(
+    (sup) => dia.supplements[sup.id] === true,
+  );
 
   return (
     <div className="space-y-3">
       <div>
         <Eyebrow className="mb-1.5 text-ink-muted">Refeições</Eyebrow>
         <div className="flex flex-wrap gap-1.5">
-          {cardapio.refeicoes.map((r) => (
-            <span
-              key={r.id}
-              className={cn(
-                "rounded-full px-2.5 py-1 text-xs font-semibold",
-                dia.meals[r.id]
-                  ? "bg-brand-soft text-brand"
-                  : "bg-line-soft text-ink-muted line-through",
-              )}
-            >
-              {r.nome}
-            </span>
-          ))}
+          {cardapio.refeicoes.map((r) => {
+            const feita = dia.meals[r.id] === true;
+            return (
+              <span
+                key={r.id}
+                className={cn(
+                  "flex items-center gap-1 rounded-full px-2.5 py-1 text-[0.6875rem] font-medium",
+                  feita
+                    ? "bg-brand-soft text-brand"
+                    : "bg-line-soft text-ink-muted",
+                )}
+              >
+                {feita ? (
+                  <Check className="h-3 w-3" />
+                ) : (
+                  <Minus className="h-3 w-3 opacity-60" />
+                )}
+                {r.nome}
+              </span>
+            );
+          })}
         </div>
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <Selo icone={<Droplet className="h-3 w-3" />} texto={formatarAgua(dia.water)} />
+        <Selo
+          icone={<Droplet className="h-3 w-3" />}
+          texto={formatarAgua(dia.water)}
+        />
         <Selo
           icone={<Dumbbell className="h-3 w-3" />}
           texto={dia.workout ? "treino feito" : "sem treino"}
@@ -269,12 +330,79 @@ function Detalhe({
         />
       </div>
 
+      <div>
+        <Eyebrow className="mb-1.5 text-ink-muted">
+          Rotina · {rotinaFeitos} de {idsRotina.length}
+        </Eyebrow>
+        <div className="space-y-2.5">
+          {blocos.map((bloco) => {
+            const feitos = bloco.itens.filter(
+              (i) => dia.supplements[i.id] === true,
+            );
+            return (
+              <div key={bloco.id}>
+                <p className="mb-1 text-[0.6875rem] font-bold text-ink-soft">
+                  {bloco.titulo}
+                  <span className="ml-1.5 font-medium text-ink-muted tabular">
+                    {feitos.length}/{bloco.itens.length}
+                  </span>
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {bloco.itens.map((item) => {
+                    const feito = dia.supplements[item.id] === true;
+                    return (
+                      <span
+                        key={item.id}
+                        className={cn(
+                          "flex items-center gap-1 rounded-full px-2.5 py-1 text-[0.6875rem] font-medium",
+                          feito
+                            ? "bg-brand-soft text-brand"
+                            : "bg-line-soft text-ink-muted",
+                        )}
+                      >
+                        {feito ? (
+                          <Check className="h-3 w-3" />
+                        ) : (
+                          <Minus className="h-3 w-3 opacity-60" />
+                        )}
+                        {item.texto}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {suplementosFeitos.length > 0 && (
+        <div>
+          <Eyebrow className="mb-1.5 text-ink-muted">
+            Suplementos tomados
+          </Eyebrow>
+          <div className="flex flex-wrap gap-1.5">
+            {suplementosFeitos.map((sup) => (
+              <span
+                key={sup.id}
+                className="flex items-center gap-1 rounded-full bg-clay-soft px-2.5 py-1 text-[0.6875rem] font-medium text-clay-deep"
+              >
+                <Check className="h-3 w-3" />
+                {sup.nome}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       {sintomas && (
         <div className="rounded-xl2 bg-plum-soft/60 p-3.5">
           <Eyebrow className="mb-1 flex items-center gap-1.5 text-plum">
             <NotebookPen className="h-3 w-3" /> Sintomas
           </Eyebrow>
-          <p className="text-sm whitespace-pre-line text-ink-soft">{sintomas}</p>
+          <p className="text-sm whitespace-pre-line text-ink-soft">
+            {sintomas}
+          </p>
         </div>
       )}
 
