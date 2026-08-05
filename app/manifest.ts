@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Milena · mais leve, mais forte",
-    short_name: "Milena",
+    name: "Mais Leve · plano da Milena",
+    short_name: "Mais Leve",
     description: "Protocolo Desinflama-se, treino e check-in diário",
     start_url: "/",
     display: "standalone",

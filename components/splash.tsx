@@ -45,9 +45,9 @@ export function Splash() {
       <div className="flex flex-col items-center gap-5">
         <BrandMark className="animate-splash-mark h-16 w-16 rounded-3xl bg-bone text-brand-deep" />
         <div className="animate-splash-text flex flex-col items-center gap-1.5">
-          <span className="font-display text-3xl leading-none text-bone">Milena</span>
+          <span className="font-display text-3xl leading-none text-bone">Mais Leve</span>
           <span className="text-[0.625rem] font-semibold tracking-[0.22em] text-bone/50 uppercase">
-            mais leve, mais forte
+            plano da Milena
           </span>
         </div>
       </div>

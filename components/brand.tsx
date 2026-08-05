@@ -38,9 +38,9 @@ export function BrandMark({ className }: { className?: string }) {
 export function Wordmark({ className }: { className?: string }) {
   return (
     <span className={cn("flex flex-col leading-none", className)}>
-      <span className="font-display text-[1.35rem] tracking-tight text-ink">Milena</span>
+      <span className="font-display text-[1.35rem] tracking-tight text-ink">Mais Leve</span>
       <span className="mt-0.5 text-[0.65rem] font-medium tracking-[0.14em] text-ink-muted uppercase">
-        mais leve, mais forte
+        plano da Milena
       </span>
     </span>
   );

@@ -25,12 +25,12 @@ const sans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Milena · mais leve, mais forte",
+  title: "Mais Leve · plano da Milena",
   description: "Protocolo Desinflama-se, treino e check-in diário",
-  applicationName: "Milena",
+  applicationName: "Mais Leve",
   appleWebApp: {
     capable: true,
-    title: "Milena",
+    title: "Mais Leve",
     statusBarStyle: "default",
   },
   formatDetection: { telephone: false },
