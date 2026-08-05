@@ -5,20 +5,31 @@ import { todayKey } from "./date";
 
 export type DayCheck = {
   meals: Record<string, boolean>;
+  /** Água do dia em MILILITROS. */
   water: number;
   workout: boolean;
   /**
-   * Guarda dois tipos de marcação, distinguidos pelo id:
-   * - suplementos (omega3, vitafer-almoco, ...) — data/supplements.ts
-   * - itens da rotina do protocolo (r-m-agua, r-n-dormir, ...) — data/protocol.ts
+   * Guarda três tipos de registro, distinguidos pelo id:
+   * - suplementos (nac, omega3, colageno, ...) — data/supplements.ts
+   * - itens da rotina (r-m-agua, r-n-dormir, ...) — data/protocol.ts
+   * - textos do dia (txt:gratidao, txt:sintomas), que guardam string
    *
-   * Os dois moram na mesma coluna `supplements` do Supabase de propósito: são
-   * marcações do mesmo dia e do mesmo tipo, e assim a rotina funciona sem
+   * Os três moram na mesma coluna `supplements` do Supabase de propósito: são
+   * registros do mesmo dia, e assim rotina e campos de texto funcionam sem
    * precisar de migração de schema.
    */
-  supplements: Record<string, boolean>;
+  supplements: Record<string, boolean | string>;
   exercises: Record<string, boolean>;
 };
+
+/**
+ * Registros antigos guardavam garrafas de 1,2 L (0, 1 ou 2) em vez de ml.
+ * Qualquer valor até 3 é lido como garrafa para o histórico não virar 2 ml.
+ */
+export function aguaEmMl(valorBruto: number): number {
+  if (valorBruto <= 3) return valorBruto * 1200;
+  return valorBruto;
+}
 
 export type WeightEntry = {
   date: string;
@@ -37,7 +48,7 @@ function rowToDay(row: DailyCheckRow | null | undefined): DayCheck {
   if (!row) return { ...EMPTY_DAY, meals: {}, supplements: {}, exercises: {} };
   return {
     meals: row.meals ?? {},
-    water: row.water ?? 0,
+    water: aguaEmMl(row.water ?? 0),
     workout: row.workout ?? false,
     supplements: row.supplements ?? {},
     exercises: row.exercises ?? {},
@@ -99,9 +110,26 @@ export async function toggleRotina(
   return toggleSupplement(itemId, date);
 }
 
-export async function setWater(value: number, date: string = todayKey()): Promise<DayCheck> {
-  const water = Math.max(0, Math.min(value, 2));
+/** Define a água do dia em mililitros. */
+export async function setWater(ml: number, date: string = todayKey()): Promise<DayCheck> {
+  const water = Math.max(0, Math.min(Math.round(ml), 6000));
   return upsertDay(date, { water });
+}
+
+/** Texto salvo por dia (gratidão, sintomas). Fica na mesma coluna — ver DayCheck. */
+export async function setTextoDoDia(
+  id: string,
+  valor: string,
+  date: string = todayKey(),
+): Promise<DayCheck> {
+  const current = await getDay(date);
+  const supplements = { ...current.supplements, [`txt:${id}`]: valor };
+  return upsertDay(date, { supplements });
+}
+
+export function getTextoDoDia(dia: DayCheck, id: string): string {
+  const valor = dia.supplements[`txt:${id}`];
+  return typeof valor === "string" ? valor : "";
 }
 
 export async function toggleWorkout(date: string = todayKey()): Promise<DayCheck> {
@@ -140,6 +168,92 @@ export async function removeWeight(date: string): Promise<WeightEntry[]> {
   const { error } = await getSupabase().from("weights").delete().eq("date", date);
   if (error) console.error("removeWeight error", error);
   return getWeights();
+}
+
+/* -------------------------------------------------------------------------- */
+/* Medidas corporais                                                          */
+/* -------------------------------------------------------------------------- */
+
+export type Medidas = {
+  date: string;
+  cintura: number | null;
+  abdomen: number | null;
+  quadril: number | null;
+  braco: number | null;
+  coxa: number | null;
+};
+
+export const CAMPOS_MEDIDAS = [
+  { chave: "cintura", rotulo: "Cintura" },
+  { chave: "abdomen", rotulo: "Abdômen" },
+  { chave: "quadril", rotulo: "Quadril" },
+  { chave: "braco", rotulo: "Braço" },
+  { chave: "coxa", rotulo: "Coxa" },
+] as const;
+
+const CHAVE_MEDIDAS = "desinflama-medidas";
+
+function medidasLocais(): Medidas[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const cru = window.localStorage.getItem(CHAVE_MEDIDAS);
+    const lista = cru ? JSON.parse(cru) : [];
+    return Array.isArray(lista) ? lista : [];
+  } catch {
+    return [];
+  }
+}
+
+function gravarMedidasLocais(lista: Medidas[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(CHAVE_MEDIDAS, JSON.stringify(lista));
+  } catch {
+    // sem espaço — segue só com a nuvem
+  }
+}
+
+/**
+ * Medidas do antes e depois. Usa a tabela `measurements` quando ela existe;
+ * enquanto não existir, guarda no próprio aparelho para nada se perder.
+ */
+export async function getMedidas(): Promise<Medidas[]> {
+  try {
+    const { data, error } = await getSupabase()
+      .from("measurements")
+      .select("date, cintura, abdomen, quadril, braco, coxa")
+      .order("date", { ascending: true });
+    if (!error && data) {
+      const lista = data as Medidas[];
+      gravarMedidasLocais(lista);
+      return lista;
+    }
+  } catch {
+    // tabela ausente ou sem rede
+  }
+  return medidasLocais().sort((a, b) => a.date.localeCompare(b.date));
+}
+
+export async function salvarMedidas(medida: Medidas): Promise<Medidas[]> {
+  const local = medidasLocais().filter((m) => m.date !== medida.date);
+  gravarMedidasLocais([...local, medida].sort((a, b) => a.date.localeCompare(b.date)));
+  try {
+    const { error } = await getSupabase().from("measurements").upsert(medida);
+    if (error) console.warn("medidas: salvando só no aparelho", error.message);
+  } catch {
+    // segue no aparelho
+  }
+  return getMedidas();
+}
+
+export async function removerMedidas(date: string): Promise<Medidas[]> {
+  gravarMedidasLocais(medidasLocais().filter((m) => m.date !== date));
+  try {
+    await getSupabase().from("measurements").delete().eq("date", date);
+  } catch {
+    // segue no aparelho
+  }
+  return getMedidas();
 }
 
 export type ShoppingState = {
@@ -255,7 +369,7 @@ export async function getStreak(): Promise<number> {
     ).length;
     const adherent = row
       ? Object.values(row.meals ?? {}).filter(Boolean).length >= 2 ||
-        (row.water ?? 0) >= 1 ||
+        aguaEmMl(row.water ?? 0) >= 300 ||
         !!row.workout ||
         rotinaMarcada >= 5
       : false;

@@ -3,13 +3,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Moon, Sun, Sunrise } from "lucide-react";
-import { ROTINA } from "@/data/protocol";
 import { Card, CardContent, CardHeader, CardTitle, Eyebrow } from "@/components/ui/card";
-import { CheckRow } from "@/components/check-row";
+import { RotinaItemRow } from "@/components/routine-item";
 import { Button } from "@/components/ui/button";
-import { getDay, toggleRotina } from "@/lib/storage";
+import { getDay, getTextoDoDia, setTextoDoDia, toggleRotina, type DayCheck } from "@/lib/storage";
 import { usePeriodoAgora } from "@/lib/protocol";
-import { cn } from "@/lib/utils";
+import { useRotina } from "@/lib/routine";
 
 const TITULO = {
   manha: { texto: "Rotina da manhã", Icone: Sunrise },
@@ -19,28 +18,32 @@ const TITULO = {
 
 /** Mostra na tela inicial só o bloco da rotina que faz sentido para a hora atual. */
 export function RoutineNow() {
-  const [checks, setChecks] = useState<Record<string, boolean>>({});
-  const [hydrated, setHydrated] = useState(false);
+  const [dia, setDia] = useState<DayCheck | null>(null);
   const periodo = usePeriodoAgora() ?? "manha";
+  const { blocos } = useRotina();
 
   useEffect(() => {
-    getDay().then((d) => {
-      setChecks(d.supplements);
-      setHydrated(true);
-    });
+    getDay().then(setDia);
   }, []);
 
   async function handleToggle(id: string) {
-    setChecks((prev) => ({ ...prev, [id]: !prev[id] }));
-    const next = await toggleRotina(id);
-    setChecks({ ...next.supplements });
+    setDia((prev) =>
+      prev ? { ...prev, supplements: { ...prev.supplements, [id]: !prev.supplements[id] } } : prev,
+    );
+    setDia(await toggleRotina(id));
   }
 
-  const blocos = ROTINA.filter((b) => b.periodo === periodo);
-  const itens = blocos.flatMap((b) => b.itens);
-  const feitos = hydrated ? itens.filter((i) => checks[i.id]).length : 0;
+  async function handleTexto(id: string, valor: string) {
+    setDia(await setTextoDoDia(id, valor));
+  }
+
+  const doPeriodo = blocos.filter((b) => b.periodo === periodo);
+  const itens = doPeriodo.flatMap((b) => b.itens);
+  const feitos = dia ? itens.filter((i) => dia.supplements[i.id] === true).length : 0;
   const pct = itens.length > 0 ? Math.round((feitos / itens.length) * 100) : 0;
   const { texto, Icone } = TITULO[periodo];
+
+  if (itens.length === 0) return null;
 
   return (
     <Card>
@@ -70,32 +73,16 @@ export function RoutineNow() {
       </CardHeader>
 
       <CardContent className="space-y-2">
-        {itens.map((it) => {
-          const checked = hydrated && !!checks[it.id];
-          return (
-            <CheckRow
-              key={it.id}
-              checked={checked}
-              onToggle={() => handleToggle(it.id)}
-              label={it.texto}
-              className={checked ? "border-plum/20 bg-plum-soft/60" : undefined}
-            >
-              <span
-                className={cn(
-                  "block text-sm font-medium",
-                  checked ? "text-ink-muted line-through" : "text-ink",
-                )}
-              >
-                {it.texto}
-              </span>
-              {it.detalhe && (
-                <span className="mt-0.5 block text-xs leading-relaxed text-ink-muted">
-                  {it.detalhe}
-                </span>
-              )}
-            </CheckRow>
-          );
-        })}
+        {itens.map((it) => (
+          <RotinaItemRow
+            key={it.id}
+            item={it}
+            checked={!!dia && dia.supplements[it.id] === true}
+            onToggle={() => handleToggle(it.id)}
+            texto={dia ? getTextoDoDia(dia, it.id) : ""}
+            onSalvarTexto={it.campo === "texto" ? (v) => handleTexto(it.id, v) : undefined}
+          />
+        ))}
         <Button asChild variant="ghost" className="w-full">
           <Link href="/rotina">
             Ver a rotina completa <ArrowRight className="h-4 w-4" />

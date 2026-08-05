@@ -100,7 +100,16 @@ export const CRITERIOS_ROTULO = [
 /* Rotina diária                                                              */
 /* -------------------------------------------------------------------------- */
 
-export type RotinaItem = { id: string; texto: string; detalhe?: string };
+export type RotinaItem = {
+  id: string;
+  texto: string;
+  detalhe?: string;
+  /** Quando presente, o item ganha uma caixa de digitação salva por dia. */
+  campo?: "texto";
+  placeholder?: string;
+  /** Atalhos que preenchem a caixa com um toque. */
+  opcoes?: string[];
+};
 
 export type RotinaBloco = {
   id: string;
@@ -112,10 +121,14 @@ export type RotinaBloco = {
 };
 
 /**
- * Os ids abaixo são gravados no Supabase dentro de daily_checks.supplements,
- * junto com os rituais. O prefixo "r-" separa rotina de suplemento.
+ * Rotina que vem de fábrica. A Milena pode editar tudo pelo app (adicionar,
+ * renomear e remover itens e blocos) — o que ela salvar vive em lib/routine.ts
+ * e substitui esta lista. Aqui fica só o ponto de partida e o botão "restaurar".
+ *
+ * Os ids são gravados no Supabase dentro de daily_checks.supplements, junto com
+ * os suplementos. O prefixo "r-" separa rotina de suplemento.
  */
-export const ROTINA: RotinaBloco[] = [
+export const ROTINA_PADRAO: RotinaBloco[] = [
   {
     id: "manha",
     titulo: "Rotina da manhã",
@@ -133,34 +146,17 @@ export const ROTINA: RotinaBloco[] = [
         detalhe: "Só se cair bem. Qualquer desconforto, suspende e conversa com o médico.",
       },
       { id: "r-m-banho", texto: "Tomar banho" },
-      { id: "r-m-arrumar", texto: "Arrumar-se e passar protetor solar" },
+      { id: "r-m-arrumar", texto: "Arrumar-se" },
+      {
+        id: "r-m-skincare",
+        texto: "Skincare",
+        detalhe: "Termine sempre com o protetor solar.",
+      },
       { id: "r-m-cama", texto: "Arrumar a cama" },
       { id: "r-m-declaracoes", texto: "Fazer as declarações" },
       { id: "r-m-objetivos", texto: "Visualizar os objetivos" },
-      { id: "r-m-proverbios", texto: "Ler Provérbios" },
+      { id: "r-m-proverbios", texto: "Ler Provérbios ou Salmos" },
       { id: "r-m-motivos", texto: "Reler os motivos do desafio" },
-    ],
-  },
-  {
-    id: "dia",
-    titulo: "Durante o dia",
-    periodo: "dia",
-    nota: "A meta de água tem card próprio na tela inicial — marque por lá.",
-    itens: [
-      { id: "r-d-fome", texto: "Comer com fome e parar na saciedade" },
-      { id: "r-d-beliscar", texto: "Não beliscar entre as refeições" },
-      { id: "r-d-mastigar", texto: "Mastigar bem, sem pressa" },
-      { id: "r-d-cardapio", texto: "Seguir o cardápio do dia" },
-      { id: "r-d-proteina", texto: "Ter proteína em todas as refeições" },
-      {
-        id: "r-d-ordem",
-        texto: "Comer na ordem: folhas → legumes → proteína → carboidrato",
-      },
-      {
-        id: "r-d-limpo",
-        texto: "Dia dentro do protocolo",
-        detalhe: "Sem açúcar, adoçante, glúten, leite, fritura, álcool ou industrializado fora da lista.",
-      },
     ],
   },
   {
@@ -182,15 +178,19 @@ export const ROTINA: RotinaBloco[] = [
     titulo: "Acompanhamento",
     periodo: "dia",
     itens: [
-      { id: "r-ac-diario", texto: "Preencher o diário alimentar (horários e quantidades)" },
-      { id: "r-ac-fome", texto: "Registrar fome e saciedade" },
-      { id: "r-ac-sintomas", texto: "Registrar sintomas do dia" },
-      { id: "r-ac-evacuacao", texto: "Registrar a evacuação" },
-      { id: "r-ac-disciplina", texto: "Marcar as bolinhas da disciplina" },
       {
-        id: "r-ac-falas",
-        texto: "Observar reclamações, críticas, julgamentos e fofocas",
-        detalhe: "O protocolo trata isso como parte do desinflamar.",
+        id: "r-ac-sintomas",
+        texto: "Registrar sintomas do dia",
+        campo: "texto",
+        placeholder: "Como o corpo respondeu hoje?",
+        opcoes: [
+          "Sem sintomas",
+          "Inchaço",
+          "Dor de cabeça",
+          "Intestino preso",
+          "Cansaço",
+          "Azia",
+        ],
       },
     ],
   },
@@ -200,21 +200,17 @@ export const ROTINA: RotinaBloco[] = [
     periodo: "noite",
     itens: [
       { id: "r-n-refeicao", texto: "Fazer uma refeição mais leve" },
-      { id: "r-n-luzes", texto: "Diminuir as luzes da casa" },
-      { id: "r-n-telas", texto: "Reduzir telas" },
-      { id: "r-n-banho", texto: "Tomar banho relaxante" },
-      { id: "r-n-roupa", texto: "Vestir roupa confortável" },
-      { id: "r-n-quarto", texto: "Deixar o quarto escuro" },
-      { id: "r-n-celular", texto: "Deixar o celular longe da cama" },
+      { id: "r-n-skincare", texto: "Skincare da noite" },
       { id: "r-n-dormir", texto: "Dormir em horário adequado" },
-      { id: "r-n-gratidao", texto: "Registrar três motivos de gratidão" },
+      {
+        id: "r-n-gratidao",
+        texto: "Registrar três motivos de gratidão",
+        campo: "texto",
+        placeholder: "1. \n2. \n3. ",
+      },
     ],
   },
 ];
-
-export const TOTAL_ITENS_ROTINA = ROTINA.reduce((s, b) => s + b.itens.length, 0);
-
-export const ROTINA_IDS = ROTINA.flatMap((b) => b.itens.map((i) => i.id));
 
 /* -------------------------------------------------------------------------- */
 /* Divergências encontradas na revisão                                        */

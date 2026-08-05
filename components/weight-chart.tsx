@@ -14,9 +14,6 @@ import {
 import type { WeightEntry } from "@/lib/storage";
 import { dataCurta } from "@/lib/date";
 
-const PESO_INICIAL = 84;
-const META = 70;
-
 /* Cores do sistema — mantidas em sincronia com app/globals.css. */
 const COR = {
   linha: "#14503f",
@@ -26,11 +23,19 @@ const COR = {
   superficie: "#ffffff",
 };
 
-export function WeightChart({ entries }: { entries: WeightEntry[] }) {
+export function WeightChart({
+  entries,
+  pesoInicial,
+  meta,
+}: {
+  entries: WeightEntry[];
+  pesoInicial: number;
+  meta: number;
+}) {
   const data = useMemo(() => {
     const first: { date: string; weight: number }[] = [];
-    if (entries.length === 0 || entries[0].weight !== PESO_INICIAL) {
-      first.push({ date: "Início", weight: PESO_INICIAL });
+    if (entries.length === 0 || entries[0].weight !== pesoInicial) {
+      first.push({ date: "Início", weight: pesoInicial });
     }
     return [
       ...first,
@@ -39,7 +44,7 @@ export function WeightChart({ entries }: { entries: WeightEntry[] }) {
         weight: e.weight,
       })),
     ];
-  }, [entries]);
+  }, [entries, pesoInicial]);
 
   if (data.length < 2) {
     return (
@@ -64,7 +69,7 @@ export function WeightChart({ entries }: { entries: WeightEntry[] }) {
             tick={{ fontSize: 11, fill: COR.texto }}
             axisLine={false}
             tickLine={false}
-            domain={[META - 2, "dataMax + 2"]}
+            domain={[meta - 2, "dataMax + 2"]}
           />
           <Tooltip
             cursor={{ stroke: COR.grade }}
@@ -79,11 +84,11 @@ export function WeightChart({ entries }: { entries: WeightEntry[] }) {
             formatter={(value) => [`${Number(value).toFixed(1).replace(".", ",")} kg`, "Peso"]}
           />
           <ReferenceLine
-            y={META}
+            y={meta}
             stroke={COR.meta}
             strokeDasharray="4 4"
             label={{
-              value: `Meta ${META} kg`,
+              value: `Meta ${meta} kg`,
               fontSize: 10,
               fontWeight: 700,
               fill: COR.meta,

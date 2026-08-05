@@ -4,6 +4,7 @@ import { useMemo, useSyncExternalStore } from "react";
 import { PROTOCOLO } from "@/data/protocol";
 import { todayKey } from "./date";
 import { useAgora, useIsClient } from "./now";
+import { usePreferencias } from "./settings";
 
 const CHAVE_INICIO = "desinflama-inicio";
 
@@ -49,9 +50,10 @@ export function useProtocolo(): StatusProtocolo | null {
   const inicio = useInicio();
   const agora = useAgora();
   const isClient = useIsClient();
+  const { prefs } = usePreferencias();
   return useMemo(
-    () => (isClient && agora ? statusProtocolo(inicio, agora) : null),
-    [isClient, agora, inicio],
+    () => (isClient && agora ? statusProtocolo(inicio, agora, prefs.cicloDias) : null),
+    [isClient, agora, inicio, prefs.cicloDias],
   );
 }
 
@@ -75,8 +77,12 @@ export type StatusProtocolo = {
   diasDepoisDoFim: number;
 };
 
-export function statusProtocolo(inicio: string, hoje: Date = new Date()): StatusProtocolo {
-  const total = PROTOCOLO.duracaoDias;
+export function statusProtocolo(
+  inicio: string,
+  hoje: Date = new Date(),
+  duracao: number = PROTOCOLO.duracaoDias,
+): StatusProtocolo {
+  const total = Math.max(1, Math.round(duracao));
   const inicioData = paraData(inicio);
   const hojeData = paraData(todayKey(hoje));
   const msPorDia = 24 * 60 * 60 * 1000;

@@ -11,16 +11,17 @@ import {
   CardTitle,
   Eyebrow,
 } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { WeightChart } from "@/components/weight-chart";
+import { MeasureBoard } from "@/components/measure-board";
+import { PhotoBoard } from "@/components/photo-board";
 import { addWeight, getWeights, removeWeight, type WeightEntry } from "@/lib/storage";
 import { todayKey, dataCurta } from "@/lib/date";
 import { PROTOCOLO } from "@/data/protocol";
 import { useProtocolo } from "@/lib/protocol";
-
-const PESO_INICIAL = 84;
-const META = 70;
+import { usePreferencias } from "@/lib/settings";
 
 export default function ProgressoPage() {
   const [list, setList] = useState<WeightEntry[]>([]);
@@ -28,6 +29,9 @@ export default function ProgressoPage() {
   const [date, setDate] = useState(todayKey());
   const [hydrated, setHydrated] = useState(false);
   const status = useProtocolo();
+  const { prefs } = usePreferencias();
+  const PESO_INICIAL = prefs.pesoInicial;
+  const META = prefs.pesoMeta;
 
   useEffect(() => {
     getWeights().then((l) => {
@@ -43,10 +47,6 @@ export default function ProgressoPage() {
     setList(await addWeight({ date, weight: w }));
   }
 
-  async function del(d: string) {
-    setList(await removeWeight(d));
-  }
-
   const ultimo = list.at(-1)?.weight ?? PESO_INICIAL;
   const primeiro = list[0]?.weight ?? PESO_INICIAL;
   const variacao = ultimo - primeiro;
@@ -58,8 +58,7 @@ export default function ProgressoPage() {
         <Eyebrow className="text-ink-muted">Progresso</Eyebrow>
         <h2 className="font-display mt-2 text-4xl leading-none text-ink">Sua jornada</h2>
         <p className="mt-3 text-sm leading-relaxed text-ink-muted">
-          Pese 1 a 2 vezes por semana, sempre no mesmo horário: de manhã, em jejum, depois do
-          banheiro.
+          Peso, fita métrica e foto. Os três juntos contam a história — a balança sozinha mente.
         </p>
       </header>
 
@@ -71,14 +70,112 @@ export default function ProgressoPage() {
             <span className="text-2xl text-bone/60"> kg</span>
           </p>
           <div className="mt-5 grid grid-cols-3 gap-2">
-            <Stat rotulo="Variação" valor={
-              hydrated ? `${variacao > 0 ? "+" : ""}${variacao.toFixed(1).replace(".", ",")} kg` : "—"
-            } />
+            <Stat
+              rotulo="Variação"
+              valor={
+                hydrated
+                  ? `${variacao > 0 ? "+" : ""}${variacao.toFixed(1).replace(".", ",")} kg`
+                  : "—"
+              }
+            />
             <Stat rotulo="Faltam" valor={`${faltam.toFixed(1).replace(".", ",")} kg`} />
             <Stat rotulo="Meta" valor={`${META} kg`} />
           </div>
         </CardContent>
       </Card>
+
+      <Tabs defaultValue="peso" className="w-full">
+        <TabsList>
+          <TabsTrigger value="peso" className="flex-1">
+            Peso
+          </TabsTrigger>
+          <TabsTrigger value="medidas" className="flex-1">
+            Medidas
+          </TabsTrigger>
+          <TabsTrigger value="fotos" className="flex-1">
+            Fotos
+          </TabsTrigger>
+        </TabsList>
+
+        {/* -------------------------------------------------------------- */}
+        <TabsContent value="peso" className="space-y-5">
+          <Card>
+            <CardHeader>
+              <Eyebrow className="text-ink-muted">Evolução</Eyebrow>
+              <CardTitle className="mt-1.5">Gráfico</CardTitle>
+              <CardDescription>Linha escura = você · linha tracejada = meta</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <WeightChart entries={list} pesoInicial={PESO_INICIAL} meta={META} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <Eyebrow className="text-ink-muted">Balança</Eyebrow>
+              <CardTitle className="mt-1.5">Registrar peso</CardTitle>
+              <CardDescription>
+                1 a 2 vezes por semana, de manhã, em jejum, depois do banheiro.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                <Input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  max={todayKey()}
+                />
+                <Input
+                  inputMode="decimal"
+                  placeholder="Peso (kg)"
+                  value={weight}
+                  onChange={(e) => setWeight(e.target.value)}
+                />
+                <Button onClick={save}>
+                  <Plus className="h-4 w-4" /> Salvar
+                </Button>
+              </div>
+
+              {hydrated && list.length === 0 && (
+                <p className="text-sm text-ink-muted">Nenhum registro ainda.</p>
+              )}
+
+              <ul className="divide-y divide-line">
+                {[...list].reverse().map((e) => (
+                  <li key={e.date} className="flex items-center justify-between py-2.5">
+                    <div>
+                      <p className="text-sm font-bold text-ink tabular">
+                        {e.weight.toFixed(1).replace(".", ",")} kg
+                      </p>
+                      <p className="text-xs text-ink-muted tabular">
+                        {dataCurta(new Date(e.date + "T00:00:00"))}
+                      </p>
+                    </div>
+                    <button
+                      onClick={async () => setList(await removeWeight(e.date))}
+                      className="rounded-full p-2.5 text-ink-muted transition hover:bg-danger-soft hover:text-danger"
+                      aria-label={`Remover registro de ${dataCurta(new Date(e.date + "T00:00:00"))}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* -------------------------------------------------------------- */}
+        <TabsContent value="medidas">
+          <MeasureBoard />
+        </TabsContent>
+
+        {/* -------------------------------------------------------------- */}
+        <TabsContent value="fotos">
+          <PhotoBoard />
+        </TabsContent>
+      </Tabs>
 
       <Card>
         <CardHeader>
@@ -94,83 +191,20 @@ export default function ProgressoPage() {
         </CardHeader>
         <CardContent className="space-y-2">
           <Marco icone={<Camera className="h-4 w-4" />}>
-            <strong className="text-ink">Foto de frente, lado e costas</strong> no dia 1 e no dia{" "}
-            {PROTOCOLO.duracaoDias}, mesma roupa e mesma luz.
+            <strong className="text-ink">Foto de frente, lado e costas</strong> no dia 1 e no último{" "}
+            dia, mesma roupa e mesma luz.
           </Marco>
           <Marco icone={<Ruler className="h-4 w-4" />}>
-            <strong className="text-ink">Medidas</strong> de cintura, abdômen, quadril e braço — a
-            fita costuma mudar antes da balança.
+            <strong className="text-ink">Medidas</strong> de cintura, abdômen, quadril, braço e
+            coxa — a fita costuma mudar antes da balança.
           </Marco>
           <Marco icone={<HeartPulse className="h-4 w-4" />}>
-            <strong className="text-ink">Sintomas e evacuação</strong> ficam no checklist diário, na{" "}
+            <strong className="text-ink">Sintomas</strong> ficam no checklist diário, na{" "}
             <Link href="/rotina" className="font-semibold text-plum underline underline-offset-2">
               aba Rotina
             </Link>
             .
           </Marco>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <Eyebrow className="text-ink-muted">Evolução</Eyebrow>
-          <CardTitle className="mt-1.5">Gráfico</CardTitle>
-          <CardDescription>Linha escura = você · linha tracejada = meta</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <WeightChart entries={list} />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <Eyebrow className="text-ink-muted">Balança</Eyebrow>
-          <CardTitle className="mt-1.5">Registrar peso</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-            <Input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              max={todayKey()}
-            />
-            <Input
-              inputMode="decimal"
-              placeholder="Peso (kg)"
-              value={weight}
-              onChange={(e) => setWeight(e.target.value)}
-            />
-            <Button onClick={save}>
-              <Plus className="h-4 w-4" /> Salvar
-            </Button>
-          </div>
-
-          {hydrated && list.length === 0 && (
-            <p className="text-sm text-ink-muted">Nenhum registro ainda.</p>
-          )}
-
-          <ul className="divide-y divide-line">
-            {[...list].reverse().map((e) => (
-              <li key={e.date} className="flex items-center justify-between py-2.5">
-                <div>
-                  <p className="text-sm font-bold text-ink tabular">
-                    {e.weight.toFixed(1).replace(".", ",")} kg
-                  </p>
-                  <p className="text-xs text-ink-muted tabular">
-                    {dataCurta(new Date(e.date + "T00:00:00"))}
-                  </p>
-                </div>
-                <button
-                  onClick={() => del(e.date)}
-                  className="rounded-full p-2.5 text-ink-muted transition hover:bg-danger-soft hover:text-danger"
-                  aria-label={`Remover registro de ${dataCurta(new Date(e.date + "T00:00:00"))}`}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </li>
-            ))}
-          </ul>
         </CardContent>
       </Card>
     </div>

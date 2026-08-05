@@ -7,14 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { addWeight, getWeights } from "@/lib/storage";
+import { usePreferencias } from "@/lib/settings";
 import { todayKey } from "@/lib/date";
-
-const PESO_INICIAL = 84;
-const META = 70;
 
 export function WeightQuickInput() {
   const [value, setValue] = useState("");
   const [latest, setLatest] = useState<number | null>(null);
+  const { prefs } = usePreferencias();
+  const PESO_INICIAL = prefs.pesoInicial;
+  const META = prefs.pesoMeta;
 
   useEffect(() => {
     getWeights().then((list) => {
@@ -32,8 +33,8 @@ export function WeightQuickInput() {
 
   const ref = latest ?? PESO_INICIAL;
   const perdido = Math.max(0, PESO_INICIAL - ref);
-  const totalPerder = PESO_INICIAL - META;
-  const pctMeta = Math.min(100, Math.round((perdido / totalPerder) * 100));
+  const totalPerder = Math.max(0.1, PESO_INICIAL - META);
+  const pctMeta = Math.max(0, Math.min(100, Math.round((perdido / totalPerder) * 100)));
 
   return (
     <Card>

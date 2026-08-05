@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { ViewTransition } from "react";
+import Link from "next/link";
+import { Settings } from "lucide-react";
 import { Instrument_Serif, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { NavBar } from "@/components/nav-bar";
@@ -56,8 +58,15 @@ export default function RootLayout({
           <div className="mx-auto flex max-w-3xl items-center gap-3 px-5 py-3.5 md:px-6">
             <BrandMark className="h-10 w-10" />
             <Wordmark />
-            <div className="ml-auto">
+            <div className="ml-auto flex items-center gap-2">
               <HeaderStatus />
+              <Link
+                href="/ajustes"
+                aria-label="Ajustes"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface/80 text-ink-muted transition hover:text-ink"
+              >
+                <Settings className="h-4 w-4" />
+              </Link>
             </div>
           </div>
           <div className="hidden border-t border-line/70 md:block">

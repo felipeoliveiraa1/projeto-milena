@@ -5,11 +5,16 @@
 
 -- 1) Tabela de check-ins diários (refeições, água, treino, suplementos, exercícios)
 --
--- Obs.: a coluna `supplements` guarda dois tipos de marcação, separadas pelo id:
---   - suplementos ........ omega3, vitafer-almoco, vitafer-jantar, vitd, creatina
---   - rotina do protocolo  ids começando com "r-" (r-m-agua, r-n-dormir, ...)
--- É de propósito: são marcações do mesmo dia e do mesmo tipo, e assim a rotina
--- do Desinflama-se funciona sem precisar de migração de schema.
+-- Obs.: a coluna `supplements` guarda três tipos de registro, separados pelo id:
+--   - suplementos .......... nac, glutamina, b12, omega3, magnesio, colageno...
+--   - rotina do protocolo .. ids começando com "r-" (r-m-agua, r-n-dormir, ...)
+--   - textos do dia ........ ids começando com "txt:" (txt:gratidao, txt:sintomas),
+--                            que guardam string em vez de booleano
+-- É de propósito: são registros do mesmo dia, e assim a rotina e os campos de
+-- texto funcionam sem precisar de migração de schema.
+--
+-- A coluna `water` guarda MILILITROS. Registros antigos (<= 3) são garrafas de
+-- 1,2 L e o app converte na leitura — ver lib/storage.ts.
 create table if not exists daily_checks (
   date date primary key,
   meals jsonb not null default '{}'::jsonb,
@@ -96,3 +101,57 @@ create trigger trg_daily_checks_updated
   before update on daily_checks
   for each row
   execute function set_updated_at();
+
+-- =============================================================================
+-- 6) Configuração do app (1 linha) — rotina e preferências editáveis pelo app
+-- Sem esta tabela o app continua funcionando: ele guarda a rotina no próprio
+-- aparelho (localStorage). Rodando este bloco, a rotina passa a sincronizar
+-- entre celular e computador.
+-- =============================================================================
+create table if not exists app_config (
+  id int primary key default 1,
+  rotina jsonb,
+  preferencias jsonb,
+  updated_at timestamptz not null default now(),
+  constraint app_config_single_row check (id = 1)
+);
+
+-- Migration para quem já criou a tabela antes das preferências
+alter table app_config
+  add column if not exists preferencias jsonb;
+
+insert into app_config (id) values (1) on conflict (id) do nothing;
+
+alter table app_config enable row level security;
+
+drop policy if exists "anon all app_config" on app_config;
+create policy "anon all app_config"
+  on app_config
+  for all
+  to anon, authenticated
+  using (true)
+  with check (true);
+
+-- =============================================================================
+-- 7) Medidas corporais para o antes e depois
+-- Também tem queda para o aparelho caso a tabela não exista ainda.
+-- =============================================================================
+create table if not exists measurements (
+  date date primary key,
+  cintura numeric(5,1),
+  abdomen numeric(5,1),
+  quadril numeric(5,1),
+  braco numeric(5,1),
+  coxa numeric(5,1),
+  created_at timestamptz not null default now()
+);
+
+alter table measurements enable row level security;
+
+drop policy if exists "anon all measurements" on measurements;
+create policy "anon all measurements"
+  on measurements
+  for all
+  to anon, authenticated
+  using (true)
+  with check (true);

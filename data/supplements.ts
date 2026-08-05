@@ -1,5 +1,8 @@
 /**
- * Suplementos durante os 15 dias do protocolo.
+ * Suplementos, organizados em dois blocos: manhã e noite.
+ *
+ * As doses ficam como "conforme orientação" de propósito — quem define é o
+ * médico ou a nutricionista dela, e o app não inventa quantidade.
  *
  * O ritual de limão e própolis não está aqui: ele vive na rotina da manhã
  * (data/protocol.ts), para não existir dois lugares marcando a mesma coisa.
@@ -9,62 +12,100 @@ export type Supplement = {
   id: string;
   nome: string;
   dose: string;
-  horario: string;
+  bloco: "manha" | "noite";
   funcao: string;
   observacao?: string;
   /** prescricao = receita médica, não se mexe. opcional = decisão dela com o médico. */
   status: "protocolo" | "prescricao" | "opcional";
 };
 
+export const BLOCOS_SUPLEMENTOS = [
+  { id: "manha", titulo: "De manhã", detalhe: "Junto com o ritual da manhã." },
+  { id: "noite", titulo: "À noite", detalhe: "Depois do jantar, antes de dormir." },
+] as const;
+
 export const SUPPLEMENTS: Supplement[] = [
+  /* ----------------------------- manhã ----------------------------------- */
   {
-    id: "omega3",
-    nome: "Ômega 3 (EPA + DHA)",
-    dose: "1–2 g",
-    horario: "Junto com o almoço",
+    id: "nac",
+    nome: "NAC",
+    dose: "conforme orientação",
+    bloco: "manha",
     funcao:
-      "Anti-inflamatório de verdade — é o suplemento que mais combina com o protocolo. Ajuda na gordura no fígado, na pressão e no humor pós-parto.",
-    observacao: "No rótulo: pelo menos 500 mg de EPA + DHA por cápsula. Tomar com a gordura do almoço melhora a absorção.",
+      "N-acetilcisteína: matéria-prima da glutationa, o antioxidante que o fígado usa para trabalhar. Combina com o objetivo de tratar a gordura no fígado.",
+    observacao: "Costuma ser melhor absorvido longe das refeições. Se pesar no estômago, tome com comida.",
     status: "protocolo",
   },
   {
-    id: "vitafer-almoco",
-    nome: "Vitafer (almoço)",
-    dose: "1 comprimido",
-    horario: "Logo após o almoço",
-    funcao: "Reposição de ferro e vitaminas, prescrita para o pós-gestação.",
-    observacao:
-      "Não tome com café ou chá — atrapalham o ferro. Com a água com limão, a vitamina C melhora a absorção. Prescrição médica: não suspenda por causa do protocolo.",
-    status: "prescricao",
+    id: "glutamina",
+    nome: "Glutamina",
+    dose: "conforme orientação",
+    bloco: "manha",
+    funcao:
+      "Aminoácido que alimenta as células do intestino. Ajuda a barreira intestinal, que é o alvo central do protocolo.",
+    observacao: "Dissolva em água em temperatura ambiente e tome longe das refeições.",
+    status: "protocolo",
   },
   {
-    id: "vitafer-jantar",
-    nome: "Vitafer (jantar)",
-    dose: "1 comprimido",
-    horario: "Logo após o jantar",
-    funcao: "Segunda dose do dia, mantém o nível de ferro estável.",
-    observacao: "Mesmo cuidado: longe de café e chá.",
+    id: "b12",
+    nome: "Vitamina B12",
+    dose: "conforme exame",
+    bloco: "manha",
+    funcao: "Energia, disposição e sistema nervoso. A dose certa é a que o seu exame indicar.",
+    observacao: "De manhã, porque em algumas pessoas atrapalha o sono se tomada tarde.",
     status: "prescricao",
   },
   {
     id: "vitd",
     nome: "Vitamina D3",
-    dose: "conforme o exame",
-    horario: "Junto com uma refeição com gordura",
-    funcao: "Só faz sentido na dose que o exame indicar. Ajuda imunidade, humor e osso.",
-    observacao: "Se não tem exame recente, converse com o médico antes de manter.",
+    dose: "conforme exame",
+    bloco: "manha",
+    funcao: "Imunidade, humor e osso. Só faz sentido na dose que o exame indicar.",
+    observacao: "Tome junto de uma refeição com gordura — é assim que ela é absorvida.",
     status: "prescricao",
   },
   {
     id: "creatina",
     nome: "Creatina monohidratada",
     dose: "3–5 g",
-    horario: "Qualquer horário, todos os dias",
+    bloco: "manha",
     funcao:
-      "Ajuda força e recuperação no treino. Não tem leite e não é alimento processado, então não bate de frente com o protocolo.",
+      "Ajuda força e recuperação no treino. Não tem leite e não é industrializado, então não bate de frente com o protocolo.",
     observacao:
-      "Não faz parte do Desinflama-se — é uma escolha sua com o médico. Se quiser fazer os 15 dias 'limpos', pode pausar sem prejuízo.",
+      "Não faz parte do Desinflama-se — é escolha sua com o médico. Se quiser os 15 dias 'limpos', pode pausar sem prejuízo.",
     status: "opcional",
+  },
+
+  /* ----------------------------- noite ----------------------------------- */
+  {
+    id: "omega3",
+    nome: "Ômega 3 (EPA + DHA)",
+    dose: "conforme orientação",
+    bloco: "noite",
+    funcao:
+      "Anti-inflamatório de verdade — o suplemento que mais combina com o protocolo. Ajuda fígado, pressão e humor no pós-parto.",
+    observacao:
+      "No rótulo: pelo menos 500 mg de EPA + DHA por cápsula. Tomar junto do jantar melhora a absorção.",
+    status: "protocolo",
+  },
+  {
+    id: "magnesio",
+    nome: "Pró Magnésio",
+    dose: "conforme orientação",
+    bloco: "noite",
+    funcao:
+      "Relaxamento muscular, sono e intestino. À noite ele trabalha a favor da rotina de dormir cedo.",
+    observacao: "Se soltar demais o intestino, converse sobre reduzir a dose.",
+    status: "protocolo",
+  },
+  {
+    id: "colageno",
+    nome: "Colágeno",
+    dose: "conforme orientação",
+    bloco: "noite",
+    funcao: "Pele, cabelo e articulações — o pós-parto costuma cobrar dos três.",
+    observacao: "Dissolva na água ou no chá da noite. Sem açúcar e sem adoçante, como o resto do protocolo.",
+    status: "protocolo",
   },
 ];
 

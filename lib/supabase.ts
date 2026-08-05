@@ -3,10 +3,21 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 export type DailyCheckRow = {
   date: string;
   meals: Record<string, boolean>;
+  /** Mililitros. Valores <= 3 são registros antigos, em garrafas de 1,2 L. */
   water: number;
   workout: boolean;
-  supplements: Record<string, boolean>;
+  /** Suplementos, itens de rotina ("r-") e textos do dia ("txt:"). */
+  supplements: Record<string, boolean | string>;
   exercises: Record<string, boolean>;
+};
+
+export type MeasurementRow = {
+  date: string;
+  cintura: number | null;
+  abdomen: number | null;
+  quadril: number | null;
+  braco: number | null;
+  coxa: number | null;
 };
 
 export type WeightRow = {

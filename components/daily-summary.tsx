@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import { Dumbbell, Droplet, Flame, Utensils } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Ring } from "@/components/ui/ring";
-import { PROTOCOLO, ROTINA_IDS, TOTAL_ITENS_ROTINA } from "@/data/protocol";
+import { PROTOCOLO } from "@/data/protocol";
 import { getDay, getStreak } from "@/lib/storage";
 import { dataExtenso } from "@/lib/date";
 import { useProtocolo } from "@/lib/protocol";
+import { useRotina } from "@/lib/routine";
+import { usePreferencias } from "@/lib/settings";
 import { useAgora } from "@/lib/now";
 
 /** Peso de cada frente no "plano de hoje" — soma 1. */
@@ -26,29 +28,28 @@ export function DailySummary() {
   const [hydrated, setHydrated] = useState(false);
   const agora = useAgora();
   const status = useProtocolo();
+  const { blocos } = useRotina();
+  const { prefs } = usePreferencias();
+  const metaAgua = prefs.aguaMetaMl;
 
   useEffect(() => {
+    const ids = blocos.flatMap((b) => b.itens.map((i) => i.id));
     Promise.all([getDay(), getStreak()])
       .then(([day, streakValue]) => {
         const refeicoes = Object.values(day.meals).filter(Boolean).length;
-        const rotina = ROTINA_IDS.filter((id) => day.supplements[id]).length;
+        const rotina = ids.filter((id) => day.supplements[id] === true).length;
         const score =
           PESOS.refeicoes * Math.min(refeicoes / 4, 1) +
-          PESOS.agua * Math.min(day.water / 2, 1) +
+          PESOS.agua * Math.min(day.water / metaAgua, 1) +
           PESOS.treino * (day.workout ? 1 : 0) +
-          PESOS.rotina * Math.min(rotina / TOTAL_ITENS_ROTINA, 1);
+          PESOS.rotina * (ids.length > 0 ? Math.min(rotina / ids.length, 1) : 0);
         setPct(Math.round(score * 100));
-        setParciais({
-          refeicoes,
-          agua: Math.min(day.water, 2),
-          treino: day.workout,
-          rotina,
-        });
+        setParciais({ refeicoes, agua: day.water, treino: day.workout, rotina });
         setStreak(streakValue);
         setHydrated(true);
       })
       .catch(() => setHydrated(true));
-  }, []);
+  }, [blocos, metaAgua]);
 
   const legenda = !status
     ? ""
@@ -89,7 +90,15 @@ export function DailySummary() {
 
         <div className="grid grid-cols-4 gap-2">
           <Mini icone={<Utensils className="h-3.5 w-3.5" />} valor={`${parciais.refeicoes}/4`} rotulo="refeições" />
-          <Mini icone={<Droplet className="h-3.5 w-3.5" />} valor={`${parciais.agua}/2`} rotulo="água" />
+          <Mini
+            icone={<Droplet className="h-3.5 w-3.5" />}
+            valor={
+              parciais.agua >= 1000
+                ? `${(parciais.agua / 1000).toFixed(1).replace(".", ",")} L`
+                : `${parciais.agua} ml`
+            }
+            rotulo="água"
+          />
           <Mini
             icone={<Dumbbell className="h-3.5 w-3.5" />}
             valor={parciais.treino ? "feito" : "—"}

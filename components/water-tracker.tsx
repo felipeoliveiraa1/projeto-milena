@@ -1,33 +1,44 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Droplet } from "lucide-react";
+import { Droplet, Minus, RotateCcw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, Eyebrow } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { getDay, setWater } from "@/lib/storage";
+import { usePreferencias } from "@/lib/settings";
 import { todayKey } from "@/lib/date";
 import { cn } from "@/lib/utils";
 
-const META = 2;
-const LITROS_POR_GARRAFA = 1.2;
+function formatar(ml: number): string {
+  if (ml < 1000) return `${ml} ml`;
+  return `${(ml / 1000).toFixed(1).replace(".", ",")} L`;
+}
 
 export function WaterTracker() {
-  const [count, setCount] = useState(0);
+  const [ml, setMl] = useState(0);
   const [hydrated, setHydrated] = useState(false);
+  const { prefs } = usePreferencias();
 
   useEffect(() => {
     getDay(todayKey()).then((d) => {
-      setCount(Math.min(d.water, META));
+      setMl(d.water);
       setHydrated(true);
     });
   }, []);
 
-  function update(value: number) {
-    const v = Math.max(0, Math.min(value, META));
-    setCount(v);
+  function atualizar(novo: number) {
+    const v = Math.max(0, Math.min(novo, 6000));
+    setMl(v);
     setWater(v).catch((err) => console.error(err));
   }
 
-  const litros = (count * LITROS_POR_GARRAFA).toFixed(1).replace(".", ",");
+  const meta = prefs.aguaMetaMl;
+  // A menor porção vira a "casinha" da barra de copos.
+  const unidade = Math.min(...prefs.aguaPorcoes);
+  const pct = Math.min(100, Math.round((ml / meta) * 100));
+  const unidades = Math.max(1, Math.min(12, Math.round(meta / unidade)));
+  const cheias = Math.floor(ml / unidade);
+  const bateuMeta = ml >= meta;
 
   return (
     <Card>
@@ -37,49 +48,58 @@ export function WaterTracker() {
             <Eyebrow className="text-brand-mid">Hidratação</Eyebrow>
             <CardTitle className="mt-1.5">Água do dia</CardTitle>
           </div>
-          <p className="font-display shrink-0 text-2xl leading-none text-ink tabular">
-            {hydrated ? litros : "0,0"}
-            <span className="text-base text-ink-muted"> L</span>
-          </p>
+          <div className="text-right">
+            <p className="font-display text-3xl leading-none text-ink tabular">
+              {hydrated ? formatar(ml) : "0 ml"}
+            </p>
+            <p className="text-xs text-ink-muted tabular">meta {formatar(meta)}</p>
+          </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="grid grid-cols-2 gap-3">
-          {Array.from({ length: META }).map((_, i) => {
-            const filled = hydrated && i < count;
-            return (
-              <button
-                key={i}
-                onClick={() => update(i + 1 === count ? i : i + 1)}
-                aria-pressed={filled}
-                aria-label={`Garrafa ${i + 1} de ${META}`}
-                className={cn(
-                  "group relative h-28 overflow-hidden rounded-xl2 border transition active:scale-[0.98]",
-                  filled ? "border-brand bg-brand text-bone" : "border-line bg-bone text-ink-muted",
-                )}
-              >
-                {/* nível da água subindo dentro da garrafa */}
-                <span
-                  className={cn(
-                    "absolute inset-x-0 bottom-0 transition-[height] duration-500 ease-out",
-                    filled ? "h-full bg-brand" : "h-0",
-                  )}
-                />
-                <span className="relative flex h-full flex-col items-center justify-center gap-1.5">
-                  <Droplet
-                    className={cn("h-7 w-7 transition", filled && "animate-pop fill-bone/20")}
-                    strokeWidth={1.6}
-                  />
-                  <span className="text-xs font-semibold">
-                    {LITROS_POR_GARRAFA.toFixed(1).replace(".", ",")} L
-                  </span>
-                </span>
-              </button>
-            );
-          })}
+
+      <CardContent className="space-y-4">
+        <div className="flex gap-1">
+          {Array.from({ length: unidades }).map((_, i) => (
+            <span
+              key={i}
+              className={cn(
+                "h-8 flex-1 rounded-lg border transition-colors duration-300",
+                hydrated && i < cheias
+                  ? "border-brand bg-brand"
+                  : "border-line bg-bone",
+              )}
+            />
+          ))}
         </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {prefs.aguaPorcoes.map((p) => (
+            <Button key={p} onClick={() => atualizar(ml + p)} className="flex-1">
+              <Droplet className="h-4 w-4" /> +{p} ml
+            </Button>
+          ))}
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => atualizar(ml - unidade)}
+            disabled={ml === 0}
+            aria-label={`Tirar ${unidade} ml`}
+          >
+            <Minus className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => atualizar(0)}
+            disabled={ml === 0}
+            aria-label="Zerar o dia"
+          >
+            <RotateCcw className="h-4 w-4" />
+          </Button>
+        </div>
+
         <p className="text-center text-xs text-ink-muted">
-          Toque na garrafa quando terminar. Meta: 2,4 L por dia.
+          {bateuMeta ? "Meta batida! 💧" : `${pct}% da meta · faltam ${formatar(meta - ml)}`}
         </p>
       </CardContent>
     </Card>

@@ -15,19 +15,21 @@ export function Splash() {
 
   useEffect(() => {
     const semMovimento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // Já abriu nesta sessão: sai de imediato, sem a espera nem o fade.
+    const direto = window.sessionStorage.getItem("splash") === "1" || semMovimento;
 
-    // Já abriu nesta sessão (ou recarregou a página): tira na hora, sem piscar.
-    if (window.sessionStorage.getItem("splash") === "1" || semMovimento) {
-      window.sessionStorage.setItem("splash", "1");
-      setFase("fim");
-      return;
-    }
-
-    const sair = window.setTimeout(() => {
-      window.sessionStorage.setItem("splash", "1");
-      setFase("saindo");
-      window.setTimeout(() => setFase("fim"), 520);
-    }, 1000);
+    const sair = window.setTimeout(
+      () => {
+        window.sessionStorage.setItem("splash", "1");
+        if (direto) {
+          setFase("fim");
+          return;
+        }
+        setFase("saindo");
+        window.setTimeout(() => setFase("fim"), 520);
+      },
+      direto ? 0 : 1000,
+    );
 
     return () => window.clearTimeout(sair);
   }, []);
