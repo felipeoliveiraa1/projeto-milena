@@ -68,6 +68,26 @@ export async function getDay(date: string = todayKey()): Promise<DayCheck> {
   return rowToDay(data as DailyCheckRow | null);
 }
 
+/** Todos os dias de um intervalo, em uma consulta só — usado pelo histórico. */
+export async function getPeriodo(
+  inicio: string,
+  fim: string,
+): Promise<Record<string, DayCheck>> {
+  const { data, error } = await getSupabase()
+    .from("daily_checks")
+    .select("*")
+    .gte("date", inicio)
+    .lte("date", fim)
+    .order("date", { ascending: true });
+  if (error || !data) {
+    if (error) console.error("getPeriodo error", error);
+    return {};
+  }
+  const mapa: Record<string, DayCheck> = {};
+  for (const row of data as DailyCheckRow[]) mapa[row.date] = rowToDay(row);
+  return mapa;
+}
+
 async function upsertDay(date: string, partial: Partial<DailyCheckRow>): Promise<DayCheck> {
   const current = await getDay(date);
   const merged: DailyCheckRow = {

@@ -1,20 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Dumbbell, Droplet, Flame, Utensils } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, Dumbbell, Droplet, Flame, Utensils } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Ring } from "@/components/ui/ring";
 import { PROTOCOLO } from "@/data/protocol";
 import { getDay, getStreak } from "@/lib/storage";
+import { formatarAgua, resumoDoDia } from "@/lib/score";
 import { dataExtenso } from "@/lib/date";
 import { useProtocolo } from "@/lib/protocol";
 import { useRotina } from "@/lib/routine";
 import { usePreferencias } from "@/lib/settings";
 import { useAgora } from "@/lib/now";
 import { useDia } from "@/components/day-context";
-
-/** Peso de cada frente no "plano de hoje" — soma 1. */
-const PESOS = { refeicoes: 0.3, agua: 0.15, treino: 0.2, rotina: 0.35 };
 
 function saudacao(hora: number): string {
   if (hora < 12) return "Bom dia";
@@ -43,20 +42,13 @@ export function DailySummary() {
     const ids = blocos.flatMap((b) => b.itens.map((i) => i.id));
     Promise.all([getDay(data), getStreak()])
       .then(([day, streakValue]) => {
-        const refeicoes = Object.values(day.meals).filter(Boolean).length;
-        const rotina = ids.filter((id) => day.supplements[id] === true).length;
-        const score =
-          PESOS.refeicoes * Math.min(refeicoes / 4, 1) +
-          PESOS.agua * Math.min(day.water / metaAgua, 1) +
-          PESOS.treino * (day.workout ? 1 : 0) +
-          PESOS.rotina *
-            (ids.length > 0 ? Math.min(rotina / ids.length, 1) : 0);
-        setPct(Math.round(score * 100));
+        const resumo = resumoDoDia(day, { metaAgua, idsRotina: ids });
+        setPct(resumo.pct);
         setParciais({
-          refeicoes,
-          agua: day.water,
-          treino: day.workout,
-          rotina,
+          refeicoes: resumo.refeicoes,
+          agua: resumo.agua,
+          treino: resumo.treino,
+          rotina: resumo.rotina,
         });
         setStreak(streakValue);
         setHydrated(true);
@@ -121,11 +113,7 @@ export function DailySummary() {
           />
           <Mini
             icone={<Droplet className="h-3.5 w-3.5" />}
-            valor={
-              parciais.agua >= 1000
-                ? `${(parciais.agua / 1000).toFixed(1).replace(".", ",")} L`
-                : `${parciais.agua} ml`
-            }
+            valor={formatarAgua(parciais.agua)}
             rotulo="água"
           />
           <Mini
@@ -160,6 +148,14 @@ export function DailySummary() {
             </div>
           </div>
         )}
+
+        <Link
+          href="/historico"
+          className="flex items-center justify-between rounded-2xl bg-bone/10 px-4 py-3 text-sm font-semibold text-bone transition hover:bg-bone/15"
+        >
+          Ver tudo que já fiz
+          <ArrowRight className="h-4 w-4" />
+        </Link>
       </CardContent>
     </Card>
   );
