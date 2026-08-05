@@ -12,23 +12,24 @@ import { todayKey } from "@/lib/date";
 
 export function WeightQuickInput() {
   const [value, setValue] = useState("");
-  const [latest, setLatest] = useState<number | null>(null);
+  const [historico, setHistorico] = useState<number[]>([]);
   const { prefs } = usePreferencias();
-  const PESO_INICIAL = prefs.pesoInicial;
+  // O ponto de partida é a primeira pesagem registrada — no caso dela, a de
+  // 03/08, quando o protocolo começou. Sem registro nenhum, cai no ajuste.
+  const PESO_INICIAL = historico[0] ?? prefs.pesoInicial;
   const META = prefs.pesoMeta;
+  const latest = historico.length > 0 ? historico[historico.length - 1] : null;
 
   useEffect(() => {
-    getWeights().then((list) => {
-      if (list.length > 0) setLatest(list[list.length - 1].weight);
-    });
+    getWeights().then((list) => setHistorico(list.map((e) => e.weight)));
   }, []);
 
   async function save() {
     const w = parseFloat(value.replace(",", "."));
     if (isNaN(w) || w < 30 || w > 200) return;
-    setLatest(w);
     setValue("");
-    await addWeight({ date: todayKey(), weight: w });
+    const lista = await addWeight({ date: todayKey(), weight: w });
+    setHistorico(lista.map((e) => e.weight));
   }
 
   const ref = latest ?? PESO_INICIAL;

@@ -13,6 +13,8 @@ export type Supplement = {
   nome: string;
   dose: string;
   bloco: "manha" | "noite";
+  /** Dias da semana em que ele entra (0 = domingo). Sem isto, é todo dia. */
+  dias?: number[];
   funcao: string;
   observacao?: string;
   /** prescricao = receita médica, não se mexe. opcional = decisão dela com o médico. */
@@ -60,8 +62,10 @@ export const SUPPLEMENTS: Supplement[] = [
     nome: "Vitamina D3",
     dose: "conforme exame",
     bloco: "manha",
+    dias: [1], // segunda-feira
     funcao: "Imunidade, humor e osso. Só faz sentido na dose que o exame indicar.",
-    observacao: "Tome junto de uma refeição com gordura — é assim que ela é absorvida.",
+    observacao:
+      "Uma vez por semana, na segunda. Tome junto de uma refeição com gordura — é assim que ela é absorvida.",
     status: "prescricao",
   },
   {
@@ -70,10 +74,9 @@ export const SUPPLEMENTS: Supplement[] = [
     dose: "3–5 g",
     bloco: "manha",
     funcao:
-      "Ajuda força e recuperação no treino. Não tem leite e não é industrializado, então não bate de frente com o protocolo.",
-    observacao:
-      "Não faz parte do Desinflama-se — é escolha sua com o médico. Se quiser os 15 dias 'limpos', pode pausar sem prejuízo.",
-    status: "opcional",
+      "Força e recuperação no treino. Não tem leite e não é industrializado, então não bate de frente com o protocolo.",
+    observacao: "Todo dia, inclusive nos de descanso. Não precisa 'ciclar'.",
+    status: "protocolo",
   },
 
   /* ----------------------------- noite ----------------------------------- */

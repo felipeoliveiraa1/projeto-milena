@@ -45,7 +45,7 @@ import { setInicio, useInicio, useProtocolo } from "@/lib/protocol";
 import { novoId, useRotina } from "@/lib/routine";
 import { useDia } from "@/components/day-context";
 import { DaySwitch } from "@/components/day-switch";
-import { todayKey } from "@/lib/date";
+import { todayKey, diaDaSemana } from "@/lib/date";
 import { cn } from "@/lib/utils";
 
 const ICONE_BLOCO: Record<string, typeof Sunrise> = {
@@ -115,6 +115,7 @@ export default function RotinaPage() {
     setEditandoData(false);
   }
 
+  const diaDaSemanaAtual = diaDaSemana(new Date(data + "T00:00:00"));
   const itensTodos = blocos.flatMap((b) => b.itens);
   const totalFeitos = dia
     ? itensTodos.filter((i) => dia.supplements[i.id] === true).length
@@ -300,7 +301,12 @@ export default function RotinaPage() {
       </header>
 
       {BLOCOS_SUPLEMENTOS.map((bloco) => {
-        const doBloco = SUPPLEMENTS.filter((s) => s.bloco === bloco.id);
+        // Suplemento com `dias` só aparece nos dias marcados — a vitamina D,
+        // por exemplo, é uma vez por semana.
+        const doBloco = SUPPLEMENTS.filter(
+          (s) => s.bloco === bloco.id && (!s.dias || s.dias.includes(diaDaSemanaAtual)),
+        );
+        if (doBloco.length === 0) return null;
         const feitos = dia ? doBloco.filter((s) => dia.supplements[s.id] === true).length : 0;
         return (
           <Card key={bloco.id}>
@@ -353,6 +359,11 @@ export default function RotinaPage() {
                             <Pill className="mr-1.5 inline h-3.5 w-3.5 text-clay" />
                             {s.nome}
                           </p>
+                          {s.dias && (
+                            <span className="rounded-full bg-gold-soft px-2 py-0.5 text-[0.625rem] font-bold text-gold">
+                              1x por semana
+                            </span>
+                          )}
                           <span
                             className={cn(
                               "rounded-full px-2 py-0.5 text-[0.625rem] font-bold",

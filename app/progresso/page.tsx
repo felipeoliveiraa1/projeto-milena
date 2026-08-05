@@ -30,7 +30,9 @@ export default function ProgressoPage() {
   const [hydrated, setHydrated] = useState(false);
   const status = useProtocolo();
   const { prefs } = usePreferencias();
-  const PESO_INICIAL = prefs.pesoInicial;
+  // Referência = primeira pesagem registrada; o ajuste só entra se não houver
+  // nenhuma ainda.
+  const PESO_INICIAL = list[0]?.weight ?? prefs.pesoInicial;
   const META = prefs.pesoMeta;
 
   useEffect(() => {

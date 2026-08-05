@@ -10,6 +10,11 @@ export type Exercise = {
   videoId?: string;
   /** Por que este exercício entrou no lugar do original (quando houve troca). */
   adaptacao?: string;
+  /**
+   * Cuidado com diástase abdominal (afastamento dos retos, comum no pós-parto).
+   * "evitar" nem aparece mais no plano; "cuidado" pede ajuste na execução.
+   */
+  diastase?: { nivel: "cuidado"; nota: string };
 };
 
 export type WorkoutDay = {
@@ -192,6 +197,10 @@ export const WORKOUTS: WorkoutDay[] = [
           "Fortalece o transverso (a faixa que segura a barriga por dentro). Essencial pós-parto.",
         equipamento: "Colchonete",
         videoId: "jh0z3gbljUM",
+        diastase: {
+          nivel: "cuidado",
+          nota: "Olhe a barriga de lado: se aparecer um 'morrinho' no meio, é sinal de pressão demais. Aí faça apoiada nos joelhos, ou segure menos tempo.",
+        },
       },
       {
         nome: "Dead bug (deitada, alterna braço e perna)",
@@ -210,19 +219,26 @@ export const WORKOUTS: WorkoutDay[] = [
         beneficio: "Cardio + abdômen ao mesmo tempo. Tira gordura visceral do fígado.",
         equipamento: "Colchonete",
         videoId: "9wdmQlRzaO8",
+        diastase: {
+          nivel: "cuidado",
+          nota: "Faça devagar, uma perna de cada vez, sem tirar o quadril do lugar. Se a barriga estufar no meio, troque pelo dead bug.",
+        },
       },
       {
-        nome: "Abdominal infra (deitada, eleva pernas)",
+        nome: "Deslizamento de calcanhar (deitada)",
         series: "3",
-        reps: "15",
+        reps: "10 cada perna",
         descanso: "30s",
-        beneficio: "Foco na barriga baixa (pochete pós-gestação).",
-        equipamento: "Colchonete ou banco reto",
-        videoId: "ixJcUH8AlL8",
+        beneficio:
+          "Trabalha a barriga baixa por dentro, do jeito que a fisioterapia usa para fechar diástase.",
+        equipamento: "Colchonete",
+        videoId: "Ke9al-Aliyc",
+        adaptacao:
+          "Entra no lugar do abdominal infra (elevar as duas pernas). Aquele é dos que mais empurram a parede da barriga para fora — o pior exercício possível com diástase aberta.",
       },
     ],
     observacao:
-      "Importante: nas primeiras 2 semanas evite abdominais clássicos (crunch). Priorize prancha e dead bug se ainda houver diástase abdominal.",
+      "Nada de abdominal clássico (crunch) nem elevação das duas pernas enquanto houver diástase. O teste caseiro: deitada, dedos acima do umbigo, levante a cabeça — se os dedos afundam num vão, procure um fisioterapeuta pélvico antes de forçar o abdômen.",
   },
   {
     diaSemana: 4,
@@ -375,13 +391,16 @@ export const WORKOUTS: WorkoutDay[] = [
         videoId: "AuBN9_8Iihc",
       },
       {
-        nome: "Abdominal oblíquo (em pé com halter)",
+        nome: "Pallof press com elástico",
         series: "3",
-        reps: "15 por lado",
+        reps: "12 por lado",
         descanso: "30s",
-        beneficio: "Cintura definida, marca os 'lados' da barriga.",
-        equipamento: "1 halter",
-        videoId: "F0B9K83FSUQ",
+        beneficio:
+          "Trabalha a cintura segurando o tronco firme, sem dobrar a coluna — é o jeito seguro de treinar oblíquo com diástase.",
+        equipamento: "Elástico do espaldar",
+        videoId: "y1fOBVtANdM",
+        adaptacao:
+          "Entra no lugar da flexão lateral com halter. Dobrar o tronco de lado puxa justamente a linha do meio da barriga, que é a que precisa fechar.",
       },
     ],
   },

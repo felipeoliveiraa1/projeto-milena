@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, Clock, Info, Repeat, Sparkles, Wrench } from "lucide-react";
+import { CheckCircle2, Clock, Info, Repeat, ShieldAlert, Sparkles, Wrench } from "lucide-react";
 import { WORKOUTS, EQUIPAMENTOS, SEM_APARELHO } from "@/data/workouts";
 import { Card, CardContent, CardHeader, CardTitle, Eyebrow } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -178,6 +178,15 @@ export default function TreinoPage() {
                               <p className="mt-2.5 flex items-start gap-2 rounded-xl bg-brand-soft/60 p-3 text-xs leading-relaxed text-brand">
                                 <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                                 {ex.adaptacao}
+                              </p>
+                            )}
+
+                            {ex.diastase && (
+                              <p className="mt-2.5 flex items-start gap-2 rounded-xl bg-danger-soft p-3 text-xs leading-relaxed text-danger">
+                                <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                                <span>
+                                  <strong>Diástase:</strong> {ex.diastase.nota}
+                                </span>
                               </p>
                             )}
 
