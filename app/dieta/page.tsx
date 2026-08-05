@@ -1,34 +1,74 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  Apple,
+  AlertTriangle,
   Ban,
-  Clock,
-  Replace,
-  Stethoscope,
   CheckCircle2,
-  ShoppingCart,
   ChevronsUpDown,
+  Clock,
+  GitCompareArrows,
+  ShieldAlert,
+  ShoppingCart,
+  Stethoscope,
+  Tag,
+  Utensils,
 } from "lucide-react";
+import { CARDAPIO, ORIENTACOES_MEDICO, type DiaCardapio, type TipoItem } from "@/data/meals";
 import {
-  ALIMENTOS_EVITAR,
-  MEALS,
-  ORIENTACOES_MEDICO,
-  SUBSTITUICOES_GERAIS,
-  TOTAL_MACROS,
-  type Meal,
-} from "@/data/meals";
+  CRITERIOS_ROTULO,
+  DIVERGENCIAS,
+  EXTRAS_PRATO,
+  FORA_DO_PROTOCOLO,
+  MONTAGEM_PRATO,
+  ORDEM_CONSUMO,
+  PREFERENCIAS,
+  PROTOCOLO,
+} from "@/data/protocol";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { getShoppingState, toggleComponentSelection } from "@/lib/storage";
+import { CheckRow } from "@/components/check-row";
+import { getShoppingState, setComponentsSelection, toggleComponentSelection } from "@/lib/storage";
+import { useProtocolo } from "@/lib/protocol";
 import { cn } from "@/lib/utils";
+
+const CORES_TIPO: Record<TipoItem, string> = {
+  proteina: "bg-rose-100 text-rose-700",
+  carbo: "bg-amber-100 text-amber-800",
+  vegetal: "bg-emerald-100 text-emerald-800",
+  fruta: "bg-pink-100 text-pink-700",
+  gordura: "bg-orange-100 text-orange-800",
+  bebida: "bg-sky-100 text-sky-800",
+};
+
+const ROTULO_TIPO: Record<TipoItem, string> = {
+  proteina: "proteína",
+  carbo: "carbo",
+  vegetal: "vegetal",
+  fruta: "fruta",
+  gordura: "gordura",
+  bebida: "bebida",
+};
+
+const BADGE_DIVERGENCIA = {
+  seguranca: { texto: "Segurança", classe: "bg-red-100 text-red-800" },
+  protocolo: { texto: "Regra do protocolo", classe: "bg-violet-100 text-violet-800" },
+  preferencia: { texto: "Preferência sua", classe: "bg-emerald-100 text-emerald-800" },
+};
+
+function idsDoDia(dia: DiaCardapio): string[] {
+  return dia.refeicoes.flatMap((r) => r.itens.map((i) => i.id));
+}
 
 export default function DietaPage() {
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [hydrated, setHydrated] = useState(false);
+  // Aba escolhida na mão vence; sem escolha, abre no dia em que ela está.
+  const [abaEscolhida, setAbaEscolhida] = useState<string | null>(null);
+  const status = useProtocolo();
+  const diaAtual = status?.diaCardapio ?? 1;
 
   useEffect(() => {
     getShoppingState().then((s) => {
@@ -43,20 +83,41 @@ export default function DietaPage() {
     setSelected(next.selectedComponents);
   }
 
-  const totalSelecionados = hydrated
-    ? Object.values(selected).filter(Boolean).length
-    : 0;
+  async function handleBulk(ids: string[], value: boolean) {
+    setSelected((prev) => {
+      const copy = { ...prev };
+      for (const id of ids) copy[id] = value;
+      return copy;
+    });
+    const next = await setComponentsSelection(ids, value);
+    setSelected(next.selectedComponents);
+  }
+
+  const semana1 = useMemo(() => CARDAPIO.slice(0, 7).flatMap(idsDoDia), []);
+  const semana2 = useMemo(() => CARDAPIO.slice(7).flatMap(idsDoDia), []);
+
+  // Conta só o que existe no cardápio atual: o banco ainda guarda ids do plano
+  // antigo (pré-protocolo), e eles não devem aparecer como escolha da Milena.
+  const totalSelecionados = useMemo(
+    () =>
+      hydrated ? [...semana1, ...semana2].filter((id) => selected[id]).length : 0,
+    [selected, hydrated, semana1, semana2],
+  );
 
   return (
     <div className="space-y-5">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-widest text-rose-500">
-          Plano alimentar
+        <p className="text-xs font-semibold uppercase tracking-widest text-violet-500">
+          Protocolo {PROTOCOLO.nome}
         </p>
-        <h2 className="text-2xl font-bold text-zinc-900">Sua dieta completa</h2>
+        <h2 className="text-2xl font-bold text-zinc-900">Cardápio dos {PROTOCOLO.duracaoDias} dias</h2>
         <p className="mt-1 text-sm text-zinc-600">
-          Marque cada item (alimento ou substituição) que você vai usar — vai montando o cardápio
-          do seu jeito. Os ingredientes aparecem em <strong>/lista</strong> automaticamente.
+          Montado com as suas preferências: frango, peixe, ovos e tofu; grão-de-bico como única
+          leguminosa; sem leite, glúten, açúcar ou adoçante. Marque o que vai usar — a{" "}
+          <Link href="/lista" className="font-medium text-rose-600 underline">
+            lista de compras
+          </Link>{" "}
+          se monta sozinha.
         </p>
       </div>
 
@@ -69,12 +130,9 @@ export default function DietaPage() {
               </div>
               <div>
                 <p className="text-sm font-semibold text-emerald-900">
-                  {totalSelecionados}{" "}
-                  {totalSelecionados === 1 ? "item escolhido" : "itens escolhidos"}
+                  {totalSelecionados} {totalSelecionados === 1 ? "item escolhido" : "itens escolhidos"}
                 </p>
-                <p className="text-xs text-emerald-700">
-                  Lista de compras consolidada atualizada
-                </p>
+                <p className="text-xs text-emerald-700">Lista de compras atualizada</p>
               </div>
             </div>
             <Button asChild size="sm" variant="soft">
@@ -84,16 +142,316 @@ export default function DietaPage() {
         </Card>
       )}
 
+      {/* Regras do prato ---------------------------------------------------- */}
+      <Card className="border-emerald-200 bg-linear-to-br from-emerald-50 to-white">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-emerald-800">
+            <Utensils className="h-5 w-5" /> Como montar o prato
+          </CardTitle>
+          <CardDescription>Vale para almoço e jantar, todos os dias.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex h-8 w-full overflow-hidden rounded-full">
+            {MONTAGEM_PRATO.map((m) => (
+              <div
+                key={m.item}
+                className={cn(
+                  "flex items-center justify-center text-[10px] font-bold text-white",
+                  m.cor,
+                  m.fracao === "½ prato" ? "w-1/2" : "w-1/4",
+                )}
+              >
+                {m.fracao}
+              </div>
+            ))}
+          </div>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {MONTAGEM_PRATO.map((m) => (
+              <div key={m.item} className="rounded-xl bg-white p-3 text-center text-xs">
+                <span className={cn("mx-auto mb-1 block h-1.5 w-8 rounded-full", m.cor)} />
+                <p className="font-semibold text-zinc-800">{m.item}</p>
+                <p className="text-zinc-500">{m.fracao}</p>
+              </div>
+            ))}
+          </div>
+
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-emerald-700">
+              Ordem de comer
+            </p>
+            <ol className="space-y-2">
+              {ORDEM_CONSUMO.map((o) => (
+                <li key={o.o} className="flex items-start gap-2 text-sm">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[11px] font-bold text-white">
+                    {o.passo}
+                  </span>
+                  <span>
+                    <strong className="text-zinc-900">{o.o}</strong>
+                    <span className="block text-xs text-zinc-600">{o.porque}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </div>
+
+          <ul className="space-y-1 rounded-xl bg-emerald-50 p-3 text-xs text-emerald-900">
+            {EXTRAS_PRATO.map((e) => (
+              <li key={e} className="flex items-start gap-2">
+                <CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-emerald-600" />
+                {e}
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
+
+      {/* Cardápio dos 15 dias ----------------------------------------------- */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Os {PROTOCOLO.duracaoDias} dias</CardTitle>
+          <CardDescription>
+            Abre no dia em que você está. As quatro refeições são opções, não obrigação.
+          </CardDescription>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={() => handleBulk(semana1, true)}>
+              Selecionar dias 1–7
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => handleBulk(semana2, true)}>
+              Selecionar dias 8–15
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Tabs
+            value={abaEscolhida ?? String(diaAtual)}
+            onValueChange={setAbaEscolhida}
+            className="w-full"
+          >
+            <TabsList>
+              {CARDAPIO.map((d) => (
+                <TabsTrigger key={d.dia} value={String(d.dia)}>
+                  {d.dia}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+
+            {CARDAPIO.map((d) => {
+              const ids = idsDoDia(d);
+              const marcados = hydrated ? ids.filter((i) => selected[i]).length : 0;
+              const tudoMarcado = marcados === ids.length;
+              return (
+                <TabsContent key={d.dia} value={String(d.dia)} className="space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-semibold text-zinc-800">
+                      Dia {d.dia}
+                      <span className="ml-2 text-xs font-normal text-zinc-500">
+                        {marcados}/{ids.length} itens na lista
+                      </span>
+                    </p>
+                    <Button
+                      size="sm"
+                      variant={tudoMarcado ? "soft" : "outline"}
+                      onClick={() => handleBulk(ids, !tudoMarcado)}
+                    >
+                      {tudoMarcado ? "Desmarcar dia" : "Marcar dia todo"}
+                    </Button>
+                  </div>
+
+                  {d.refeicoes.map((refeicao) => (
+                    <div
+                      key={refeicao.id}
+                      className="space-y-2 rounded-2xl border border-zinc-100 p-3"
+                    >
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-zinc-900">{refeicao.nome}</p>
+                        <span className="flex items-center gap-1 text-xs text-zinc-500">
+                          <Clock className="h-3 w-3" /> {refeicao.hora}
+                        </span>
+                      </div>
+
+                      {refeicao.itens.map((it) => {
+                        const checked = hydrated && !!selected[it.id];
+                        return (
+                          <CheckRow
+                            key={it.id}
+                            checked={checked}
+                            onToggle={() => handleToggle(it.id)}
+                            label={it.label}
+                            className={cn(
+                              "bg-white",
+                              checked
+                                ? "border-emerald-200 bg-emerald-50/60"
+                                : "border-zinc-100 hover:bg-rose-50/40",
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                "mr-2 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                                CORES_TIPO[it.tipo],
+                              )}
+                            >
+                              {ROTULO_TIPO[it.tipo]}
+                            </span>
+                            <span
+                              className={cn(
+                                "text-sm",
+                                checked ? "text-zinc-500 line-through" : "text-zinc-800",
+                              )}
+                            >
+                              {it.label}
+                            </span>
+                          </CheckRow>
+                        );
+                      })}
+
+                      {refeicao.nota && (
+                        <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-900">
+                          {refeicao.nota}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </TabsContent>
+              );
+            })}
+          </Tabs>
+        </CardContent>
+      </Card>
+
+      {/* Preferências -------------------------------------------------------- */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ChevronsUpDown className="h-5 w-5 text-rose-500" /> Suas escolhas
+          </CardTitle>
+          <CardDescription>O cardápio inteiro respeita esta lista.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4 text-sm">
+          {[
+            { titulo: "Proteínas", dados: PREFERENCIAS.proteinas },
+            { titulo: "Carboidratos", dados: PREFERENCIAS.carboidratos },
+            { titulo: "Leguminosas", dados: PREFERENCIAS.leguminosas },
+          ].map(({ titulo, dados }) => (
+            <div key={titulo}>
+              <p className="mb-1 font-semibold text-zinc-900">{titulo}</p>
+              <div className="flex flex-wrap gap-1">
+                {dados.sim.map((s) => (
+                  <span
+                    key={s}
+                    className="rounded-full bg-emerald-100 px-2 py-1 text-xs text-emerald-800"
+                  >
+                    {s}
+                  </span>
+                ))}
+                {dados.nao.map((s) => (
+                  <span
+                    key={s}
+                    className="rounded-full bg-zinc-100 px-2 py-1 text-xs text-zinc-500 line-through"
+                  >
+                    {s}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* Fora do protocolo --------------------------------------------------- */}
+      <Card className="border-red-200">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-red-700">
+            <Ban className="h-5 w-5" /> Fora do protocolo nos 15 dias
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <ul className="space-y-2 text-sm">
+            {FORA_DO_PROTOCOLO.map((f) => (
+              <li key={f.item} className="flex items-start gap-2">
+                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-red-400" />
+                <span>
+                  <strong className="text-zinc-900">{f.item}</strong>
+                  <span className="block text-xs text-zinc-600">{f.detalhe}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+          <div className="rounded-xl bg-sky-50 p-3">
+            <p className="mb-2 flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-sky-800">
+              <Tag className="h-3 w-3" /> Como ler o rótulo
+            </p>
+            <ul className="space-y-1 text-xs text-sky-900">
+              {CRITERIOS_ROTULO.map((c) => (
+                <li key={c} className="flex items-start gap-2">
+                  <CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-sky-600" />
+                  {c}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Divergências -------------------------------------------------------- */}
+      <Card className="border-violet-200">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-violet-800">
+            <GitCompareArrows className="h-5 w-5" /> O que mudou e por quê
+          </CardTitle>
+          <CardDescription>
+            O app era montado sobre o plano do médico. Nada foi trocado em silêncio — cada
+            divergência entre os dois está aqui.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {DIVERGENCIAS.map((d) => {
+            const badge = BADGE_DIVERGENCIA[d.tipo];
+            return (
+              <div
+                key={d.id}
+                className={cn(
+                  "space-y-2 rounded-2xl border p-3",
+                  d.tipo === "seguranca" ? "border-red-200 bg-red-50/60" : "border-zinc-100",
+                )}
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  {d.tipo === "seguranca" && <ShieldAlert className="h-4 w-4 text-red-600" />}
+                  <p className="font-semibold text-zinc-900">{d.tema}</p>
+                  <span
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                      badge.classe,
+                    )}
+                  >
+                    {badge.texto}
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-600">
+                  <strong className="text-zinc-700">Antes:</strong> {d.antes}
+                </p>
+                <p className="text-xs text-zinc-600">
+                  <strong className="text-zinc-700">Protocolo:</strong> {d.protocolo}
+                </p>
+                <p className="rounded-xl bg-emerald-50 p-2 text-xs text-emerald-900">
+                  <strong>Decisão:</strong> {d.decisao}
+                </p>
+              </div>
+            );
+          })}
+        </CardContent>
+      </Card>
+
+      {/* Médico -------------------------------------------------------------- */}
       <Card className="border-sky-200 bg-linear-to-br from-sky-50 to-emerald-50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-sky-800">
-            <Stethoscope className="h-5 w-5" /> Orientações do médico
+            <Stethoscope className="h-5 w-5" /> Orientações do médico que seguem valendo
           </CardTitle>
           <CardDescription>
             {ORIENTACOES_MEDICO.medico} · {ORIENTACOES_MEDICO.especialidade}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           <ul className="space-y-2 text-sm text-zinc-700">
             {ORIENTACOES_MEDICO.pontos.map((p) => (
               <li key={p} className="flex items-start gap-2">
@@ -102,243 +460,12 @@ export default function DietaPage() {
               </li>
             ))}
           </ul>
-        </CardContent>
-      </Card>
-
-      <Card className="bg-linear-to-br from-emerald-50 to-rose-50 border-emerald-200">
-        <CardHeader>
-          <CardTitle className="text-emerald-800">Total do dia (de referência)</CardTitle>
-          <CardDescription>Distribuídos nas 6–7 refeições abaixo</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-4 gap-3 text-center">
-            <Macro label="Kcal" value={TOTAL_MACROS.kcal.toString()} unit="" />
-            <Macro label="Proteína" value={TOTAL_MACROS.proteina.toString()} unit="g" />
-            <Macro label="Carbo" value={TOTAL_MACROS.carbo.toString()} unit="g" />
-            <Macro label="Gordura" value={TOTAL_MACROS.gordura.toString()} unit="g" />
+          <div className="flex gap-2 rounded-xl bg-amber-50 p-3 text-xs text-amber-900">
+            <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
+            <span>{ORIENTACOES_MEDICO.emConflito}</span>
           </div>
         </CardContent>
       </Card>
-
-      {MEALS.map((meal) => (
-        <MealCard
-          key={meal.id}
-          meal={meal}
-          selected={selected}
-          hydrated={hydrated}
-          onToggle={handleToggle}
-        />
-      ))}
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Replace className="h-5 w-5 text-rose-500" /> Substituições gerais
-          </CardTitle>
-          <CardDescription>
-            Tabela de equivalência com porção e macros — use para variar sem perder o equilíbrio
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-5 text-sm">
-          {SUBSTITUICOES_GERAIS.map((g) => (
-            <div key={g.grupo} className="space-y-2">
-              <div>
-                <p className="font-semibold text-zinc-900">{g.grupo}</p>
-                {g.nota && <p className="text-xs text-zinc-500">{g.nota}</p>}
-              </div>
-              <div className="overflow-x-auto rounded-xl border border-rose-100">
-                <table className="w-full text-xs">
-                  <thead className="bg-rose-50 text-rose-700">
-                    <tr>
-                      <th className="px-2 py-2 text-left font-semibold">Alimento</th>
-                      <th className="px-2 py-2 text-left font-semibold">Porção</th>
-                      <th className="px-2 py-2 text-right font-semibold">kcal</th>
-                      <th className="px-2 py-2 text-right font-semibold">P</th>
-                      <th className="px-2 py-2 text-right font-semibold">C</th>
-                      <th className="px-2 py-2 text-right font-semibold">G</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-rose-50">
-                    {g.opcoes.map((o) => (
-                      <tr key={o.nome}>
-                        <td className="px-2 py-2 font-medium text-zinc-800">{o.nome}</td>
-                        <td className="px-2 py-2 text-zinc-600">{o.quantidade}</td>
-                        <td className="px-2 py-2 text-right text-zinc-700">{o.macros.kcal}</td>
-                        <td className="px-2 py-2 text-right text-zinc-700">{o.macros.proteina}</td>
-                        <td className="px-2 py-2 text-right text-zinc-700">{o.macros.carbo}</td>
-                        <td className="px-2 py-2 text-right text-zinc-700">{o.macros.gordura}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      <Card className="border-red-200">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-red-700">
-            <Ban className="h-5 w-5" /> Evitar
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ul className="list-inside list-disc space-y-1 text-sm text-zinc-700">
-            {ALIMENTOS_EVITAR.map((a) => (
-              <li key={a}>{a}</li>
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-function MealCard({
-  meal,
-  selected,
-  hydrated,
-  onToggle,
-}: {
-  meal: Meal;
-  selected: Record<string, boolean>;
-  hydrated: boolean;
-  onToggle: (id: string) => void;
-}) {
-  const totalNoCard = meal.componentes.length + (meal.substituicoes?.length ?? 0);
-  const marcadosNoCard = [
-    ...meal.componentes.map((c) => c.id),
-    ...(meal.substituicoes?.map((s) => s.id) ?? []),
-  ].filter((id) => hydrated && selected[id]).length;
-
-  return (
-    <Card
-      className={cn(
-        "transition",
-        marcadosNoCard > 0 && "border-emerald-300 ring-2 ring-emerald-200",
-      )}
-    >
-      <CardHeader>
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <CardTitle className="flex items-center gap-2">
-              <Apple className="h-5 w-5 text-rose-500" />
-              {meal.nome}
-            </CardTitle>
-            <p className="flex items-center gap-1 text-xs text-zinc-500">
-              <Clock className="h-3 w-3" />
-              {meal.hora} · {meal.macros.kcal} kcal · P {meal.macros.proteina}g · C {meal.macros.carbo}g · G {meal.macros.gordura}g
-            </p>
-          </div>
-          {marcadosNoCard > 0 && (
-            <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">
-              {marcadosNoCard}/{totalNoCard}
-            </span>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3 text-sm">
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-600">
-            Alimentos da refeição
-          </p>
-          {meal.componentes.map((c) => {
-            const checked = hydrated && !!selected[c.id];
-            return (
-              <button
-                key={c.id}
-                onClick={() => onToggle(c.id)}
-                className={cn(
-                  "flex w-full items-start gap-3 rounded-2xl border bg-white p-3 text-left transition active:scale-[0.99]",
-                  checked
-                    ? "border-emerald-200 bg-emerald-50/60"
-                    : c.alternativa
-                      ? "border-zinc-100 border-dashed"
-                      : "border-zinc-100 hover:bg-rose-50/40",
-                )}
-              >
-                <Checkbox
-                  checked={checked}
-                  onCheckedChange={() => onToggle(c.id)}
-                  className="mt-0.5"
-                />
-                <span
-                  className={cn(
-                    "flex-1 text-sm",
-                    checked ? "text-zinc-500 line-through" : "text-zinc-800",
-                    c.alternativa && !checked && "text-zinc-600 italic",
-                  )}
-                >
-                  {c.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="rounded-xl bg-amber-50 p-3 text-xs text-amber-900">
-          <strong className="block text-amber-700">Por que comer:</strong>
-          {meal.porQue}
-        </div>
-
-        {meal.substituicoes && meal.substituicoes.length > 0 && (
-          <div className="space-y-2">
-            <p className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-rose-700">
-              <ChevronsUpDown className="h-3 w-3" /> Substituições (também selecionáveis)
-            </p>
-            <div className="space-y-2">
-              {meal.substituicoes.map((s) => {
-                const checked = hydrated && !!selected[s.id];
-                return (
-                  <button
-                    key={s.id}
-                    onClick={() => onToggle(s.id)}
-                    className={cn(
-                      "flex w-full items-start gap-3 rounded-2xl border-2 p-3 text-left transition active:scale-[0.99]",
-                      checked
-                        ? "border-emerald-300 bg-emerald-50/60"
-                        : "border-rose-100 bg-rose-50/40 hover:bg-rose-50",
-                    )}
-                  >
-                    <Checkbox
-                      checked={checked}
-                      onCheckedChange={() => onToggle(s.id)}
-                      className="mt-0.5"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p
-                        className={cn(
-                          "text-sm font-semibold",
-                          checked ? "text-zinc-500 line-through" : "text-rose-900",
-                        )}
-                      >
-                        {s.trocar} → {s.por}
-                      </p>
-                      <p className="text-xs text-rose-700">{s.quantidade}</p>
-                      <p className="mt-1 text-[11px] text-zinc-600">
-                        {s.macros.kcal} kcal · P {s.macros.proteina}g · C {s.macros.carbo}g · G {s.macros.gordura}g
-                      </p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function Macro({ label, value, unit }: { label: string; value: string; unit: string }) {
-  return (
-    <div className="rounded-2xl bg-white/80 p-3">
-      <p className="text-2xl font-bold text-zinc-900">
-        {value}
-        <span className="text-xs font-medium text-zinc-500">{unit}</span>
-      </p>
-      <p className="text-[10px] uppercase tracking-wider text-zinc-500">{label}</p>
     </div>
   );
 }

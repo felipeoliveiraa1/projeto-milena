@@ -1,18 +1,40 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronDown, Clock, Utensils } from "lucide-react";
-import { MEALS, type Meal } from "@/data/meals";
+import { ChevronDown, Clock, Info, Utensils } from "lucide-react";
+import { cardapioDoDia, type Refeicao, type TipoItem } from "@/data/meals";
+import { ORDEM_CONSUMO } from "@/data/protocol";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getDay, toggleMeal } from "@/lib/storage";
 import { todayKey } from "@/lib/date";
+import { useProtocolo } from "@/lib/protocol";
 import { cn } from "@/lib/utils";
+
+const CORES_TIPO: Record<TipoItem, string> = {
+  proteina: "bg-rose-100 text-rose-700",
+  carbo: "bg-amber-100 text-amber-800",
+  vegetal: "bg-emerald-100 text-emerald-800",
+  fruta: "bg-pink-100 text-pink-700",
+  gordura: "bg-orange-100 text-orange-800",
+  bebida: "bg-sky-100 text-sky-800",
+};
+
+const ROTULO_TIPO: Record<TipoItem, string> = {
+  proteina: "proteína",
+  carbo: "carbo",
+  vegetal: "vegetal",
+  fruta: "fruta",
+  gordura: "gordura boa",
+  bebida: "bebida",
+};
 
 export function MealChecklist() {
   const [checks, setChecks] = useState<Record<string, boolean>>({});
   const [open, setOpen] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const status = useProtocolo();
+  const dia = status?.diaCardapio ?? 1;
 
   useEffect(() => {
     getDay(todayKey()).then((d) => {
@@ -21,11 +43,13 @@ export function MealChecklist() {
     });
   }, []);
 
-  async function handleToggle(meal: Meal) {
-    setChecks((prev) => ({ ...prev, [meal.id]: !prev[meal.id] }));
-    const next = await toggleMeal(meal.id);
+  async function handleToggle(refeicao: Refeicao) {
+    setChecks((prev) => ({ ...prev, [refeicao.id]: !prev[refeicao.id] }));
+    const next = await toggleMeal(refeicao.id);
     setChecks({ ...next.meals });
   }
+
+  const cardapio = cardapioDoDia(dia);
 
   return (
     <Card>
@@ -34,14 +58,28 @@ export function MealChecklist() {
           <Utensils className="h-5 w-5 text-rose-500" />
           Refeições de hoje
         </CardTitle>
+        <p className="text-xs text-zinc-500">
+          Cardápio do dia {dia} do protocolo. São opções — coma com fome e pare na saciedade.
+        </p>
       </CardHeader>
       <CardContent className="space-y-2">
-        {MEALS.map((meal) => {
-          const checked = hydrated && !!checks[meal.id];
-          const isOpen = open === meal.id;
+        <div className="flex flex-wrap items-center gap-1 rounded-xl bg-emerald-50 px-3 py-2 text-[11px] text-emerald-900">
+          <Info className="mr-1 h-3 w-3 text-emerald-600" />
+          {ORDEM_CONSUMO.map((o, i) => (
+            <span key={o.o} className="flex items-center gap-1">
+              {i > 0 && <span className="text-emerald-400">→</span>}
+              <span className="font-semibold">{o.o}</span>
+            </span>
+          ))}
+        </div>
+
+        {cardapio.refeicoes.map((refeicao) => {
+          const checked = hydrated && !!checks[refeicao.id];
+          const isOpen = open === refeicao.id;
+          const proteinas = refeicao.itens.filter((i) => i.tipo === "proteina");
           return (
             <div
-              key={meal.id}
+              key={refeicao.id}
               className={cn(
                 "rounded-2xl border transition",
                 checked ? "border-rose-200 bg-rose-50/60" : "border-zinc-100 bg-white",
@@ -50,25 +88,28 @@ export function MealChecklist() {
               <div className="flex items-center gap-3 p-3">
                 <Checkbox
                   checked={checked}
-                  onCheckedChange={() => handleToggle(meal)}
-                  aria-label={meal.nome}
+                  onCheckedChange={() => handleToggle(refeicao)}
+                  aria-label={refeicao.nome}
                 />
                 <button
                   className="flex flex-1 items-center justify-between gap-3 text-left"
-                  onClick={() => setOpen(isOpen ? null : meal.id)}
+                  onClick={() => setOpen(isOpen ? null : refeicao.id)}
                 >
-                  <div>
+                  <div className="min-w-0">
                     <p
                       className={cn(
                         "font-medium",
                         checked ? "text-zinc-400 line-through" : "text-zinc-900",
                       )}
                     >
-                      {meal.nome}
+                      {refeicao.nome}
                     </p>
-                    <p className="flex items-center gap-1 text-xs text-zinc-500">
-                      <Clock className="h-3 w-3" />
-                      {meal.hora} · {meal.macros.kcal} kcal · P {meal.macros.proteina}g
+                    <p className="flex items-center gap-1 truncate text-xs text-zinc-500">
+                      <Clock className="h-3 w-3 shrink-0" />
+                      {refeicao.hora}
+                      {proteinas.length > 0 && (
+                        <span className="truncate"> · {proteinas[0].label.split(":")[0]}</span>
+                      )}
                     </p>
                   </div>
                   <ChevronDown
@@ -80,34 +121,23 @@ export function MealChecklist() {
                 </button>
               </div>
               {isOpen && (
-                <div className="space-y-3 px-4 pb-4 text-sm">
-                  <ul className="list-inside list-disc space-y-1 text-zinc-700">
-                    {meal.componentes.map((c) => (
-                      <li key={c.id}>{c.label}</li>
-                    ))}
-                  </ul>
-                  <div className="rounded-xl bg-amber-50 p-3 text-xs text-amber-900">
-                    <strong className="block text-amber-700">Por que comer:</strong>
-                    {meal.porQue}
-                  </div>
-                  {meal.substituicoes && (
-                    <div className="text-xs">
-                      <strong className="mb-1 block text-zinc-700">Substituições:</strong>
-                      <ul className="space-y-1">
-                        {meal.substituicoes.map((s, i) => (
-                          <li
-                            key={`${s.trocar}-${s.por}-${i}`}
-                            className="rounded-lg bg-rose-50/60 px-2 py-1.5"
-                          >
-                            <p className="font-medium text-zinc-800">
-                              {s.trocar} → {s.por}
-                            </p>
-                            <p className="text-zinc-500">
-                              {s.quantidade} · {s.macros.kcal} kcal · P {s.macros.proteina}g · C {s.macros.carbo}g · G {s.macros.gordura}g
-                            </p>
-                          </li>
-                        ))}
-                      </ul>
+                <div className="space-y-2 px-4 pb-4 text-sm">
+                  {refeicao.itens.map((it) => (
+                    <div key={it.id} className="flex items-start gap-2">
+                      <span
+                        className={cn(
+                          "mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                          CORES_TIPO[it.tipo],
+                        )}
+                      >
+                        {ROTULO_TIPO[it.tipo]}
+                      </span>
+                      <span className="text-zinc-700">{it.label}</span>
+                    </div>
+                  ))}
+                  {refeicao.nota && (
+                    <div className="rounded-xl bg-amber-50 p-3 text-xs text-amber-900">
+                      {refeicao.nota}
                     </div>
                   )}
                 </div>

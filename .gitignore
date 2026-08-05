@@ -38,6 +38,7 @@ yarn-error.log*
 docs/briefing-original.md
 META SAUDÁVEL.pdf
 *.pdf
+conversa_completa_desinflama_se.md
 
 # fotos da academia — referência para montar o treino, não são assets do app
 /fotos-academia/

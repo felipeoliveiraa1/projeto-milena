@@ -1,19 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { HeartPulse, Plus, Trash2, TrendingDown } from "lucide-react";
+import Link from "next/link";
+import { Camera, HeartPulse, Plus, Ruler, Trash2, TrendingDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { WeightChart } from "@/components/weight-chart";
 import { addWeight, getWeights, removeWeight, type WeightEntry } from "@/lib/storage";
 import { todayKey, dataCurta } from "@/lib/date";
+import { PROTOCOLO } from "@/data/protocol";
+import { useProtocolo } from "@/lib/protocol";
 
 export default function ProgressoPage() {
   const [list, setList] = useState<WeightEntry[]>([]);
   const [weight, setWeight] = useState("");
   const [date, setDate] = useState(todayKey());
   const [hydrated, setHydrated] = useState(false);
+  const status = useProtocolo();
 
   useEffect(() => {
     getWeights().then((l) => {
@@ -62,6 +66,45 @@ export default function ProgressoPage() {
               accent={variacao < 0 ? "text-emerald-600" : "text-zinc-700"}
             />
             <Stat label="Meta" value="70,0 kg" accent="text-emerald-600" />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-violet-200 bg-linear-to-br from-violet-50 to-white">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-violet-900">
+            <Camera className="h-5 w-5 text-violet-500" /> Marcos do {PROTOCOLO.nome}
+          </CardTitle>
+          <CardDescription>
+            {status && !status.naoComecou && !status.concluido
+              ? `Você está no dia ${status.dia} de ${status.total}.`
+              : "O protocolo mede o resultado por foto, medidas e peso — não só pela balança."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          <div className="flex items-start gap-2 rounded-xl bg-white/70 p-3">
+            <Camera className="mt-0.5 h-4 w-4 shrink-0 text-violet-500" />
+            <span className="text-zinc-700">
+              <strong>Foto de frente, lado e costas</strong> no dia 1 e no dia {PROTOCOLO.duracaoDias}, mesma
+              roupa e mesma luz.
+            </span>
+          </div>
+          <div className="flex items-start gap-2 rounded-xl bg-white/70 p-3">
+            <Ruler className="mt-0.5 h-4 w-4 shrink-0 text-violet-500" />
+            <span className="text-zinc-700">
+              <strong>Medidas</strong> de cintura, abdômen, quadril e braço — a fita costuma mudar
+              antes da balança.
+            </span>
+          </div>
+          <div className="flex items-start gap-2 rounded-xl bg-white/70 p-3">
+            <HeartPulse className="mt-0.5 h-4 w-4 shrink-0 text-violet-500" />
+            <span className="text-zinc-700">
+              <strong>Sintomas e evacuação</strong> ficam no checklist diário, na{" "}
+              <Link href="/rotina" className="font-medium text-violet-700 underline">
+                aba Rotina
+              </Link>
+              .
+            </span>
           </div>
         </CardContent>
       </Card>

@@ -2,15 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Apple, CalendarHeart, Dumbbell, HeartPulse, Pill, ShoppingCart } from "lucide-react";
+import { Apple, CalendarHeart, Dumbbell, HeartPulse, ListChecks, ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ITEMS = [
   { href: "/", label: "Hoje", icon: CalendarHeart },
   { href: "/dieta", label: "Dieta", icon: Apple },
   { href: "/treino", label: "Treino", icon: Dumbbell },
+  { href: "/rotina", label: "Rotina", icon: ListChecks },
   { href: "/lista", label: "Lista", icon: ShoppingCart },
-  { href: "/suplementos", label: "Suple.", icon: Pill },
   { href: "/progresso", label: "Peso", icon: HeartPulse },
 ];
 

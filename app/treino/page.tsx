@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { ExerciseVideo } from "@/components/exercise-video";
 import { diaDaSemana } from "@/lib/date";
+import { useAgora } from "@/lib/now";
 import { getDay, toggleExercise } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 
@@ -17,12 +18,14 @@ function exId(diaSemana: number, idx: number) {
 }
 
 export default function TreinoPage() {
-  const [today, setToday] = useState<number | null>(null);
   const [checks, setChecks] = useState<Record<string, boolean>>({});
   const [hydrated, setHydrated] = useState(false);
+  // Aba escolhida na mão vence; sem escolha, abre no dia de hoje.
+  const [abaEscolhida, setAbaEscolhida] = useState<string | null>(null);
+  const agora = useAgora();
+  const today = agora ? diaDaSemana(agora) : null;
 
   useEffect(() => {
-    setToday(diaDaSemana());
     getDay().then((d) => {
       setChecks(d.exercises);
       setHydrated(true);
@@ -40,7 +43,7 @@ export default function TreinoPage() {
     return order.indexOf(a.diaSemana) - order.indexOf(b.diaSemana);
   });
 
-  const defaultTab = today === null ? "1" : String(today);
+  const abaAtual = abaEscolhida ?? String(today ?? 1);
 
   return (
     <div className="space-y-5">
@@ -77,7 +80,7 @@ export default function TreinoPage() {
         </div>
       </details>
 
-      <Tabs defaultValue={defaultTab} className="w-full">
+      <Tabs value={abaAtual} onValueChange={setAbaEscolhida} className="w-full">
         <TabsList>
           {ordered.map((w) => (
             <TabsTrigger key={w.diaSemana} value={String(w.diaSemana)}>

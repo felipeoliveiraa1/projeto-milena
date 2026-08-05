@@ -8,15 +8,16 @@ import { Button } from "@/components/ui/button";
 import { WORKOUTS } from "@/data/workouts";
 import { getDay, toggleWorkout } from "@/lib/storage";
 import { diaDaSemana } from "@/lib/date";
+import { useAgora } from "@/lib/now";
 import { cn } from "@/lib/utils";
 
 export function WorkoutOfDay() {
   const [done, setDone] = useState(false);
   const [hydrated, setHydrated] = useState(false);
-  const [day, setDay] = useState(0);
+  const agora = useAgora();
+  const day = agora ? diaDaSemana(agora) : 0;
 
   useEffect(() => {
-    setDay(diaDaSemana());
     getDay().then((d) => {
       setDone(d.workout);
       setHydrated(true);

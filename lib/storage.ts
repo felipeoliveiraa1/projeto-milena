@@ -7,6 +7,15 @@ export type DayCheck = {
   meals: Record<string, boolean>;
   water: number;
   workout: boolean;
+  /**
+   * Guarda dois tipos de marcação, distinguidos pelo id:
+   * - suplementos (omega3, vitafer-almoco, ...) — data/supplements.ts
+   * - itens da rotina do protocolo (r-m-agua, r-n-dormir, ...) — data/protocol.ts
+   *
+   * Os dois moram na mesma coluna `supplements` do Supabase de propósito: são
+   * marcações do mesmo dia e do mesmo tipo, e assim a rotina funciona sem
+   * precisar de migração de schema.
+   */
   supplements: Record<string, boolean>;
   exercises: Record<string, boolean>;
 };
@@ -80,6 +89,14 @@ export async function toggleSupplement(
   const current = await getDay(date);
   const supplements = { ...current.supplements, [suppId]: !current.supplements[suppId] };
   return upsertDay(date, { supplements });
+}
+
+/** Item da rotina do protocolo. Mesma coluna dos suplementos — ver DayCheck. */
+export async function toggleRotina(
+  itemId: string,
+  date: string = todayKey(),
+): Promise<DayCheck> {
+  return toggleSupplement(itemId, date);
 }
 
 export async function setWater(value: number, date: string = todayKey()): Promise<DayCheck> {
@@ -187,6 +204,17 @@ export async function toggleComponentSelection(
   return setShoppingState({ selected_components });
 }
 
+/** Marca ou desmarca vários itens do cardápio de uma vez (ex.: "selecionar o dia todo"). */
+export async function setComponentsSelection(
+  ids: string[],
+  value: boolean,
+): Promise<ShoppingState> {
+  const current = await getShoppingState();
+  const selected_components = { ...current.selectedComponents };
+  for (const id of ids) selected_components[id] = value;
+  return setShoppingState({ selected_components });
+}
+
 export async function clearShoppingChecked(): Promise<ShoppingState> {
   return setShoppingState({ items: {} });
 }
@@ -220,10 +248,16 @@ export async function getStreak(): Promise<number> {
   for (let i = 0; i < 60; i++) {
     const key = todayKey(cursor);
     const row = byDate.get(key);
+    // Dia conta na sequência se ela cumpriu alguma parte relevante do protocolo:
+    // metade das refeições, a água, o treino ou boa parte da rotina.
+    const rotinaMarcada = Object.entries(row?.supplements ?? {}).filter(
+      ([id, v]) => v && id.startsWith("r-"),
+    ).length;
     const adherent = row
-      ? Object.values(row.meals ?? {}).filter(Boolean).length >= 4 ||
+      ? Object.values(row.meals ?? {}).filter(Boolean).length >= 2 ||
         (row.water ?? 0) >= 1 ||
-        !!row.workout
+        !!row.workout ||
+        rotinaMarcada >= 5
       : false;
     if (i === 0 && !adherent) {
       cursor.setDate(cursor.getDate() - 1);

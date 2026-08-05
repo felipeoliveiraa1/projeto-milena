@@ -1,3 +1,10 @@
+/**
+ * Suplementos durante os 15 dias do protocolo.
+ *
+ * O ritual de limão e própolis não está aqui: ele vive na rotina da manhã
+ * (data/protocol.ts), para não existir dois lugares marcando a mesma coisa.
+ */
+
 export type Supplement = {
   id: string;
   nome: string;
@@ -5,56 +12,67 @@ export type Supplement = {
   horario: string;
   funcao: string;
   observacao?: string;
+  /** prescricao = receita médica, não se mexe. opcional = decisão dela com o médico. */
+  status: "protocolo" | "prescricao" | "opcional";
 };
 
 export const SUPPLEMENTS: Supplement[] = [
   {
-    id: "whey",
-    nome: "Whey Protein",
-    dose: "30 g (1 scoop)",
-    horario: "Logo após o treino",
-    funcao:
-      "Proteína de absorção rápida. Recupera o músculo, ajuda a ganhar massa magra e dá saciedade. Com déficit calórico para emagrecer, o Whey protege a musculatura.",
-    observacao:
-      "Pode bater com água, leite desnatado ou leite vegetal. Misture com a Creatina no mesmo shake.",
-  },
-  {
-    id: "creatina",
-    nome: "Creatina Monohidratada",
-    dose: "3–5 g",
-    horario: "Qualquer horário (de preferência junto com o Whey)",
-    funcao:
-      "Aumenta força, performance no treino e recuperação. Ajuda a ganhar massa magra com mais facilidade. Tomar TODOS os dias, mesmo nos de descanso, sem 'ciclar'.",
-    observacao:
-      "Beba bastante água ao longo do dia (já está na meta de 2,5–3 L). Os primeiros dias podem retir até 1 kg de água — é normal e não é gordura.",
-  },
-  {
     id: "omega3",
     nome: "Ômega 3 (EPA + DHA)",
     dose: "1–2 g",
-    horario: "Junto com o almoço (com gordura ajuda absorção)",
+    horario: "Junto com o almoço",
     funcao:
-      "Anti-inflamatório natural. Ajuda muito na gordura no fígado, na pressão e na recuperação muscular. Pós-parto também colabora com humor.",
-    observacao: "Verifique no rótulo: precisa ter pelo menos 500 mg de EPA + DHA por cápsula.",
+      "Anti-inflamatório de verdade — é o suplemento que mais combina com o protocolo. Ajuda na gordura no fígado, na pressão e no humor pós-parto.",
+    observacao: "No rótulo: pelo menos 500 mg de EPA + DHA por cápsula. Tomar com a gordura do almoço melhora a absorção.",
+    status: "protocolo",
   },
   {
     id: "vitafer-almoco",
     nome: "Vitafer (almoço)",
     dose: "1 comprimido",
     horario: "Logo após o almoço",
-    funcao:
-      "Reposição de ferro e vitaminas. Pós-gestação muitas mulheres ficam anêmicas e cansadas. O ferro ajuda na disposição para treinar.",
+    funcao: "Reposição de ferro e vitaminas, prescrita para o pós-gestação.",
     observacao:
-      "Não tome com café, chá ou leite (atrapalham a absorção do ferro). Se possível, tome com suco de laranja ou água com limão — a vitamina C melhora a absorção do ferro.",
+      "Não tome com café ou chá — atrapalham o ferro. Com a água com limão, a vitamina C melhora a absorção. Prescrição médica: não suspenda por causa do protocolo.",
+    status: "prescricao",
   },
   {
     id: "vitafer-jantar",
     nome: "Vitafer (jantar)",
     dose: "1 comprimido",
     horario: "Logo após o jantar",
+    funcao: "Segunda dose do dia, mantém o nível de ferro estável.",
+    observacao: "Mesmo cuidado: longe de café e chá.",
+    status: "prescricao",
+  },
+  {
+    id: "vitd",
+    nome: "Vitamina D3",
+    dose: "conforme o exame",
+    horario: "Junto com uma refeição com gordura",
+    funcao: "Só faz sentido na dose que o exame indicar. Ajuda imunidade, humor e osso.",
+    observacao: "Se não tem exame recente, converse com o médico antes de manter.",
+    status: "prescricao",
+  },
+  {
+    id: "creatina",
+    nome: "Creatina monohidratada",
+    dose: "3–5 g",
+    horario: "Qualquer horário, todos os dias",
     funcao:
-      "Segunda dose diária. Mantém os níveis de ferro e vitaminas estáveis ao longo do dia.",
+      "Ajuda força e recuperação no treino. Não tem leite e não é alimento processado, então não bate de frente com o protocolo.",
     observacao:
-      "Mesmo cuidado: nada de café, chá preto ou leite junto. Pode tomar com um copo d'água ou suco natural.",
+      "Não faz parte do Desinflama-se — é uma escolha sua com o médico. Se quiser fazer os 15 dias 'limpos', pode pausar sem prejuízo.",
+    status: "opcional",
+  },
+];
+
+/** O que saiu da suplementação por causa do protocolo. */
+export const SUPLEMENTOS_SUSPENSOS = [
+  {
+    nome: "Whey protein",
+    porque:
+      "É derivado do leite, e o protocolo tira leite e derivados nos 15 dias. A proteína do pós-treino passa a vir de comida: 2 ovos, frango desfiado ou o patê de atum/frango.",
   },
 ];

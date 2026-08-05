@@ -4,6 +4,12 @@
 -- =============================================================================
 
 -- 1) Tabela de check-ins diários (refeições, água, treino, suplementos, exercícios)
+--
+-- Obs.: a coluna `supplements` guarda dois tipos de marcação, separadas pelo id:
+--   - suplementos ........ omega3, vitafer-almoco, vitafer-jantar, vitd, creatina
+--   - rotina do protocolo  ids começando com "r-" (r-m-agua, r-n-dormir, ...)
+-- É de propósito: são marcações do mesmo dia e do mesmo tipo, e assim a rotina
+-- do Desinflama-se funciona sem precisar de migração de schema.
 create table if not exists daily_checks (
   date date primary key,
   meals jsonb not null default '{}'::jsonb,
