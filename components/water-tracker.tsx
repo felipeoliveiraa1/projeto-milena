@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, Eyebrow } from "@/components/
 import { Button } from "@/components/ui/button";
 import { getDay, setWater } from "@/lib/storage";
 import { usePreferencias } from "@/lib/settings";
-import { todayKey } from "@/lib/date";
+import { useDia } from "@/components/day-context";
 import { cn } from "@/lib/utils";
 
 function formatar(ml: number): string {
@@ -15,21 +15,23 @@ function formatar(ml: number): string {
 }
 
 export function WaterTracker() {
-  const [ml, setMl] = useState(0);
-  const [hydrated, setHydrated] = useState(false);
+  // Guarda a data junto do valor: assim dá para saber se o que está na tela é
+  // do dia escolhido, sem precisar zerar estado dentro do efeito.
+  const [carga, setCarga] = useState<{ data: string; ml: number } | null>(null);
   const { prefs } = usePreferencias();
+  const { data } = useDia();
 
   useEffect(() => {
-    getDay(todayKey()).then((d) => {
-      setMl(d.water);
-      setHydrated(true);
-    });
-  }, []);
+    getDay(data).then((d) => setCarga({ data, ml: d.water }));
+  }, [data]);
+
+  const hydrated = carga?.data === data;
+  const ml = hydrated ? carga.ml : 0;
 
   function atualizar(novo: number) {
     const v = Math.max(0, Math.min(novo, 6000));
-    setMl(v);
-    setWater(v).catch((err) => console.error(err));
+    setCarga({ data, ml: v });
+    setWater(v, data).catch((err) => console.error(err));
   }
 
   const meta = prefs.aguaMetaMl;

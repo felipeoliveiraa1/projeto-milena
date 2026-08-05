@@ -8,20 +8,19 @@ import { Button } from "@/components/ui/button";
 import { WORKOUTS } from "@/data/workouts";
 import { getDay, toggleWorkout } from "@/lib/storage";
 import { diaDaSemana } from "@/lib/date";
-import { useAgora } from "@/lib/now";
+import { useDia } from "@/components/day-context";
 
 export function WorkoutOfDay() {
-  const [done, setDone] = useState(false);
-  const [hydrated, setHydrated] = useState(false);
-  const agora = useAgora();
-  const day = agora ? diaDaSemana(agora) : 0;
+  const [carga, setCarga] = useState<{ data: string; feito: boolean } | null>(null);
+  const { data } = useDia();
+  const day = diaDaSemana(new Date(data + "T00:00:00"));
 
   useEffect(() => {
-    getDay().then((d) => {
-      setDone(d.workout);
-      setHydrated(true);
-    });
-  }, []);
+    getDay(data).then((d) => setCarga({ data, feito: d.workout }));
+  }, [data]);
+
+  const hydrated = carga?.data === data;
+  const done = hydrated && carga.feito;
 
   const workout = WORKOUTS.find((w) => w.diaSemana === day) ?? WORKOUTS[0];
   const descanso = workout.exercicios.length <= 2;
@@ -47,9 +46,9 @@ export function WorkoutOfDay() {
           <Button
             variant={done ? "secondary" : "default"}
             onClick={async () => {
-              setDone((v) => !v);
-              const next = await toggleWorkout();
-              setDone(next.workout);
+              setCarga({ data, feito: !done });
+              const next = await toggleWorkout(data);
+              setCarga({ data, feito: next.workout });
             }}
             className="flex-1"
             disabled={!hydrated}

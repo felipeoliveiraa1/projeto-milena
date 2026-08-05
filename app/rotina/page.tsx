@@ -43,6 +43,8 @@ import {
 } from "@/lib/storage";
 import { setInicio, useInicio, useProtocolo } from "@/lib/protocol";
 import { novoId, useRotina } from "@/lib/routine";
+import { useDia } from "@/components/day-context";
+import { DaySwitch } from "@/components/day-switch";
 import { todayKey } from "@/lib/date";
 import { cn } from "@/lib/utils";
 
@@ -67,7 +69,7 @@ const BADGE_STATUS = {
 };
 
 export default function RotinaPage() {
-  const [dia, setDia] = useState<DayCheck | null>(null);
+  const [carga, setCarga] = useState<{ data: string; dia: DayCheck } | null>(null);
   const [editandoData, setEditandoData] = useState(false);
   const [rascunhoData, setRascunhoData] = useState<string | null>(null);
   const [rascunho, setRascunho] = useState<RotinaBloco[] | null>(null);
@@ -75,27 +77,35 @@ export default function RotinaPage() {
   const inicio = useInicio();
   const novaData = rascunhoData ?? inicio;
   const { blocos, origem, salvar, restaurar } = useRotina();
+  const { data } = useDia();
 
   useEffect(() => {
-    getDay().then(setDia);
-  }, []);
+    getDay(data).then((d) => setCarga({ data, dia: d }));
+  }, [data]);
+
+  // Só usa o que foi carregado se for do dia que está na tela.
+  const dia = carga?.data === data ? carga.dia : null;
+
+  function marcarLocal(id: string) {
+    if (!dia) return;
+    setCarga({
+      data,
+      dia: { ...dia, supplements: { ...dia.supplements, [id]: !dia.supplements[id] } },
+    });
+  }
 
   async function handleRotina(id: string) {
-    setDia((prev) =>
-      prev ? { ...prev, supplements: { ...prev.supplements, [id]: !prev.supplements[id] } } : prev,
-    );
-    setDia(await toggleRotina(id));
+    marcarLocal(id);
+    setCarga({ data, dia: await toggleRotina(id, data) });
   }
 
   async function handleSuplemento(id: string) {
-    setDia((prev) =>
-      prev ? { ...prev, supplements: { ...prev.supplements, [id]: !prev.supplements[id] } } : prev,
-    );
-    setDia(await toggleSupplement(id));
+    marcarLocal(id);
+    setCarga({ data, dia: await toggleSupplement(id, data) });
   }
 
   async function handleTexto(id: string, valor: string) {
-    setDia(await setTextoDoDia(id, valor));
+    setCarga({ data, dia: await setTextoDoDia(id, valor, data) });
   }
 
   function salvarData() {
@@ -119,6 +129,8 @@ export default function RotinaPage() {
         <h2 className="font-display mt-2 text-4xl leading-none text-ink">Rotina do dia</h2>
         <p className="mt-3 text-sm leading-relaxed text-ink-muted">{PROTOCOLO.resumo}</p>
       </header>
+
+      <DaySwitch />
 
       {/* Ciclo ------------------------------------------------------------- */}
       <Card className="border-plum/15 bg-plum-soft/40">

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { getDay, getTextoDoDia, setTextoDoDia, toggleRotina, type DayCheck } from "@/lib/storage";
 import { usePeriodoAgora } from "@/lib/protocol";
 import { useRotina } from "@/lib/routine";
+import { useDia } from "@/components/day-context";
 
 const TITULO = {
   manha: { texto: "Rotina da manhã", Icone: Sunrise },
@@ -18,30 +19,40 @@ const TITULO = {
 
 /** Mostra na tela inicial só o bloco da rotina que faz sentido para a hora atual. */
 export function RoutineNow() {
-  const [dia, setDia] = useState<DayCheck | null>(null);
+  const [carga, setCarga] = useState<{ data: string; dia: DayCheck } | null>(null);
   const periodo = usePeriodoAgora() ?? "manha";
   const { blocos } = useRotina();
+  const { data, ehHoje } = useDia();
 
   useEffect(() => {
-    getDay().then(setDia);
-  }, []);
+    getDay(data).then((d) => setCarga({ data, dia: d }));
+  }, [data]);
+
+  const dia = carga?.data === data ? carga.dia : null;
 
   async function handleToggle(id: string) {
-    setDia((prev) =>
-      prev ? { ...prev, supplements: { ...prev.supplements, [id]: !prev.supplements[id] } } : prev,
-    );
-    setDia(await toggleRotina(id));
+    if (dia) {
+      setCarga({
+        data,
+        dia: { ...dia, supplements: { ...dia.supplements, [id]: !dia.supplements[id] } },
+      });
+    }
+    setCarga({ data, dia: await toggleRotina(id, data) });
   }
 
   async function handleTexto(id: string, valor: string) {
-    setDia(await setTextoDoDia(id, valor));
+    setCarga({ data, dia: await setTextoDoDia(id, valor, data) });
   }
 
-  const doPeriodo = blocos.filter((b) => b.periodo === periodo);
+  // Num dia que já passou não existe "agora": mostra a rotina inteira para ela
+  // conseguir lançar tudo de uma vez.
+  const doPeriodo = ehHoje ? blocos.filter((b) => b.periodo === periodo) : blocos;
   const itens = doPeriodo.flatMap((b) => b.itens);
   const feitos = dia ? itens.filter((i) => dia.supplements[i.id] === true).length : 0;
   const pct = itens.length > 0 ? Math.round((feitos / itens.length) * 100) : 0;
-  const { texto, Icone } = TITULO[periodo];
+  const { texto, Icone } = ehHoje
+    ? TITULO[periodo]
+    : { texto: "Rotina do dia", Icone: Sun };
 
   if (itens.length === 0) return null;
 

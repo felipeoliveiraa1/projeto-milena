@@ -15,7 +15,7 @@ export const PROTOCOLO = {
    * Data em que a Milena começou o ciclo de 15 dias (formato AAAA-MM-DD).
    * Serve de padrão — ela pode corrigir pelo próprio app, na tela /rotina.
    */
-  inicioPadrao: "2026-08-04",
+  inicioPadrao: "2026-08-03",
   resumo:
     "15 dias tirando do prato o que inflama (açúcar, adoçante, glúten, leite, fritura, álcool e industrializado) e colocando comida de verdade, água, sono e rotina.",
 };

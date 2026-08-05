@@ -7,8 +7,8 @@ import { ORDEM_CONSUMO } from "@/data/protocol";
 import { Card, CardContent, CardHeader, CardTitle, Eyebrow } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getDay, toggleMeal } from "@/lib/storage";
-import { todayKey } from "@/lib/date";
 import { useProtocolo } from "@/lib/protocol";
+import { useDia } from "@/components/day-context";
 import { cn } from "@/lib/utils";
 
 export const CORES_TIPO: Record<TipoItem, string> = {
@@ -30,23 +30,25 @@ export const ROTULO_TIPO: Record<TipoItem, string> = {
 };
 
 export function MealChecklist() {
-  const [checks, setChecks] = useState<Record<string, boolean>>({});
+  const [carga, setCarga] = useState<{ data: string; checks: Record<string, boolean> } | null>(
+    null,
+  );
   const [open, setOpen] = useState<string | null>(null);
-  const [hydrated, setHydrated] = useState(false);
   const status = useProtocolo();
   const dia = status?.diaCardapio ?? 1;
+  const { data } = useDia();
 
   useEffect(() => {
-    getDay(todayKey()).then((d) => {
-      setChecks(d.meals);
-      setHydrated(true);
-    });
-  }, []);
+    getDay(data).then((d) => setCarga({ data, checks: d.meals }));
+  }, [data]);
+
+  const hydrated = carga?.data === data;
+  const checks = hydrated ? carga.checks : {};
 
   async function handleToggle(refeicao: Refeicao) {
-    setChecks((prev) => ({ ...prev, [refeicao.id]: !prev[refeicao.id] }));
-    const next = await toggleMeal(refeicao.id);
-    setChecks({ ...next.meals });
+    setCarga({ data, checks: { ...checks, [refeicao.id]: !checks[refeicao.id] } });
+    const next = await toggleMeal(refeicao.id, data);
+    setCarga({ data, checks: { ...next.meals } });
   }
 
   const cardapio = cardapioDoDia(dia);

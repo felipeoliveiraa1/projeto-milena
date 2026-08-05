@@ -21,7 +21,8 @@ export type Preferencias = {
 };
 
 export const PREFERENCIAS_PADRAO: Preferencias = {
-  aguaMetaMl: 2400,
+  // 3,4 L é a meta que ela vem seguindo — ajustável em /ajustes.
+  aguaMetaMl: 3400,
   aguaPorcoes: [300, 600],
   pesoInicial: 84,
   pesoMeta: 70,

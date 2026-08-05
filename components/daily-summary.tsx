@@ -11,6 +11,7 @@ import { useProtocolo } from "@/lib/protocol";
 import { useRotina } from "@/lib/routine";
 import { usePreferencias } from "@/lib/settings";
 import { useAgora } from "@/lib/now";
+import { useDia } from "@/components/day-context";
 
 /** Peso de cada frente no "plano de hoje" — soma 1. */
 const PESOS = { refeicoes: 0.3, agua: 0.15, treino: 0.2, rotina: 0.35 };
@@ -24,17 +25,23 @@ function saudacao(hora: number): string {
 export function DailySummary() {
   const [pct, setPct] = useState(0);
   const [streak, setStreak] = useState(0);
-  const [parciais, setParciais] = useState({ refeicoes: 0, agua: 0, treino: false, rotina: 0 });
+  const [parciais, setParciais] = useState({
+    refeicoes: 0,
+    agua: 0,
+    treino: false,
+    rotina: 0,
+  });
   const [hydrated, setHydrated] = useState(false);
   const agora = useAgora();
   const status = useProtocolo();
   const { blocos } = useRotina();
   const { prefs } = usePreferencias();
   const metaAgua = prefs.aguaMetaMl;
+  const { data, ehHoje } = useDia();
 
   useEffect(() => {
     const ids = blocos.flatMap((b) => b.itens.map((i) => i.id));
-    Promise.all([getDay(), getStreak()])
+    Promise.all([getDay(data), getStreak()])
       .then(([day, streakValue]) => {
         const refeicoes = Object.values(day.meals).filter(Boolean).length;
         const rotina = ids.filter((id) => day.supplements[id] === true).length;
@@ -42,14 +49,20 @@ export function DailySummary() {
           PESOS.refeicoes * Math.min(refeicoes / 4, 1) +
           PESOS.agua * Math.min(day.water / metaAgua, 1) +
           PESOS.treino * (day.workout ? 1 : 0) +
-          PESOS.rotina * (ids.length > 0 ? Math.min(rotina / ids.length, 1) : 0);
+          PESOS.rotina *
+            (ids.length > 0 ? Math.min(rotina / ids.length, 1) : 0);
         setPct(Math.round(score * 100));
-        setParciais({ refeicoes, agua: day.water, treino: day.workout, rotina });
+        setParciais({
+          refeicoes,
+          agua: day.water,
+          treino: day.workout,
+          rotina,
+        });
         setStreak(streakValue);
         setHydrated(true);
       })
       .catch(() => setHydrated(true));
-  }, [blocos, metaAgua]);
+  }, [blocos, metaAgua, data]);
 
   const legenda = !status
     ? ""
@@ -64,10 +77,22 @@ export function DailySummary() {
       <CardContent className="space-y-5 p-6">
         <div className="flex items-start justify-between gap-5">
           <div className="min-w-0 pt-1">
-            <p className="eyebrow text-bone/50">{agora ? dataExtenso(agora) : " "}</p>
+            <p className="eyebrow text-bone/50">
+              {agora ? dataExtenso(agora) : " "}
+            </p>
             <h2 className="font-display mt-1.5 text-[2rem] leading-none text-bone">
-              {agora ? saudacao(agora.getHours()) : "Olá"},<br />
-              <span className="italic">Milena</span>
+              {ehHoje ? (
+                <>
+                  {agora ? saudacao(agora.getHours()) : "Olá"},<br />
+                  <span className="italic">Milena</span>
+                </>
+              ) : (
+                <>
+                  Fechando
+                  <br />
+                  <span className="italic">esse dia</span>
+                </>
+              )}
             </h2>
             <p className="mt-3 text-sm text-bone/70">{legenda || " "}</p>
           </div>
@@ -89,7 +114,11 @@ export function DailySummary() {
         </div>
 
         <div className="grid grid-cols-4 gap-2">
-          <Mini icone={<Utensils className="h-3.5 w-3.5" />} valor={`${parciais.refeicoes}/4`} rotulo="refeições" />
+          <Mini
+            icone={<Utensils className="h-3.5 w-3.5" />}
+            valor={`${parciais.refeicoes}/4`}
+            rotulo="refeições"
+          />
           <Mini
             icone={<Droplet className="h-3.5 w-3.5" />}
             valor={
