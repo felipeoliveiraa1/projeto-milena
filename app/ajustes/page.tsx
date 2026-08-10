@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { usePreferencias, type Preferencias } from "@/lib/settings";
 import { emailDaSessao, sair, useSessao } from "@/lib/auth";
+import { ResetCard } from "@/components/reset-card";
 import { cn } from "@/lib/utils";
 
 export default function AjustesPage() {
@@ -36,7 +37,8 @@ export default function AjustesPage() {
   const [salvo, setSalvo] = useState(false);
 
   const atual = rascunho ?? prefs;
-  const mudou = rascunho !== null && JSON.stringify(rascunho) !== JSON.stringify(prefs);
+  const mudou =
+    rascunho !== null && JSON.stringify(rascunho) !== JSON.stringify(prefs);
 
   function editar(patch: Partial<Preferencias>) {
     setRascunho({ ...atual, ...patch });
@@ -55,17 +57,20 @@ export default function AjustesPage() {
     <div className="stagger space-y-5">
       <header>
         <Eyebrow className="text-ink-muted">Ajustes</Eyebrow>
-        <h2 className="font-display mt-2 text-4xl leading-none text-ink">Do seu jeito</h2>
+        <h2 className="font-display mt-2 text-4xl leading-none text-ink">
+          Do seu jeito
+        </h2>
         <p className="mt-3 text-sm leading-relaxed text-ink-muted">
-          Metas, medidas e o tamanho do ciclo. Muda aqui e vale no app inteiro — sem depender de
-          atualização.
+          Metas, medidas e o tamanho do ciclo. Muda aqui e vale no app inteiro —
+          sem depender de atualização.
         </p>
       </header>
 
       {origem === "aparelho" && (
         <p className="flex items-center gap-2 rounded-xl2 bg-gold-soft px-4 py-3 text-xs font-semibold text-gold">
           <Smartphone className="h-3.5 w-3.5 shrink-0" />
-          Salvo neste aparelho. Para sincronizar com outros, rode o SQL de supabase/schema.sql.
+          Salvo neste aparelho. Para sincronizar com outros, rode o SQL de
+          supabase/schema.sql.
         </p>
       )}
 
@@ -82,19 +87,28 @@ export default function AjustesPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <label className="block space-y-1.5">
-            <span className="text-xs font-semibold text-ink-soft">Meta do dia (ml)</span>
+            <span className="text-xs font-semibold text-ink-soft">
+              Meta do dia (ml)
+            </span>
             <Input
               inputMode="numeric"
               value={String(atual.aguaMetaMl)}
-              onChange={(e) => editar({ aguaMetaMl: Number(e.target.value.replace(/\D/g, "")) || 0 })}
+              onChange={(e) =>
+                editar({
+                  aguaMetaMl: Number(e.target.value.replace(/\D/g, "")) || 0,
+                })
+              }
             />
             <span className="block text-xs text-ink-muted tabular">
-              = {(atual.aguaMetaMl / 1000).toFixed(1).replace(".", ",")} L por dia
+              = {(atual.aguaMetaMl / 1000).toFixed(1).replace(".", ",")} L por
+              dia
             </span>
           </label>
 
           <div className="space-y-2">
-            <span className="text-xs font-semibold text-ink-soft">Botões de registro (ml)</span>
+            <span className="text-xs font-semibold text-ink-soft">
+              Botões de registro (ml)
+            </span>
             {atual.aguaPorcoes.map((p, i) => (
               <div key={i} className="flex items-center gap-2">
                 <Input
@@ -112,7 +126,9 @@ export default function AjustesPage() {
                   aria-label={`Remover botão de ${p} ml`}
                   disabled={atual.aguaPorcoes.length <= 1}
                   onClick={() =>
-                    editar({ aguaPorcoes: atual.aguaPorcoes.filter((_, k) => k !== i) })
+                    editar({
+                      aguaPorcoes: atual.aguaPorcoes.filter((_, k) => k !== i),
+                    })
                   }
                 >
                   <Trash2 className="h-4 w-4 text-ink-muted" />
@@ -123,7 +139,9 @@ export default function AjustesPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => editar({ aguaPorcoes: [...atual.aguaPorcoes, 500] })}
+                onClick={() =>
+                  editar({ aguaPorcoes: [...atual.aguaPorcoes, 500] })
+                }
               >
                 <Plus className="h-4 w-4" /> Adicionar botão
               </Button>
@@ -145,21 +163,31 @@ export default function AjustesPage() {
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-3">
           <label className="space-y-1.5">
-            <span className="text-xs font-semibold text-ink-soft">Peso inicial (kg)</span>
+            <span className="text-xs font-semibold text-ink-soft">
+              Peso inicial (kg)
+            </span>
             <Input
               inputMode="decimal"
               value={String(atual.pesoInicial).replace(".", ",")}
               onChange={(e) =>
-                editar({ pesoInicial: Number(e.target.value.replace(",", ".")) || 0 })
+                editar({
+                  pesoInicial: Number(e.target.value.replace(",", ".")) || 0,
+                })
               }
             />
           </label>
           <label className="space-y-1.5">
-            <span className="text-xs font-semibold text-ink-soft">Meta (kg)</span>
+            <span className="text-xs font-semibold text-ink-soft">
+              Meta (kg)
+            </span>
             <Input
               inputMode="decimal"
               value={String(atual.pesoMeta).replace(".", ",")}
-              onChange={(e) => editar({ pesoMeta: Number(e.target.value.replace(",", ".")) || 0 })}
+              onChange={(e) =>
+                editar({
+                  pesoMeta: Number(e.target.value.replace(",", ".")) || 0,
+                })
+              }
             />
           </label>
         </CardContent>
@@ -173,7 +201,8 @@ export default function AjustesPage() {
             <CalendarDays className="h-4.5 w-4.5 text-plum" /> Duração do ciclo
           </CardTitle>
           <CardDescription>
-            O padrão do Desinflama-se é 15 dias. Se quiser emendar um ciclo maior, é aqui.
+            O padrão do Desinflama-se é 15 dias. Se quiser emendar um ciclo
+            maior, é aqui.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
@@ -182,12 +211,16 @@ export default function AjustesPage() {
             <Input
               inputMode="numeric"
               value={String(atual.cicloDias)}
-              onChange={(e) => editar({ cicloDias: Number(e.target.value.replace(/\D/g, "")) || 0 })}
+              onChange={(e) =>
+                editar({
+                  cicloDias: Number(e.target.value.replace(/\D/g, "")) || 0,
+                })
+              }
             />
           </label>
           <p className="text-xs leading-relaxed text-ink-muted">
-            O cardápio tem 15 dias montados; passando disso ele recomeça do dia 1. A data de início
-            do ciclo você ajusta na aba Rotina.
+            O cardápio tem 15 dias montados; passando disso ele recomeça do dia
+            1. A data de início do ciclo você ajusta na aba Rotina.
           </p>
         </CardContent>
       </Card>
@@ -200,7 +233,8 @@ export default function AjustesPage() {
             <ListChecks className="h-4.5 w-4.5 text-plum" /> Blocos e itens
           </CardTitle>
           <CardDescription>
-            Manhã, movimento, acompanhamento, noite — tudo editável, com blocos novos se quiser.
+            Manhã, movimento, acompanhamento, noite — tudo editável, com blocos
+            novos se quiser.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -227,6 +261,8 @@ export default function AjustesPage() {
           </Button>
         </CardContent>
       </Card>
+
+      <ResetCard />
 
       {/* Ações -------------------------------------------------------------- */}
       <div
