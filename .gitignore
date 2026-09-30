@@ -43,6 +43,9 @@ conversa_completa_desinflama_se.md
 # fotos da academia — referência para montar o treino, não são assets do app
 /fotos-academia/
 
+# capturas do Playwright usadas em teste visual (mostram dados dela)
+/.playwright-mcp/
+
 # vercel
 .vercel
 

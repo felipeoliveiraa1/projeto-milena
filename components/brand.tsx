@@ -37,9 +37,11 @@ export function BrandMark({ className }: { className?: string }) {
 
 export function Wordmark({ className }: { className?: string }) {
   return (
-    <span className={cn("flex flex-col leading-none", className)}>
+    // min-w-0 + truncate: em 320 px o subtítulo encolhe com reticências, em vez
+    // de empurrar o selo da semana para duas linhas.
+    <span className={cn("flex min-w-0 flex-col leading-none", className)}>
       <span className="font-display text-[1.35rem] tracking-tight text-ink">Mais Leve</span>
-      <span className="mt-0.5 text-[0.65rem] font-medium tracking-[0.14em] text-ink-muted uppercase">
+      <span className="mt-0.5 truncate text-[0.65rem] font-medium tracking-[0.14em] text-ink-muted uppercase">
         plano da Milena
       </span>
     </span>

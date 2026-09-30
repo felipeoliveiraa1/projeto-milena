@@ -19,7 +19,48 @@ function valida(valor: unknown): RotinaBloco[] | null {
       typeof (b as RotinaBloco).titulo === "string" &&
       Array.isArray((b as RotinaBloco).itens),
   );
-  return blocos.length > 0 ? blocos : null;
+  return blocos.length > 0 ? atualizarItensDeFabrica(blocos) : null;
+}
+
+/**
+ * Texto de fábrica que mudou com o plano novo (29/09/2026). A rotina salva
+ * guarda uma cópia de cada item; sem isto, quem já tinha editado a rotina
+ * continuaria vendo "refeição mais leve" à noite, bem na hora do jejum.
+ *
+ * Só troca o que ainda está igual ao antigo de fábrica — o que ela escreveu
+ * com as próprias mãos fica como está.
+ */
+const FABRICA_ANTERIOR: Record<string, { texto?: string; opcoes?: string[] }> = {
+  "r-n-refeicao": { texto: "Fazer uma refeição mais leve" },
+  // "Desafio" era o nome do Desinflama-se; os motivos continuam.
+  "r-m-motivos": { texto: "Reler os motivos do desafio" },
+  "r-ac-sintomas": {
+    opcoes: ["Sem sintomas", "Inchaço", "Dor de cabeça", "Intestino preso", "Cansaço", "Azia"],
+  },
+};
+
+const FABRICA_ATUAL = new Map(ROTINA_PADRAO.flatMap((b) => b.itens).map((i) => [i.id, i]));
+
+function atualizarItensDeFabrica(blocos: RotinaBloco[]): RotinaBloco[] {
+  return blocos.map((bloco) => ({
+    ...bloco,
+    itens: bloco.itens.map((item) => {
+      const antigo = FABRICA_ANTERIOR[item.id];
+      const atual = FABRICA_ATUAL.get(item.id);
+      if (!antigo || !atual) return item;
+      let novo = item;
+      if (antigo.texto !== undefined && item.texto === antigo.texto) {
+        novo = { ...novo, texto: atual.texto, detalhe: atual.detalhe };
+      }
+      if (
+        antigo.opcoes !== undefined &&
+        JSON.stringify(item.opcoes) === JSON.stringify(antigo.opcoes)
+      ) {
+        novo = { ...novo, opcoes: atual.opcoes };
+      }
+      return novo;
+    }),
+  }));
 }
 
 function lerLocal(): RotinaBloco[] | null {

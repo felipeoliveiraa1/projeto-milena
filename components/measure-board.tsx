@@ -12,14 +12,20 @@ import {
   salvarMedidas,
   type Medidas,
 } from "@/lib/storage";
-import { todayKey, dataCurta } from "@/lib/date";
+import { dataCurta, hojeKey } from "@/lib/date";
+import { useAgoraVivo } from "@/lib/now";
 import { cn } from "@/lib/utils";
 
 type Rascunho = Record<string, string>;
 
 export function MeasureBoard() {
   const [lista, setLista] = useState<Medidas[]>([]);
-  const [data, setData] = useState(todayKey());
+  // Só guarda a data que ela escolheu; sem escolha, vale o "hoje" do app, que
+  // anda com o relógio (o PWA pode ficar aberto de um dia para o outro).
+  const [escolhida, setData] = useState<string | null>(null);
+  const agora = useAgoraVivo();
+  // "Limpar" no seletor de data manda "": volta para hoje, em vez de gravar sem data.
+  const data = escolhida || hojeKey(agora ?? undefined);
   const [rascunho, setRascunho] = useState<Rascunho>({});
   const [carregando, setCarregando] = useState(true);
 
@@ -108,7 +114,7 @@ export function MeasureBoard() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Input type="date" value={data} max={todayKey()} onChange={(e) => setData(e.target.value)} />
+          <Input type="date" value={data} max={hojeKey()} onChange={(e) => setData(e.target.value)} />
           <div className="grid grid-cols-2 gap-2">
             {CAMPOS_MEDIDAS.map((c) => (
               <label key={c.chave} className="space-y-1">

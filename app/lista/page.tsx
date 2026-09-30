@@ -9,6 +9,7 @@ import {
   Flame,
   MessageCircle,
   Refrigerator,
+  Scale,
   Share2,
   Snowflake,
   Utensils,
@@ -57,14 +58,15 @@ export default function ListaPage() {
     });
   }, []);
 
-  /** Quais dias do cardápio entraram na lista. */
+  /** Quais dias da semana entraram na lista, na ordem do cardápio (segunda a domingo). */
   const dias = useMemo(
     () =>
       CARDAPIO.filter((d) =>
         d.refeicoes.some((r) => r.itens.some((i) => state.selectedComponents[i.id])),
-      ).map((d) => d.dia),
+      ).map((d) => d.nome),
     [state.selectedComponents],
   );
+  const diasTexto = dias.length === CARDAPIO.length ? "a semana toda" : dias.join(", ");
 
   /** Ingredientes únicos dos itens marcados + os essenciais de despensa. */
   const grouped = useMemo(() => {
@@ -111,7 +113,10 @@ export default function ListaPage() {
   }
 
   function buildShareText(): string {
-    const lines: string[] = ["🛒 *Lista de compras — Desinflama-se*", ""];
+    const lines: string[] = ["🛒 *Lista de compras da semana*"];
+    // Quem for ao mercado sabe para quais dias é a compra.
+    if (dias.length > 0) lines.push(`_Cardápio: ${diasTexto}_`);
+    lines.push("");
     let total = 0;
     for (const g of grouped) {
       const itens = g.itens.filter((i) => !state.items[i.id]);
@@ -185,8 +190,8 @@ export default function ListaPage() {
                 </span>
                 <p className="font-display text-2xl text-ink">Lista vazia</p>
                 <p className="text-sm leading-relaxed text-ink-muted">
-                  Escolha os dias na aba Dieta — dá para marcar a semana inteira de uma vez — e os
-                  ingredientes aparecem aqui.
+                  Escolha os dias no cardápio da aba Dieta — o botão “Marcar a semana toda” faz
+                  tudo de uma vez — e os ingredientes aparecem aqui, com as quantidades.
                 </p>
                 <Button asChild>
                   <Link href="/dieta">Escolher os dias</Link>
@@ -224,8 +229,8 @@ export default function ListaPage() {
                   </div>
                   <Progress value={pct} />
                   {dias.length > 0 && (
-                    <p className="text-xs text-ink-muted">
-                      Dias no carrinho: <strong className="text-ink">{dias.join(", ")}</strong>
+                    <p className="text-xs leading-relaxed text-ink-muted">
+                      Dias no carrinho: <strong className="text-ink">{diasTexto}</strong>
                     </p>
                   )}
                   <div className="flex flex-wrap gap-2 border-t border-line pt-4">
@@ -323,13 +328,31 @@ export default function ListaPage() {
             <CardContent className="space-y-2.5 p-5">
               <Eyebrow className="text-ink-soft">Na hora de comprar</Eyebrow>
               <ul className="space-y-1.5 text-xs leading-relaxed text-ink-soft">
-                <li>Feira e sacolão antes do supermercado.</li>
-                <li>Rótulo curto: se tem muita coisa escrita, não vai pro carrinho.</li>
                 <li>
-                  Aveia só com selo <strong>sem glúten</strong>.
+                  Queijo: o <strong>minas do pote preto</strong> — foi o melhor dos avaliados no
+                  resumo.
                 </li>
-                <li>Atum em óleo, nunca ao molho de tomate — e escorra todo o óleo.</li>
-                <li>Quanto mais cor no carrinho, melhor o prato.</li>
+                <li>
+                  O creme de ricota light é sabor: pode ir, mas{" "}
+                  <strong>não é fonte principal de proteína</strong>.
+                </li>
+                <li>
+                  Whey: o <strong>Chef Zero</strong>, 40 g por dia — 280 g na semana.
+                </li>
+                <li>Iogurte proteico: confira os 15–17 g de proteína no rótulo do pote.</li>
+                <li>Pão francês comum serve: o miolo sai em casa.</li>
+                <li>Carne magra: patinho. Para o moído, peça para moer na hora, sem a capa de gordura.</li>
+                <li>
+                  Macarrão <strong>integral e sem glúten</strong>, como o resumo pede.
+                </li>
+                <li>Feira e sacolão antes do supermercado, como o Dr. Henry pede.</li>
+                {/* Fica fora da lista da semana de propósito: não é comida do
+                    cardápio, é o socorro do card do jejum (tremor, suor frio). */}
+                <li>
+                  Para o socorro do jejum, tenha em casa{" "}
+                  <strong>sachês de açúcar ou uma caixinha de suco comum</strong> — não é
+                  para o dia a dia.
+                </li>
               </ul>
             </CardContent>
           </Card>
@@ -343,7 +366,7 @@ export default function ListaPage() {
               <CardTitle className="mt-1.5">{ESTRATEGIA.titulo}</CardTitle>
               <CardDescription className="text-ink-soft">{ESTRATEGIA.texto}</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <ol className="space-y-2.5">
                 {ESTRATEGIA.passos.map((p, i) => (
                   <li key={p} className="flex items-start gap-3">
@@ -354,6 +377,10 @@ export default function ListaPage() {
                   </li>
                 ))}
               </ol>
+              <p className="flex items-start gap-2 rounded-xl2 bg-surface/80 p-3.5 text-xs leading-relaxed text-ink-soft">
+                <Scale className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand" />
+                {ESTRATEGIA.dica}
+              </p>
             </CardContent>
           </Card>
 

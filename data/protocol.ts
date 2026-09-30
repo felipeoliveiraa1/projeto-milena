@@ -1,100 +1,41 @@
 /**
- * Protocolo Desinflama-se — regras, rotina e restrições da Milena.
+ * Plano atual da Milena — recomposição corporal.
  *
- * Fonte: apostila do protocolo + e-books de receitas + a lista de preferências
- * e ajustes que ela fechou na conversa exportada em 04/08/2026.
+ * Até setembro o app seguia o protocolo Desinflama-se (15 dias sem açúcar,
+ * glúten, leite e industrializados). Em 29/09/2026 ela mandou o plano novo: o
+ * resumo de alimentação para recomposição corporal, a lista de remédios e
+ * suplementos, a bioimpedância de 12/08 e as orientações do médico para o
+ * treino.
  *
- * Este arquivo é a única fonte de verdade das regras. O cardápio (data/meals.ts),
- * a lista de compras (data/shopping.ts) e o preparo (data/prep.ts) derivam daqui.
+ * Este arquivo guarda o que é do plano como um todo e a rotina de fábrica. As
+ * regras de comida moram em data/alimentacao.ts, o treino em data/workouts.ts
+ * e os remédios em data/supplements.ts.
  */
 
-export const PROTOCOLO = {
-  nome: "Desinflama-se",
-  duracaoDias: 15,
+export const PLANO = {
+  nome: "Recomposição corporal",
   /**
-   * Data em que a Milena começou o ciclo de 15 dias (formato AAAA-MM-DD).
-   * Serve de padrão — ela pode corrigir pelo próprio app, na tela /rotina.
+   * Começo da jornada (AAAA-MM-DD). Serve de padrão — ela pode corrigir pelo
+   * próprio app, na tela /rotina. 12/08 é o dia da bioimpedância de partida.
    */
-  inicioPadrao: "2026-08-03",
+  inicioPadrao: "2026-08-12",
   resumo:
-    "15 dias tirando do prato o que inflama (açúcar, adoçante, glúten, leite, fritura, álcool e industrializado) e colocando comida de verdade, água, sono e rotina.",
+    "Perder gordura sem perder músculo: proteína em todas as refeições, janela de refeições com jejum à noite, perna forte e cardio entre as séries.",
+  /** O sinal de que está dando certo, nas palavras do resumo de alimentação. */
+  objetivo:
+    "Peso e cintura diminuindo enquanto a força na musculação se mantém ou aumenta.",
 };
 
-/* -------------------------------------------------------------------------- */
-/* Montagem do prato                                                          */
-/* -------------------------------------------------------------------------- */
-
-export const MONTAGEM_PRATO = [
-  { fracao: "½ prato", item: "Verduras e legumes", cor: "bg-brand" },
-  { fracao: "¼ prato", item: "Proteína", cor: "bg-clay" },
-  { fracao: "¼ prato", item: "Carboidrato", cor: "bg-gold" },
-];
-
-export const ORDEM_CONSUMO = [
-  { passo: 1, o: "Folhas", porque: "Fibra primeiro: enche o estômago e segura o pico de glicose." },
-  { passo: 2, o: "Legumes", porque: "Mais fibra e volume, ainda antes da parte densa." },
-  { passo: 3, o: "Proteína", porque: "Saciedade que dura e preserva massa magra." },
-  { passo: 4, o: "Carboidrato", porque: "Por último, o corpo já está saciado e você come menos." },
-];
-
-export const EXTRAS_PRATO = [
-  "Leguminosa: grão-de-bico em porção pequena, se cair bem.",
-  "Gordura boa: um fio de azeite, 1 colher de chá de chia ou linhaça, ou algumas nozes.",
-  "Refeições menores: proteína + carboidrato de qualidade + fruta ou vegetal.",
-];
-
-/* -------------------------------------------------------------------------- */
-/* Preferências fechadas pela Milena                                          */
-/* -------------------------------------------------------------------------- */
-
-export const PREFERENCIAS = {
-  proteinas: {
-    sim: ["Frango", "Peixe", "Ovos", "Tofu"],
-    nao: ["Frutos do mar", "Fígado", "Sardinha"],
-  },
-  carboidratos: {
-    sim: [
-      "Arroz integral",
-      "Batata",
-      "Batata-doce",
-      "Mandioca",
-      "Quinoa",
-      "Tapioca",
-      "Cuscuz",
-      "Macarrão sem glúten",
-    ],
-    nao: ["Mandioquinha (batata baroa) — não é a mesma coisa que mandioca"],
-  },
-  leguminosas: {
-    sim: ["Grão-de-bico"],
-    nao: ["Feijão", "Lentilha", "Ervilha"],
-  },
+/** Dados que ela passou em 29/09/2026 e que o app usa nas contas. */
+export const PERFIL = {
+  nome: "Milena",
+  idade: 39,
+  alturaM: 1.61,
+  /** Peso que ela informou em 29/09/2026. No dia a dia, vale a balança do app. */
+  pesoInformadoKg: 85,
+  /** Afastamento dos retos abdominais medido. Orienta todo exercício de abdômen. */
+  diastaseCm: 3.9,
 };
-
-/* -------------------------------------------------------------------------- */
-/* Permitidos e proibidos                                                     */
-/* -------------------------------------------------------------------------- */
-
-export const FORA_DO_PROTOCOLO = [
-  { item: "Açúcar", detalhe: "Em qualquer forma — inclusive mel e melado." },
-  { item: "Adoçante", detalhe: "Nenhum, nem natural nem artificial." },
-  { item: "Glúten", detalhe: "Trigo, pão comum, torrada, macarrão comum, bolacha." },
-  { item: "Leite e derivados", detalhe: "Leite, iogurte, queijo, coalhada, requeijão e whey." },
-  { item: "Frituras", detalhe: "Nada de imersão em óleo." },
-  { item: "Álcool", detalhe: "Zero durante os 15 dias." },
-  {
-    item: "Industrializado fora da lista",
-    detalhe: "Só entra o que passar nos critérios de rótulo abaixo.",
-  },
-];
-
-export const CRITERIOS_ROTULO = [
-  "Poucos ingredientes — se a lista é longa, devolve pra prateleira.",
-  "Sem açúcar adicionado (inclusive xarope de glicose, maltodextrina, dextrose).",
-  "Sem corante.",
-  "Sem realçador de sabor.",
-  "Sem gordura vegetal hidrogenada.",
-];
 
 /* -------------------------------------------------------------------------- */
 /* Rotina diária                                                              */
@@ -126,7 +67,8 @@ export type RotinaBloco = {
  * e substitui esta lista. Aqui fica só o ponto de partida e o botão "restaurar".
  *
  * Os ids são gravados no Supabase dentro de daily_checks.supplements, junto com
- * os suplementos. O prefixo "r-" separa rotina de suplemento.
+ * os suplementos. O prefixo "r-" separa rotina de suplemento. Por isso um id
+ * nunca muda, mesmo quando o texto muda: o histórico depende dele.
  */
 export const ROTINA_PADRAO: RotinaBloco[] = [
   {
@@ -156,14 +98,14 @@ export const ROTINA_PADRAO: RotinaBloco[] = [
       { id: "r-m-declaracoes", texto: "Fazer as declarações" },
       { id: "r-m-objetivos", texto: "Visualizar os objetivos" },
       { id: "r-m-proverbios", texto: "Ler Provérbios ou Salmos" },
-      { id: "r-m-motivos", texto: "Reler os motivos do desafio" },
+      { id: "r-m-motivos", texto: "Reler os seus motivos" },
     ],
   },
   {
     id: "movimento",
     titulo: "Movimento",
     periodo: "dia",
-    nota: "O treino do dia fica na aba Treino — este bloco é o extra do protocolo.",
+    nota: "O treino do dia fica na aba Treino — este bloco é o extra.",
     itens: [
       { id: "r-mov-atividade", texto: "Fazer a atividade física do dia" },
       {
@@ -185,13 +127,17 @@ export const ROTINA_PADRAO: RotinaBloco[] = [
         texto: "Registrar sintomas do dia",
         campo: "texto",
         placeholder: "Como o corpo respondeu hoje?",
+        // Enjoo e falta de fome são os efeitos mais comuns do Mounjaro — vale
+        // anotar para levar ao médico.
         opcoes: [
           "Sem sintomas",
-          "Inchaço",
-          "Dor de cabeça",
+          "Enjoo",
+          "Sem fome",
           "Intestino preso",
-          "Cansaço",
           "Azia",
+          "Inchaço",
+          "Cansaço",
+          "Dor de cabeça",
         ],
       },
     ],
@@ -201,7 +147,13 @@ export const ROTINA_PADRAO: RotinaBloco[] = [
     titulo: "Rotina da noite",
     periodo: "noite",
     itens: [
-      { id: "r-n-refeicao", texto: "Fazer uma refeição mais leve" },
+      {
+        // O id ainda é o da antiga "refeição mais leve": à noite agora é jejum.
+        id: "r-n-refeicao",
+        texto: "Fechar a janela no horário",
+        detalhe:
+          "Depois da última refeição, só água, chá ou café sem açúcar até o café da manhã — os remédios da noite seguem a lista.",
+      },
       { id: "r-n-skincare", texto: "Skincare da noite" },
       { id: "r-n-dormir", texto: "Dormir em horário adequado" },
       {
@@ -215,121 +167,18 @@ export const ROTINA_PADRAO: RotinaBloco[] = [
 ];
 
 /* -------------------------------------------------------------------------- */
-/* Divergências encontradas na revisão                                        */
-/* -------------------------------------------------------------------------- */
-
-export type Divergencia = {
-  id: string;
-  tema: string;
-  /** Gravidade: "seguranca" aparece primeiro e em vermelho. */
-  tipo: "seguranca" | "protocolo" | "preferencia";
-  antes: string;
-  protocolo: string;
-  decisao: string;
-};
-
-/**
- * O app foi originalmente montado sobre o plano do Dr. Henry (endocrinologista).
- * O protocolo Desinflama-se conflita com ele em vários pontos. Nada foi apagado
- * em silêncio: cada troca está registrada aqui e aparece na tela /dieta.
- */
-export const DIVERGENCIAS: Divergencia[] = [
-  {
-    id: "medicamento",
-    tema: "Medicamento",
-    tipo: "seguranca",
-    antes:
-      "A apostila diz, em um trecho, que só o médico pode retirar medicamento — e, em outro, sugere suspender conforme a pressão ou a glicemia.",
-    protocolo: "Os dois trechos não podem valer ao mesmo tempo.",
-    decisao:
-      "O app segue o trecho seguro: nenhum medicamento é suspenso ou ajustado sem o médico responsável. Com histórico de pressão alta gestacional e diabetes gestacional, isso não é negociável.",
-  },
-  {
-    id: "laticinios",
-    tema: "Leite e derivados",
-    tipo: "protocolo",
-    antes:
-      "O plano anterior usava iogurte natural, leite desnatado, coalhada, queijos e whey — apareciam em quatro das seis refeições.",
-    protocolo: "O protocolo tira leite e derivados durante os 15 dias.",
-    decisao:
-      "Saíram do cardápio e da lista. A proteína passou a vir de ovos, frango, peixe e tofu; onde precisava de leite, entrou leite de amêndoas caseiro ou de rótulo curto.",
-  },
-  {
-    id: "gluten",
-    tema: "Glúten",
-    tipo: "protocolo",
-    antes:
-      "Pão integral, torrada integral, granola, macarrão integral, barra de cereais e bolacha de água e sal.",
-    protocolo: "O protocolo tira o glúten.",
-    decisao:
-      "Trocados por tapioca, crepioca, pãozinho de aveia ou cenoura, cuscuz de milho e macarrão sem glúten. Compre aveia com selo sem glúten — a aveia comum costuma vir contaminada com trigo.",
-  },
-  {
-    id: "acucar-mel",
-    tema: "Açúcar, mel e adoçante",
-    tipo: "protocolo",
-    antes: "Havia mel no pré-treino, chocolate 70%, tâmaras e frutas secas como lanche.",
-    protocolo:
-      "Os materiais se contradizem: uma receita salgada traz mel como opcional, e o e-book de receitas doces afirma que o protocolo não usa mel.",
-    decisao:
-      "O app segue a regra mais restritiva: sem açúcar, sem mel e sem adoçante. Doce é fruta, e a canela faz o papel de adoçar.",
-  },
-  {
-    id: "proteinas",
-    tema: "Proteínas",
-    tipo: "preferencia",
-    antes:
-      "O plano tinha salmão, camarão, atum fresco, sardinha, lombo de porco, patinho, coxão mole e peito de peru.",
-    protocolo: "Você fechou em frango, peixe, ovos e tofu — sem frutos do mar, fígado e sardinha.",
-    decisao:
-      "Todo o resto saiu. O atum ficou só na versão do patê, em lata, com o óleo escorrido por completo — e o patê está sempre escrito como atum/frango, porque você ainda vai testar o atum.",
-  },
-  {
-    id: "leguminosas",
-    tema: "Leguminosas",
-    tipo: "preferencia",
-    antes: "Grão-de-bico estava na lista de evitar, junto com feijão e lentilha.",
-    protocolo: "Agora o grão-de-bico é a única leguminosa que você mantém.",
-    decisao:
-      "Inverteu: grão-de-bico entrou no cardápio em porções pequenas (inclusive como homus). Feijão, lentilha e ervilha seguem fora.",
-  },
-  {
-    id: "suplementos",
-    tema: "Suplementos",
-    tipo: "protocolo",
-    antes: "Whey protein e creatina no pós-treino, ômega 3 e Vitafer.",
-    protocolo: "Whey é derivado do leite.",
-    decisao:
-      "Whey saiu durante os 15 dias — a proteína do pós-treino virou comida (ovos ou frango). Creatina não tem leite e não é alimento: fica como decisão sua com o médico. Ômega 3 continua. Vitafer é prescrição e não se mexe.",
-  },
-  {
-    id: "mandioquinha",
-    tema: "Mandioquinha",
-    tipo: "preferencia",
-    antes: "Mandioquinha (batata baroa) aparecia como substituição do arroz.",
-    protocolo: "Mandioquinha não é mandioca, e não está na sua lista de carboidratos.",
-    decisao: "Saiu do cardápio e da lista de compras. Mandioca continua.",
-  },
-  {
-    id: "salada-entrada",
-    tema: "Salada como entrada",
-    tipo: "protocolo",
-    antes: "O médico já pedia salada como entrada obrigatória em toda refeição principal.",
-    protocolo: "O protocolo pede a ordem folhas → legumes → proteína → carboidrato.",
-    decisao:
-      "Aqui os dois concordam. A regra ficou e virou a ordem oficial do prato no app.",
-  },
-];
-
-/* -------------------------------------------------------------------------- */
 /* Segurança                                                                  */
 /* -------------------------------------------------------------------------- */
 
 export const SEGURANCA = [
-  "Nenhum medicamento é suspenso ou ajustado sem o médico que receitou.",
-  "Limão, própolis, banho gelado, volume grande de água e exercício são adaptados à sua tolerância.",
-  "Tontura, dor, enjoo, falta de ar ou fraqueza: não force o hábito, pare e procure orientação.",
-  "Preparações perecíveis vão pra geladeira rápido; na geladeira só o que você come nos próximos dias.",
-  "Não descongele alimento em cima da pia. Peixe descongelado se prepara — não volta cru pro congelador.",
-  "Folhas e frutas cortadas ficam sempre refrigeradas.",
+  "Nenhum remédio é suspenso, trocado de dia ou ajustado sem o médico que receitou — Mounjaro, testosterona e fórmula inclusive.",
+  // Tremor e suor frio são sinais de açúcar baixo, e a regra é açúcar rápido e
+  // sozinho (ADA e SBD): proteína e fibra atrasam a subida — e o Mounjaro já
+  // deixa o estômago mais lento.
+  "Jejum não é para passar mal. Tremor, suor frio, fraqueza ou tontura podem ser açúcar baixo: 15 g de açúcar rápido e sozinho — 1 colher de sopa de açúcar na água ou 150 ml de suco ou refrigerante comum —, espere 15 minutos e, se não passar, repita uma vez. Passou: um lanche com proteína. Não passou, confusão ou desmaio: atendimento. E avise o médico.",
+  "Mounjaro: dor forte na barriga que não passa (às vezes indo para as costas), vômito que não para ou sinais de desidratação — procure atendimento.",
+  "Testosterona na pele: lave as mãos depois de passar e deixe o local coberto pela roupa. O bebê não pode encostar na pele onde foi aplicada.",
+  "Treino: dor ou aperto no peito, falta de ar fora do normal para o esforço, tontura forte, desmaio ou coração disparado ou irregular — pare e procure atendimento. Não é caso de trocar de exercício.",
+  "Treino: escape de urina, sensação de peso ou de 'bola' na vagina, dor, ou a barriga formando um 'morrinho' no meio — pare, ajuste ou troque o exercício e fale com a fisioterapeuta pélvica.",
+  "Antes da cirurgia plástica (ou de qualquer anestesia), avise o cirurgião e o anestesista de todos os remédios — o Mounjaro costuma precisar de ajuste antes.",
 ];

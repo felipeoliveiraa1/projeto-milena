@@ -1,13 +1,18 @@
 -- =============================================================================
 -- Schema do Treino & Dieta da Milena
 -- Cole este SQL no SQL Editor do Supabase e clique em "Run".
+--
+-- ATENÇÃO: só para projeto novo. Num projeto que já passou pela migration 0003
+-- (login), NÃO rode este arquivo de novo: ele recria as políticas "anon all",
+-- e política do Postgres soma — o acesso sem login voltaria para as tabelas
+-- antigas. Mudança em projeto que já existe vai por supabase/migrations/.
 -- =============================================================================
 
 -- 1) Tabela de check-ins diários (refeições, água, treino, suplementos, exercícios)
 --
 -- Obs.: a coluna `supplements` guarda três tipos de registro, separados pelo id:
---   - suplementos .......... nac, glutamina, b12, omega3, magnesio, colageno...
---   - rotina do protocolo .. ids começando com "r-" (r-m-agua, r-n-dormir, ...)
+--   - remédios/suplementos . mounjaro, testosterona, b12, vitd, creatina, colageno...
+--   - rotina diária ........ ids começando com "r-" (r-m-agua, r-n-dormir, ...)
 --   - textos do dia ........ ids começando com "txt:" (txt:gratidao, txt:sintomas),
 --                            que guardam string em vez de booleano
 -- É de propósito: são registros do mesmo dia, e assim a rotina e os campos de
@@ -155,3 +160,25 @@ create policy "anon all measurements"
   to anon, authenticated
   using (true)
   with check (true);
+
+-- =============================================================================
+-- 8) Exames de bioimpedância (aba Progresso → Exame)
+-- A política de acesso e os grants moram na migration 0006_bioimpedancia.sql,
+-- porque usam public.is_allowed(), que só existe depois da 0002. Até a 0006
+-- rodar, a tabela fica trancada e o app guarda os exames no próprio aparelho.
+-- O exame de partida (12/08/2026) está no código e não entra na tabela.
+-- =============================================================================
+create table if not exists bioimpedance (
+  date date primary key,
+  peso numeric(5,1),         -- kg
+  gordura numeric(4,1),      -- % de gordura corporal
+  musculo numeric(4,1),      -- % de músculo esquelético
+  visceral numeric(3,1),     -- nível; alguns aparelhos marcam meio nível
+  metabolismo numeric(6,1),  -- metabolismo em repouso, kcal por dia
+  idade_corporal smallint,   -- anos, estimada pela balança
+  idade smallint,            -- idade dela no dia do exame
+  obs text,                  -- horário, aparelho, fase do ciclo
+  created_at timestamptz not null default now()
+);
+
+alter table bioimpedance enable row level security;

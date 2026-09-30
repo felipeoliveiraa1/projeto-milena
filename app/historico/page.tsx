@@ -17,23 +17,24 @@ import {
 import { Card, CardContent, CardHeader, Eyebrow } from "@/components/ui/card";
 import { Ring } from "@/components/ui/ring";
 import { Button } from "@/components/ui/button";
-import { cardapioDoDia } from "@/data/meals";
+import { REFEICOES_META, REFEICOES_ORDEM } from "@/data/meals";
 import type { RotinaBloco } from "@/data/protocol";
-import { SUPPLEMENTS } from "@/data/supplements";
+import { suplementosTomados } from "@/data/supplements";
 import { getPeriodo, getTextoDoDia, type DayCheck } from "@/lib/storage";
 import { formatarAgua, resumoDoDia } from "@/lib/score";
-import { useInicio, useProtocolo } from "@/lib/protocol";
+import { useInicio, usePlano } from "@/lib/protocol";
 import { usePreferencias } from "@/lib/settings";
 import { useRotina } from "@/lib/routine";
+import { useAgoraVivo } from "@/lib/now";
 import { useDia } from "@/components/day-context";
-import { todayKey, dataExtenso } from "@/lib/date";
+import { hojeKey, todayKey, dataExtenso } from "@/lib/date";
 import { cn } from "@/lib/utils";
 
 export default function HistoricoPage() {
   const [dias, setDias] = useState<Record<string, DayCheck>>({});
   const [carregando, setCarregando] = useState(true);
   const [aberto, setAberto] = useState<string | null>(null);
-  const status = useProtocolo();
+  const status = usePlano();
   const inicio = useInicio();
   const { prefs } = usePreferencias();
   const { blocos } = useRotina();
@@ -45,13 +46,27 @@ export default function HistoricoPage() {
     [blocos],
   );
 
-  useEffect(() => {
-    getPeriodo(inicio, todayKey())
-      .then(setDias)
-      .finally(() => setCarregando(false));
-  }, [inicio]);
+  // O "hoje" do app (vira às 05:00), no mesmo relógio do usePlano: com o app
+  // aberto de um dia para o outro, a lista ganha o dia novo sozinha.
+  const agora = useAgoraVivo();
+  const hoje = agora ? hojeKey(agora) : hojeKey();
 
-  /** Do dia de hoje para trás, até o começo do protocolo. */
+  useEffect(() => {
+    // Resposta atrasada de uma busca antiga não passa por cima da nova.
+    let valendo = true;
+    getPeriodo(inicio, hoje)
+      .then((d) => {
+        if (valendo) setDias(d);
+      })
+      .finally(() => {
+        if (valendo) setCarregando(false);
+      });
+    return () => {
+      valendo = false;
+    };
+  }, [inicio, hoje]);
+
+  /** Do dia de hoje para trás, até o começo da jornada. */
   const linha = useMemo(() => {
     const diasCorridos = status?.naoComecou ? 0 : (status?.dia ?? 1);
     const lista: { data: string; numero: number }[] = [];
@@ -99,7 +114,7 @@ export default function HistoricoPage() {
           Até aqui
         </h2>
         <p className="mt-3 text-sm leading-relaxed text-ink-muted">
-          Cada dia desde o começo do protocolo. Toque em um dia para ver o que
+          Cada dia desde o começo da jornada. Toque em um dia para ver o que
           foi feito — e para completar o que ficou faltando.
         </p>
       </header>
@@ -157,7 +172,7 @@ export default function HistoricoPage() {
         <Card>
           <CardContent className="p-8 text-center">
             <p className="font-display text-2xl text-ink">
-              O protocolo ainda não começou
+              A jornada ainda não começou
             </p>
             <p className="mt-2 text-sm text-ink-muted">
               A data de início fica na aba Rotina.
@@ -168,7 +183,7 @@ export default function HistoricoPage() {
         resumos.map(({ data, numero, resumo }) => {
           const dia = dias[data];
           const estaAberto = aberto === data;
-          const ehHoje = data === todayKey();
+          const ehHoje = data === hoje;
           return (
             <Card
               key={data}
@@ -193,7 +208,12 @@ export default function HistoricoPage() {
 
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-bold text-ink">Dia {numero}</p>
+                      <p className="font-bold text-ink">
+                        Dia {numero}
+                        <span className="ml-1.5 text-xs font-semibold text-ink-muted">
+                          · semana {Math.floor((numero - 1) / 7) + 1}
+                        </span>
+                      </p>
                       {ehHoje && (
                         <span className="rounded-full bg-brand-soft px-2 py-0.5 text-[0.625rem] font-bold text-brand">
                           hoje
@@ -210,7 +230,8 @@ export default function HistoricoPage() {
                     </p>
                     <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[0.6875rem] text-ink-muted tabular">
                       <span className="flex items-center gap-1">
-                        <Utensils className="h-3 w-3" /> {resumo.refeicoes}/4
+                        <Utensils className="h-3 w-3" /> {resumo.refeicoes}/
+                        {REFEICOES_ORDEM.length}
                       </span>
                       <span className="flex items-center gap-1">
                         <Droplet className="h-3 w-3" />{" "}
@@ -238,7 +259,7 @@ export default function HistoricoPage() {
 
               {estaAberto && (
                 <CardContent className="animate-rise space-y-3 border-t border-line/70 pt-4">
-                  <Detalhe dia={dia} numero={numero} blocos={blocos} />
+                  <Detalhe dia={dia} blocos={blocos} />
                   <Button
                     variant="outline"
                     className="w-full"
@@ -264,38 +285,35 @@ export default function HistoricoPage() {
 
 function Detalhe({
   dia,
-  numero,
   blocos,
 }: {
   dia: DayCheck | undefined;
-  numero: number;
   blocos: RotinaBloco[];
 }) {
   if (!dia) {
     return <p className="text-sm text-ink-muted">Nenhum registro nesse dia.</p>;
   }
 
-  const cardapio = cardapioDoDia(numero);
   const sintomas = getTextoDoDia(dia, "r-ac-sintomas");
   const gratidao = getTextoDoDia(dia, "r-n-gratidao");
   const idsRotina = blocos.flatMap((b) => b.itens.map((i) => i.id));
   const rotinaFeitos = idsRotina.filter(
     (id) => dia.supplements[id] === true,
   ).length;
-  const suplementosFeitos = SUPPLEMENTS.filter(
-    (sup) => dia.supplements[sup.id] === true,
-  );
+  // Inclui os ids que saíram da lista em 29/09: o que ela tomou antes continua
+  // aparecendo nos dias em que tomou.
+  const suplementosFeitos = suplementosTomados(dia.supplements);
 
   return (
     <div className="space-y-3">
       <div>
         <Eyebrow className="mb-1.5 text-ink-muted">Refeições</Eyebrow>
         <div className="flex flex-wrap gap-1.5">
-          {cardapio.refeicoes.map((r) => {
-            const feita = dia.meals[r.id] === true;
+          {REFEICOES_ORDEM.map((id) => {
+            const feita = dia.meals[id] === true;
             return (
               <span
-                key={r.id}
+                key={id}
                 className={cn(
                   "flex items-center gap-1 rounded-full px-2.5 py-1 text-[0.6875rem] font-medium",
                   feita
@@ -308,7 +326,7 @@ function Detalhe({
                 ) : (
                   <Minus className="h-3 w-3 opacity-60" />
                 )}
-                {r.nome}
+                {REFEICOES_META[id].nome}
               </span>
             );
           })}
@@ -379,7 +397,7 @@ function Detalhe({
       {suplementosFeitos.length > 0 && (
         <div>
           <Eyebrow className="mb-1.5 text-ink-muted">
-            Suplementos tomados
+            Remédios e suplementos
           </Eyebrow>
           <div className="flex flex-wrap gap-1.5">
             {suplementosFeitos.map((sup) => (

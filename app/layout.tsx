@@ -26,7 +26,7 @@ const sans = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   title: "Mais Leve · plano da Milena",
-  description: "Protocolo Desinflama-se, treino e check-in diário",
+  description: "Recomposição corporal, treino e check-in diário",
   applicationName: "Mais Leve",
   appleWebApp: {
     capable: true,

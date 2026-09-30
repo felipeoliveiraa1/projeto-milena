@@ -3,13 +3,15 @@
 import { getSupabase } from "./supabase";
 import { BUCKET } from "./photos";
 import { setInicio } from "./protocol";
+import { TABELA_BIOIMPEDANCIA, limparExamesLocais } from "./bioimpedancia";
 
 /**
  * Recomeçar do zero.
  *
  * Cada parte é opcional de propósito: quase sempre o que se quer apagar é o
- * progresso (dias, pesagens, fotos), e não a configuração — meta de água, fase
- * do treino e a rotina que ela montou continuam de pé, a não ser que ela peça.
+ * progresso (dias, pesagens, medidas, fotos, exames), e não a configuração —
+ * metas, janela do jejum, fase do treino e a rotina que ela montou continuam
+ * de pé, a não ser que ela peça.
  *
  * Não tem desfazer. Quem chama isto já confirmou.
  */
@@ -18,8 +20,13 @@ export type EscopoReset = {
   pesagens: boolean;
   medidas: boolean;
   fotos: boolean;
+  /**
+   * Exames de bioimpedância registrados no app. O de partida (12/08) fica: ele
+   * mora no código, em data/bioimpedancia.ts.
+   */
+  bioimpedancia: boolean;
   compras: boolean;
-  /** Nova data de início do protocolo (AAAA-MM-DD). Vazio = não mexe. */
+  /** Nova data de início da jornada (AAAA-MM-DD). Vazio = não mexe. */
   novoInicio?: string;
 };
 
@@ -30,6 +37,20 @@ export type ResultadoReset = {
 
 /** Filtro que pega todas as linhas — o PostgREST exige algum where no delete. */
 const TODAS_AS_DATAS = "1900-01-01";
+
+/**
+ * Tabela que ainda não foi criada no Supabase não é erro para quem nunca usou.
+ * O Postgres responde 42P01; o PostgREST mais novo, PGRST205 ("schema cache").
+ */
+function tabelaAusente(error: { code?: string; message: string }): boolean {
+  const mensagem = error.message.toLowerCase();
+  return (
+    error.code === "42P01" ||
+    error.code === "PGRST205" ||
+    mensagem.includes("does not exist") ||
+    mensagem.includes("schema cache")
+  );
+}
 
 export async function resetar(escopo: EscopoReset): Promise<ResultadoReset> {
   const supabase = getSupabase();
@@ -59,8 +80,7 @@ export async function resetar(escopo: EscopoReset): Promise<ResultadoReset> {
       .from("measurements")
       .delete()
       .gte("date", TODAS_AS_DATAS);
-    // Tabela ausente não é erro para quem nunca mediu.
-    if (error && !error.message.toLowerCase().includes("does not exist")) {
+    if (error && !tabelaAusente(error)) {
       erros.push(`medidas: ${error.message}`);
     } else {
       apagados.push("medidas");
@@ -85,6 +105,22 @@ export async function resetar(escopo: EscopoReset): Promise<ResultadoReset> {
     }
   }
 
+  if (escopo.bioimpedancia) {
+    const { error } = await supabase
+      .from(TABELA_BIOIMPEDANCIA)
+      .delete()
+      .gte("date", TODAS_AS_DATAS);
+    // O aparelho também guarda cópia, os exames que ainda não subiram e as
+    // exclusões na fila: sem limpar aqui, os exames voltariam na próxima
+    // abertura da aba.
+    limparExamesLocais();
+    if (error && !tabelaAusente(error)) {
+      erros.push(`exames de bioimpedância: ${error.message}`);
+    } else {
+      apagados.push("exames de bioimpedância");
+    }
+  }
+
   if (escopo.compras) {
     const { error } = await supabase
       .from("shopping_state")
@@ -101,7 +137,7 @@ export async function resetar(escopo: EscopoReset): Promise<ResultadoReset> {
   if (escopo.novoInicio && /^\d{4}-\d{2}-\d{2}$/.test(escopo.novoInicio)) {
     setInicio(escopo.novoInicio);
     apagados.push(
-      `início do protocolo em ${escopo.novoInicio.split("-").reverse().join("/")}`,
+      `início da jornada em ${escopo.novoInicio.split("-").reverse().join("/")}`,
     );
   }
 

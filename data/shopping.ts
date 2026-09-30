@@ -1,9 +1,13 @@
 /**
- * Catálogo de compras do protocolo Desinflama-se.
+ * Catálogo de compras do cardápio da recomposição corporal.
  *
- * Só entra aqui o que é permitido no protocolo e o que a Milena come.
- * Os ids são referenciados pelo cardápio (data/meals.ts) — mexer em um id
- * quebra a lista automática, então mantenha-os estáveis.
+ * Só entra aqui o que o cardápio da semana usa (data/meals.ts) e o que é de
+ * despensa. As quantidades são de uma semana inteira — marcar os sete dias na
+ * dieta dá exatamente esta compra.
+ *
+ * Os ids são referenciados pelo cardápio — mexer em um id quebra a lista
+ * automática, então mantenha-os estáveis. Os que já existiam no Desinflama-se
+ * (ovos, frango, legumes, frutas, temperos) continuam com o mesmo id.
  */
 
 export type ShoppingItem = {
@@ -26,61 +30,105 @@ export type ShoppingCategory = {
 export const SHOPPING_LIST: ShoppingCategory[] = [
   {
     id: "proteinas",
-    nome: "Proteínas",
+    nome: "Carnes e ovos",
     icone: "🍗",
     itens: [
-      { id: "pr-frango-peito", nome: "Peito de frango", quantidade: "1,5 kg" },
-      { id: "pr-frango-moido", nome: "Frango moído (para hambúrguer caseiro)", quantidade: "500 g" },
-      { id: "pr-tilapia", nome: "Filé de tilápia", quantidade: "600 g" },
-      { id: "pr-merluza", nome: "Filé de merluza", quantidade: "600 g" },
-      { id: "pr-ovos", nome: "Ovos caipiras", quantidade: "3 dúzias" },
-      { id: "pr-tofu", nome: "Tofu firme", quantidade: "400 g" },
       {
-        id: "pr-atum-lata",
-        nome: "Atum em lata (em óleo)",
-        quantidade: "3 latas",
-        nota: "Escorra o óleo por completo. Não compre atum ao molho de tomate.",
+        id: "pr-frango-peito",
+        nome: "Peito de frango",
+        quantidade: "800 g",
+        nota: "Dá 3 almoços de 120 g e 2 fechamentos de 70 g. Compre com folga: cru, ele encolhe no preparo.",
+      },
+      {
+        id: "pr-patinho",
+        nome: "Patinho",
+        quantidade: "400 g",
+        nota: "Metade em iscas, metade moído. Peça para moer na hora, sem a capa de gordura.",
+      },
+      {
+        id: "pr-peixe",
+        nome: "Filé de peixe (tilápia, merluza ou pescada)",
+        quantidade: "400 g",
+        nota: "Qualquer peixe de que você goste — frutos do mar e sardinha, não.",
+      },
+      {
+        id: "pr-ovos",
+        nome: "Ovos",
+        quantidade: "2 dúzias",
+        nota: "Sobra um pouco de propósito: para as claras a mais nos dias sem fechamento e para um lanche com proteína, se precisar.",
+      },
+    ],
+  },
+  {
+    id: "laticinios",
+    nome: "Laticínios e whey",
+    icone: "🧀",
+    itens: [
+      {
+        id: "la-queijo-minas",
+        nome: "Queijo minas frescal — o do pote preto",
+        quantidade: "300 g",
+        nota: "Foi o melhor dos avaliados no resumo: equilíbrio entre proteína, calorias, gordura saturada e sódio.",
+      },
+      {
+        id: "la-ricota",
+        nome: "Ricota fresca (ou cottage)",
+        quantidade: "250 g",
+        nota: "Sólida, para o café de sexta; o resto fecha a janela no sábado.",
+      },
+      {
+        id: "la-iogurte-proteico",
+        nome: "Iogurte proteico",
+        quantidade: "3 potes",
+        // O socorro do jejum é açúcar rápido e sozinho; o iogurte é o lanche
+        // que vem depois dele, nunca o socorro em si.
+        nota: "Confira no rótulo: 15–17 g de proteína por pote. O terceiro é de reserva — para um lanchinho na janela ou para o lanche depois do socorro do jejum.",
+      },
+      {
+        id: "la-whey",
+        nome: "Whey Chef Zero",
+        quantidade: "280 g",
+        nota: "São 40 g por dia. Olhe quanto ainda tem no pote antes de comprar outro.",
+      },
+      {
+        id: "la-creme-ricota",
+        nome: "Creme de ricota light",
+        quantidade: "1 pote",
+        nota: "Opcional, pelo sabor. Não é fonte principal de proteína.",
       },
     ],
   },
   {
     id: "carbos",
-    nome: "Carboidratos",
-    icone: "🍠",
-    itens: [
-      { id: "ca-arroz-integral", nome: "Arroz integral", quantidade: "1 kg" },
-      { id: "ca-batata-doce", nome: "Batata-doce", quantidade: "1,5 kg" },
-      { id: "ca-batata", nome: "Batata inglesa", quantidade: "1 kg" },
-      { id: "ca-mandioca", nome: "Mandioca (aipim)", quantidade: "1 kg", nota: "Mandioca mesmo — mandioquinha não entra." },
-      { id: "ca-quinoa", nome: "Quinoa em grãos", quantidade: "250 g" },
-      { id: "ca-tapioca", nome: "Goma de tapioca", quantidade: "500 g" },
-      { id: "ca-cuscuz", nome: "Flocão de milho para cuscuz", quantidade: "500 g" },
-      { id: "ca-macarrao-sg", nome: "Macarrão sem glúten (arroz ou milho)", quantidade: "500 g" },
-      {
-        id: "ca-aveia-farelo",
-        nome: "Farelo de aveia",
-        quantidade: "250 g",
-        nota: "Procure o selo sem glúten — aveia comum costuma vir contaminada com trigo.",
-      },
-      {
-        id: "ca-aveia-flocos",
-        nome: "Aveia em flocos (para o pãozinho)",
-        quantidade: "250 g",
-        nota: "Também com selo sem glúten.",
-      },
-      { id: "ca-farinha-milho", nome: "Farinha de milho para farofa", quantidade: "500 g" },
-    ],
-  },
-  {
-    id: "leguminosa",
-    nome: "Leguminosa",
-    icone: "🫘",
+    nome: "Pão e carboidratos",
+    icone: "🥖",
     itens: [
       {
-        id: "lg-grao-bico",
-        nome: "Grão-de-bico seco",
-        quantidade: "500 g",
-        nota: "Sua única leguminosa. Deixe de molho na véspera, cozinhe e congele em porções pequenas.",
+        id: "ca-pao",
+        nome: "Pão francês (para tirar o miolo)",
+        // Um por café: os sete dias levam pão desde que a quinta voltou a ter.
+        quantidade: "7 unidades",
+        nota: "Congela bem: tire o miolo, congele e esquente na hora.",
+      },
+      {
+        id: "ca-arroz",
+        nome: "Arroz",
+        quantidade: "1 pacote pequeno",
+        nota: "É 'um pouco' em dois almoços — um pacote dura semanas.",
+      },
+      { id: "ca-batata", nome: "Batata", quantidade: "500 g" },
+      { id: "ca-mandioca", nome: "Mandioca (aipim)", quantidade: "300 g" },
+      {
+        id: "ca-mandioquinha",
+        nome: "Mandioquinha (batata-baroa)",
+        quantidade: "300 g",
+        nota: "Se não gostar, troque por mandioca ou batata.",
+      },
+      {
+        id: "ca-macarrao",
+        nome: "Macarrão integral sem glúten",
+        quantidade: "1 pacote",
+        nota: "Integral e sem glúten, como o resumo pede. Um pacote dura mais de uma semana.",
       },
     ],
   },
@@ -89,11 +137,9 @@ export const SHOPPING_LIST: ShoppingCategory[] = [
     nome: "Folhas",
     icone: "🥬",
     itens: [
-      { id: "fo-alface", nome: "Alface (crespa ou americana)", quantidade: "2 pés" },
-      { id: "fo-rucula", nome: "Rúcula", quantidade: "2 maços" },
-      { id: "fo-agriao", nome: "Agrião", quantidade: "1 maço" },
-      { id: "fo-couve", nome: "Couve-manteiga", quantidade: "2 maços", nota: "O protocolo pede couve com frequência — compre com folga." },
-      { id: "fo-repolho", nome: "Repolho", quantidade: "1 cabeça" },
+      { id: "fo-alface", nome: "Alface", quantidade: "2 pés" },
+      { id: "fo-rucula", nome: "Rúcula", quantidade: "1 maço" },
+      { id: "fo-couve", nome: "Couve-manteiga", quantidade: "1 maço" },
     ],
   },
   {
@@ -101,96 +147,61 @@ export const SHOPPING_LIST: ShoppingCategory[] = [
     nome: "Legumes",
     icone: "🥦",
     itens: [
-      { id: "le-abobrinha", nome: "Abobrinha italiana", quantidade: "4 unidades" },
-      { id: "le-brocolis", nome: "Brócolis", quantidade: "2 maços" },
-      { id: "le-couve-flor", nome: "Couve-flor", quantidade: "1 cabeça" },
-      { id: "le-cenoura", nome: "Cenoura", quantidade: "8 unidades" },
-      { id: "le-beterraba", nome: "Beterraba", quantidade: "3 unidades" },
-      { id: "le-berinjela", nome: "Berinjela", quantidade: "2 unidades" },
-      { id: "le-abobora-cabotia", nome: "Abóbora cabotiá", quantidade: "1 unidade" },
-      { id: "le-chuchu", nome: "Chuchu", quantidade: "3 unidades" },
-      { id: "le-vagem", nome: "Vagem", quantidade: "300 g" },
       { id: "le-tomate", nome: "Tomate", quantidade: "8 unidades" },
-      { id: "le-pepino", nome: "Pepino", quantidade: "6 unidades" },
-      { id: "le-pimentao", nome: "Pimentão", quantidade: "2 unidades" },
+      { id: "le-pepino", nome: "Pepino", quantidade: "3 unidades" },
+      { id: "le-cenoura", nome: "Cenoura", quantidade: "4 unidades" },
+      { id: "le-brocolis", nome: "Brócolis", quantidade: "1 maço" },
+      { id: "le-abobrinha", nome: "Abobrinha", quantidade: "2 unidades" },
+      { id: "le-vagem", nome: "Vagem", quantidade: "250 g" },
+      { id: "le-chuchu", nome: "Chuchu", quantidade: "2 unidades" },
+      { id: "le-abobora-cabotia", nome: "Abóbora cabotiá", quantidade: "1 pedaço" },
     ],
   },
   {
     id: "frutas",
     nome: "Frutas",
-    icone: "🍎",
+    icone: "🍌",
     itens: [
-      { id: "fr-banana", nome: "Banana", quantidade: "1 dúzia" },
-      { id: "fr-mamao", nome: "Mamão papaya", quantidade: "2 unidades" },
+      {
+        id: "fr-banana",
+        nome: "Banana",
+        quantidade: "5 unidades",
+        nota: "Madura demais? Congele em rodelas para bater com o whey.",
+      },
       { id: "fr-morango", nome: "Morango", quantidade: "2 caixas" },
-      { id: "fr-kiwi", nome: "Kiwi", quantidade: "5 unidades" },
-      { id: "fr-maca", nome: "Maçã", quantidade: "6 unidades" },
-      { id: "fr-pera", nome: "Pera", quantidade: "4 unidades" },
-      { id: "fr-melao", nome: "Melão", quantidade: "1 unidade" },
-      { id: "fr-abacaxi", nome: "Abacaxi", quantidade: "1 unidade" },
-      { id: "fr-uva", nome: "Uva", quantidade: "500 g" },
-      { id: "fr-limao", nome: "Limão", quantidade: "10 unidades", nota: "Para a água da manhã, a salada e o peixe.", essencial: true },
+      { id: "fr-maca", nome: "Maçã pequena", quantidade: "1 unidade" },
+      {
+        id: "fr-limao",
+        nome: "Limão",
+        quantidade: "6 unidades",
+        nota: "Para a água da manhã, a salada e o peixe.",
+        essencial: true,
+      },
     ],
   },
   {
-    id: "gorduras",
-    nome: "Gorduras boas e sementes",
-    icone: "🌰",
+    id: "extras",
+    nome: "Fibra e azeite",
+    icone: "🫒",
     itens: [
-      { id: "go-azeite", nome: "Azeite extravirgem", quantidade: "500 ml", essencial: true },
-      { id: "go-chia", nome: "Chia", quantidade: "200 g", essencial: true },
-      { id: "go-linhaca", nome: "Linhaça dourada", quantidade: "200 g", essencial: true },
-      { id: "go-nozes", nome: "Nozes", quantidade: "200 g" },
-      { id: "go-castanha-para", nome: "Castanha-do-pará", quantidade: "100 g" },
-      { id: "go-amendoas", nome: "Amêndoas (para o leite caseiro)", quantidade: "300 g" },
-      { id: "go-coco-oleo", nome: "Óleo de coco extravirgem", quantidade: "200 ml" },
+      {
+        id: "go-chia",
+        nome: "Chia (ou linhaça)",
+        quantidade: "1 pacote pequeno",
+        nota: "Opcional: 1 colher no iogurte ajuda o intestino — com água ao longo do dia.",
+      },
+      { id: "go-azeite", nome: "Azeite extravirgem", quantidade: "1 garrafa", essencial: true },
     ],
   },
   {
     id: "temperos",
-    nome: "Temperos e ervas",
+    nome: "Temperos",
     icone: "🌿",
     itens: [
-      { id: "te-alho", nome: "Alho", quantidade: "2 cabeças", essencial: true },
-      { id: "te-cebola", nome: "Cebola", quantidade: "6 unidades", essencial: true },
-      { id: "te-cheiro-verde", nome: "Cheiro-verde (salsinha e cebolinha)", quantidade: "2 maços" },
-      { id: "te-hortela", nome: "Hortelã", quantidade: "1 maço" },
-      { id: "te-manjericao", nome: "Manjericão", quantidade: "1 maço" },
-      { id: "te-gengibre", nome: "Gengibre fresco", quantidade: "1 pedaço" },
-      { id: "te-curcuma", nome: "Cúrcuma (açafrão-da-terra)", quantidade: "1 pote", essencial: true },
-      { id: "te-paprica", nome: "Páprica doce", quantidade: "1 pote", essencial: true },
-      { id: "te-cominho", nome: "Cominho", quantidade: "1 pote" },
-      { id: "te-oregano", nome: "Orégano", quantidade: "1 pote" },
-      { id: "te-canela", nome: "Canela em pó", quantidade: "1 pote", essencial: true, nota: "É o que adoça no protocolo — não entra açúcar nem adoçante." },
-      { id: "te-pimenta-reino", nome: "Pimenta-do-reino", quantidade: "1 moedor" },
+      { id: "te-alho", nome: "Alho", quantidade: "1 cabeça", essencial: true },
+      { id: "te-cebola", nome: "Cebola", quantidade: "4 unidades", essencial: true },
+      { id: "te-cheiro-verde", nome: "Cheiro-verde (salsinha e cebolinha)", quantidade: "1 maço" },
       { id: "te-sal", nome: "Sal", quantidade: "1 pacote", essencial: true },
-      { id: "te-vinagre-maca", nome: "Vinagre de maçã", quantidade: "500 ml", essencial: true },
-    ],
-  },
-  {
-    id: "despensa",
-    nome: "Despensa — industrializados aprovados",
-    icone: "🏷️",
-    itens: [
-      {
-        id: "in-leite-amendoas",
-        nome: "Leite de amêndoas sem açúcar",
-        quantidade: "1 L",
-        nota: "Caseiro é melhor. Comprado: rótulo curto, sem açúcar e sem adoçante.",
-      },
-      {
-        id: "in-molho-tomate",
-        nome: "Molho de tomate",
-        quantidade: "2 vidros",
-        nota: "Só tomate, sal e temperos. Sem açúcar, sem realçador de sabor.",
-      },
-      {
-        id: "in-mostarda",
-        nome: "Mostarda",
-        quantidade: "1 vidro",
-        nota: "Lista de ingredientes simples — quanto menos, melhor.",
-      },
-      { id: "in-tahine", nome: "Tahine (pasta de gergelim)", quantidade: "1 pote", nota: "Para o homus. Deve ser 100% gergelim." },
     ],
   },
   {
@@ -199,25 +210,21 @@ export const SHOPPING_LIST: ShoppingCategory[] = [
     icone: "☕",
     itens: [
       { id: "be-cafe", nome: "Café em pó", quantidade: "500 g", essencial: true },
-      { id: "be-cha-verde", nome: "Chá verde", quantidade: "1 caixa" },
-      { id: "be-cha-camomila", nome: "Chá de camomila ou cidreira", quantidade: "1 caixa", nota: "Para a rotina da noite." },
-      { id: "be-cha-hortela", nome: "Chá de hortelã", quantidade: "1 caixa" },
+      {
+        id: "be-cha",
+        nome: "Chá sem cafeína (camomila ou cidreira)",
+        quantidade: "1 caixa",
+        // Hortelã piora o refluxo, e azia é efeito comum do Mounjaro.
+        nota: "Para o jejum da noite, sem açúcar. Hortelã, só se não tiver azia.",
+        essencial: true,
+      },
       {
         id: "be-propolis",
         nome: "Própolis",
         quantidade: "1 frasco",
-        nota: "Ritual da manhã, junto com o limão — só se cair bem.",
+        nota: "Ritual da manhã, junto com o limão — só se cair bem. Compre quando estiver acabando.",
+        essencial: true,
       },
-    ],
-  },
-  {
-    id: "farmacia",
-    nome: "Farmácia",
-    icone: "💊",
-    itens: [
-      { id: "su-omega3", nome: "Ômega 3 (mín. 500 mg de EPA+DHA por cápsula)", quantidade: "60 caps" },
-      { id: "su-vitafer", nome: "Vitafer", quantidade: "conforme receita", nota: "Prescrição médica — não suspender." },
-      { id: "su-vitd", nome: "Vitamina D3", quantidade: "conforme exame" },
     ],
   },
 ];

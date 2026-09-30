@@ -2,12 +2,26 @@
 
 import { useState } from "react";
 import { ExternalLink, Play, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 /**
  * Player embutido do tutorial do exercício. O iframe só é montado depois do
- * clique — assim a página do treino não carrega 5 players de uma vez no celular.
+ * clique — assim a página do treino não carrega dezenas de players de uma vez
+ * no celular (cada dia tem os exercícios e ainda as opções de cardio).
  */
-export function ExerciseVideo({ nome, videoId }: { nome: string; videoId?: string }) {
+export function ExerciseVideo({
+  nome,
+  videoId,
+  rotulo = "Como fazer",
+  className,
+}: {
+  nome: string;
+  videoId?: string;
+  /** Texto do botão. */
+  rotulo?: string;
+  /** Substitui a margem de cima padrão, para listas mais compactas. */
+  className?: string;
+}) {
   const [open, setOpen] = useState(false);
 
   const buscaUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(
@@ -20,7 +34,10 @@ export function ExerciseVideo({ nome, videoId }: { nome: string; videoId?: strin
         href={buscaUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-3 inline-flex items-center gap-2 rounded-full bg-ink px-3.5 py-2 text-xs font-bold text-bone transition hover:bg-ink/90"
+        className={cn(
+          "mt-3 inline-flex items-center gap-2 rounded-full bg-ink px-3.5 py-2 text-xs font-bold text-bone transition hover:bg-ink/90",
+          className,
+        )}
       >
         <Play className="h-3.5 w-3.5 fill-bone" /> Buscar tutorial
       </a>
@@ -28,7 +45,7 @@ export function ExerciseVideo({ nome, videoId }: { nome: string; videoId?: strin
   }
 
   return (
-    <div className="mt-3">
+    <div className={cn("mt-3", className)}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -41,7 +58,7 @@ export function ExerciseVideo({ nome, videoId }: { nome: string; videoId?: strin
           </>
         ) : (
           <>
-            <Play className="h-3.5 w-3.5 fill-bone" /> Como fazer
+            <Play className="h-3.5 w-3.5 fill-bone" /> {rotulo}
           </>
         )}
       </button>

@@ -1,11 +1,12 @@
 "use client";
 
 import { useMemo, useSyncExternalStore } from "react";
-import { PROTOCOLO } from "@/data/protocol";
-import { todayKey } from "./date";
-import { useAgora, useIsClient } from "./now";
-import { usePreferencias } from "./settings";
+import { PLANO } from "@/data/protocol";
+import { HORA_VIRADA_DO_DIA, hojeKey, todayKey } from "./date";
+import { useAgoraVivo } from "./now";
 
+// A chave ainda leva o nome do protocolo antigo de propósito: é ela que guarda
+// a data de início no aparelho, e trocar o nome perderia o valor já salvo.
 const CHAVE_INICIO = "desinflama-inicio";
 
 function paraData(iso: string): Date {
@@ -13,11 +14,11 @@ function paraData(iso: string): Date {
   return new Date(`${iso}T00:00:00`);
 }
 
-/** Data em que o ciclo de 15 dias começou. Ela pode ajustar pelo app (/rotina). */
+/** Data em que a jornada começou. Ela pode ajustar pelo app (/rotina). */
 export function getInicio(): string {
-  if (typeof window === "undefined") return PROTOCOLO.inicioPadrao;
+  if (typeof window === "undefined") return PLANO.inicioPadrao;
   const salvo = window.localStorage.getItem(CHAVE_INICIO);
-  return salvo && /^\d{4}-\d{2}-\d{2}$/.test(salvo) ? salvo : PROTOCOLO.inicioPadrao;
+  return salvo && /^\d{4}-\d{2}-\d{2}$/.test(salvo) ? salvo : PLANO.inicioPadrao;
 }
 
 const ouvintes = new Set<() => void>();
@@ -37,78 +38,68 @@ function inscrever(callback: () => void): () => void {
   };
 }
 
-/** Data de início do ciclo, reagindo a mudanças feitas na tela /rotina. */
+/** Data de início da jornada, reagindo a mudanças feitas na tela /rotina. */
 export function useInicio(): string {
-  return useSyncExternalStore(inscrever, getInicio, () => PROTOCOLO.inicioPadrao);
+  return useSyncExternalStore(inscrever, getInicio, () => PLANO.inicioPadrao);
 }
 
 /**
- * Status do protocolo já calculado para hoje.
+ * Em que ponto da jornada ela está hoje — o "hoje" do app, que vira às 05:00
+ * e anda com o relógio (o PWA pode ficar aberto de um dia para o outro).
  * `null` enquanto renderiza no servidor — quem usa mostra um placeholder.
  */
-export function useProtocolo(): StatusProtocolo | null {
+export function usePlano(): StatusPlano | null {
   const inicio = useInicio();
-  const agora = useAgora();
-  const isClient = useIsClient();
-  const { prefs } = usePreferencias();
-  return useMemo(
-    () => (isClient && agora ? statusProtocolo(inicio, agora, prefs.cicloDias) : null),
-    [isClient, agora, inicio, prefs.cicloDias],
-  );
+  const agora = useAgoraVivo();
+  const hoje = agora ? hojeKey(agora) : null;
+  return useMemo(() => (hoje ? statusPlano(inicio, hoje) : null), [hoje, inicio]);
 }
 
-/** Bloco da rotina que corresponde à hora atual. `null` no servidor. */
+/** Bloco da rotina que corresponde à hora atual, andando com o relógio. `null` no servidor. */
 export function usePeriodoAgora(): "manha" | "dia" | "noite" | null {
-  const agora = useAgora();
-  return useMemo(() => (agora ? periodoAgora(agora) : null), [agora]);
+  const agora = useAgoraVivo();
+  return agora ? periodoAgora(agora) : null;
 }
 
-export type StatusProtocolo = {
-  /** Dia do ciclo (1 a 15). Antes do início, 0. */
+/**
+ * A recomposição não tem data para acabar — diferente do ciclo de 15 dias do
+ * Desinflama-se. Por isso aqui só existe "quanto tempo já foi", sem total.
+ */
+export type StatusPlano = {
+  /** Dia da jornada: o próprio dia de início é o dia 1. Antes do início, 0. */
   dia: number;
-  total: number;
-  /** Dia usado para escolher o cardápio — sempre entre 1 e 15. */
-  diaCardapio: number;
-  pct: number;
+  /** Semana da jornada: os dias 1 a 7 são a semana 1. Antes do início, 0. */
+  semana: number;
   naoComecou: boolean;
-  concluido: boolean;
   inicio: string;
-  /** Quantos dias passaram desde o fim do ciclo (0 se ainda está rolando). */
-  diasDepoisDoFim: number;
 };
 
-export function statusProtocolo(
-  inicio: string,
-  hoje: Date = new Date(),
-  duracao: number = PROTOCOLO.duracaoDias,
-): StatusProtocolo {
-  const total = Math.max(1, Math.round(duracao));
-  const inicioData = paraData(inicio);
-  const hojeData = paraData(todayKey(hoje));
+/**
+ * `quando` pode ser a data em AAAA-MM-DD (o "hoje" do app, ou um dia que ela
+ * está lançando) ou um Date, que vale pelo dia do calendário.
+ */
+export function statusPlano(inicio: string, quando: string | Date = hojeKey()): StatusPlano {
   const msPorDia = 24 * 60 * 60 * 1000;
-  const diff = Math.round((hojeData.getTime() - inicioData.getTime()) / msPorDia);
-
-  const dia = diff + 1; // dia 1 é o próprio dia de início
+  const chave = typeof quando === "string" ? quando : todayKey(quando);
+  const diff = Math.round((paraData(chave).getTime() - paraData(inicio).getTime()) / msPorDia);
+  const dia = diff + 1;
   const naoComecou = dia < 1;
-  const concluido = dia > total;
-
-  const diaCardapio = naoComecou ? 1 : concluido ? ((dia - 1) % total) + 1 : dia;
-
   return {
     dia: naoComecou ? 0 : dia,
-    total,
-    diaCardapio,
-    pct: naoComecou ? 0 : Math.min(100, Math.round((Math.min(dia, total) / total) * 100)),
+    semana: naoComecou ? 0 : Math.floor((dia - 1) / 7) + 1,
     naoComecou,
-    concluido,
     inicio,
-    diasDepoisDoFim: concluido ? dia - total : 0,
   };
 }
 
-/** Bloco da rotina que faz sentido mostrar agora, pela hora do dia. */
+/**
+ * Bloco da rotina que faz sentido mostrar agora, pela hora do dia. A madrugada
+ * ainda é noite: até a virada do dia (05:00), valem a rotina e os remédios da
+ * noite, não os da manhã.
+ */
 export function periodoAgora(hoje: Date = new Date()): "manha" | "dia" | "noite" {
   const h = hoje.getHours();
+  if (h < HORA_VIRADA_DO_DIA) return "noite";
   if (h < 12) return "manha";
   if (h < 18) return "dia";
   return "noite";

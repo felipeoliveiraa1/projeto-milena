@@ -8,14 +8,16 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { addWeight, getWeights } from "@/lib/storage";
 import { usePreferencias } from "@/lib/settings";
-import { todayKey } from "@/lib/date";
+import { hojeKey } from "@/lib/date";
 
 export function WeightQuickInput() {
   const [value, setValue] = useState("");
   const [historico, setHistorico] = useState<number[]>([]);
+  const [naoSalvou, setNaoSalvou] = useState(false);
   const { prefs } = usePreferencias();
-  // O ponto de partida é a primeira pesagem registrada — no caso dela, a de
-  // 03/08, quando o protocolo começou. Sem registro nenhum, cai no ajuste.
+  // O ponto de partida é a primeira pesagem registrada. Sem registro nenhum,
+  // vale o peso inicial dos ajustes — de fábrica, os 85,5 kg da bioimpedância
+  // de 12/08, começo da recomposição.
   const PESO_INICIAL = historico[0] ?? prefs.pesoInicial;
   const META = prefs.pesoMeta;
   const latest = historico.length > 0 ? historico[historico.length - 1] : null;
@@ -27,9 +29,16 @@ export function WeightQuickInput() {
   async function save() {
     const w = parseFloat(value.replace(",", "."));
     if (isNaN(w) || w < 30 || w > 200) return;
-    setValue("");
-    const lista = await addWeight({ date: todayKey(), weight: w });
-    setHistorico(lista.map((e) => e.weight));
+    try {
+      const lista = await addWeight({ date: hojeKey(), weight: w });
+      setHistorico(lista.map((e) => e.weight));
+      // O campo só limpa depois de gravar: sem internet, o peso digitado fica.
+      setValue("");
+      setNaoSalvou(false);
+    } catch (err) {
+      console.error(err);
+      setNaoSalvou(true);
+    }
   }
 
   const ref = latest ?? PESO_INICIAL;
@@ -77,6 +86,11 @@ export function WeightQuickInput() {
             <Plus className="h-4 w-4" />
           </Button>
         </div>
+        {naoSalvou && (
+          <p role="alert" className="text-xs font-semibold text-danger">
+            Não deu para salvar agora. Confira a internet e tente de novo.
+          </p>
+        )}
       </CardContent>
     </Card>
   );

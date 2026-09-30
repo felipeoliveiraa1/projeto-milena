@@ -1,7 +1,7 @@
 "use client";
 
 import { getSupabase, type DailyCheckRow, type WeightRow } from "./supabase";
-import { todayKey } from "./date";
+import { hojeKey, todayKey } from "./date";
 
 export type DayCheck = {
   meals: Record<string, boolean>;
@@ -10,7 +10,7 @@ export type DayCheck = {
   workout: boolean;
   /**
    * Guarda três tipos de registro, distinguidos pelo id:
-   * - suplementos (nac, omega3, colageno, ...) — data/supplements.ts
+   * - remédios e suplementos (mounjaro, b12, colageno, ...) — data/supplements.ts
    * - itens da rotina (r-m-agua, r-n-dormir, ...) — data/protocol.ts
    * - textos do dia (txt:gratidao, txt:sintomas), que guardam string
    *
@@ -55,7 +55,7 @@ function rowToDay(row: DailyCheckRow | null | undefined): DayCheck {
   };
 }
 
-export async function getDay(date: string = todayKey()): Promise<DayCheck> {
+export async function getDay(date: string = hojeKey()): Promise<DayCheck> {
   const { data, error } = await getSupabase()
     .from("daily_checks")
     .select("*")
@@ -66,6 +66,26 @@ export async function getDay(date: string = todayKey()): Promise<DayCheck> {
     return { ...EMPTY_DAY };
   }
   return rowToDay(data as DailyCheckRow | null);
+}
+
+/**
+ * Como getDay, mas conta quando a leitura falhou. Um dia que não carregou não
+ * é um dia em branco: a tela avisa, em vez de mostrar o Mounjaro como pendente
+ * quando ele pode já ter sido aplicado.
+ */
+export async function getDayComErro(
+  date: string = hojeKey(),
+): Promise<{ dia: DayCheck; erro: boolean }> {
+  const { data, error } = await getSupabase()
+    .from("daily_checks")
+    .select("*")
+    .eq("date", date)
+    .maybeSingle();
+  if (error) {
+    console.error("getDay error", error);
+    return { dia: { ...EMPTY_DAY, meals: {}, supplements: {}, exercises: {} }, erro: true };
+  }
+  return { dia: rowToDay(data as DailyCheckRow | null), erro: false };
 }
 
 /** Todos os dias de um intervalo, em uma consulta só — usado pelo histórico. */
@@ -88,8 +108,58 @@ export async function getPeriodo(
   return mapa;
 }
 
-async function upsertDay(date: string, partial: Partial<DailyCheckRow>): Promise<DayCheck> {
-  const current = await getDay(date);
+/**
+ * Lê o dia para gravar em cima. Diferente de getDay, aqui erro não vira "dia
+ * vazio": se a leitura falha e a gravação passa, a linha do dia seria trocada
+ * por uma quase vazia — e iam embora as marcações, os sintomas e a gratidão.
+ * Melhor não gravar aquele toque do que apagar o dia.
+ */
+async function lerDiaParaGravar(date: string): Promise<DayCheck> {
+  // Sem as novas tentativas automáticas do supabase-js (1 s + 2 s + 4 s): num
+  // toque, é melhor ela saber em 1 segundo que não salvou do que em 7.
+  const { data, error } = await getSupabase()
+    .from("daily_checks")
+    .select("*")
+    .eq("date", date)
+    .maybeSingle()
+    .retry(false);
+  if (error) throw new Error(`Não deu para ler ${date} antes de gravar: ${error.message}`);
+  return rowToDay(data as DailyCheckRow | null);
+}
+
+/**
+ * Gravações do mesmo dia entram numa fila, uma de cada vez. Cada gravação lê o
+ * dia e grava a linha inteira; se duas se cruzassem (a água e uma refeição
+ * tocadas juntas na tela inicial), a segunda gravaria por cima da primeira com
+ * o dia que leu antes — e a primeira marca sumiria.
+ */
+const filaPorDia = new Map<string, Promise<unknown>>();
+
+function naFila<T>(date: string, tarefa: () => Promise<T>): Promise<T> {
+  const anterior = filaPorDia.get(date) ?? Promise.resolve();
+  // Roda depois da anterior terminar, tenha ela dado certo ou não.
+  const atual = anterior.then(tarefa, tarefa);
+  // O que fica na fila nunca rejeita: o erro é de quem chamou, não da fila.
+  const fim = atual.then(
+    () => undefined,
+    () => undefined,
+  );
+  filaPorDia.set(date, fim);
+  void fim.then(() => {
+    if (filaPorDia.get(date) === fim) filaPorDia.delete(date);
+  });
+  return atual;
+}
+
+/** Evento que avisa a tela de que um dia foi gravado (o resumo do topo escuta). */
+export const EVENTO_DIA_GRAVADO = "mais-leve:dia-gravado";
+
+async function upsertDay(
+  date: string,
+  partial: Partial<DailyCheckRow>,
+  atual?: DayCheck,
+): Promise<DayCheck> {
+  const current = atual ?? (await lerDiaParaGravar(date));
   const merged: DailyCheckRow = {
     date,
     meals: current.meals,
@@ -100,51 +170,107 @@ async function upsertDay(date: string, partial: Partial<DailyCheckRow>): Promise
     ...partial,
   };
   const { error } = await getSupabase().from("daily_checks").upsert(merged);
-  if (error) console.error("upsertDay error", error);
+  // A gravação que falha precisa chegar à tela: é o caso mais comum em rede
+  // ruim, porque o supabase-js repete a leitura, mas nunca a gravação.
+  if (error) throw new Error(`Não deu para gravar ${date}: ${error.message}`);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(EVENTO_DIA_GRAVADO, { detail: date }));
+  }
   return rowToDay(merged);
 }
 
+/*
+ * Os toques recebem o valor que a tela quer gravar (`valor`). Inverter o que
+ * está no banco dava errado quando a tela mostrava outra coisa — um dia que não
+ * carregou, por exemplo: o toque para "marcar" desmarcava. Sem `valor`, inverte.
+ */
+
 export async function toggleMeal(
   mealId: string,
-  date: string = todayKey(),
+  date: string = hojeKey(),
+  valor?: boolean,
 ): Promise<DayCheck> {
-  const current = await getDay(date);
-  const meals = { ...current.meals, [mealId]: !current.meals[mealId] };
-  return upsertDay(date, { meals });
+  return naFila(date, async () => {
+    const current = await lerDiaParaGravar(date);
+    const meals = { ...current.meals, [mealId]: valor ?? !current.meals[mealId] };
+    return upsertDay(date, { meals }, current);
+  });
 }
 
 export async function toggleSupplement(
   suppId: string,
-  date: string = todayKey(),
+  date: string = hojeKey(),
+  valor?: boolean,
 ): Promise<DayCheck> {
-  const current = await getDay(date);
-  const supplements = { ...current.supplements, [suppId]: !current.supplements[suppId] };
-  return upsertDay(date, { supplements });
+  return naFila(date, async () => {
+    const current = await lerDiaParaGravar(date);
+    const supplements = {
+      ...current.supplements,
+      [suppId]: valor ?? !current.supplements[suppId],
+    };
+    return upsertDay(date, { supplements }, current);
+  });
 }
 
-/** Item da rotina do protocolo. Mesma coluna dos suplementos — ver DayCheck. */
+/** Item da rotina. Mesma coluna dos suplementos — ver DayCheck. */
 export async function toggleRotina(
   itemId: string,
-  date: string = todayKey(),
+  date: string = hojeKey(),
+  valor?: boolean,
 ): Promise<DayCheck> {
-  return toggleSupplement(itemId, date);
+  return toggleSupplement(itemId, date, valor);
 }
 
-/** Define a água do dia em mililitros. */
-export async function setWater(ml: number, date: string = todayKey()): Promise<DayCheck> {
+/** Define a água do dia em mililitros (usado para zerar). */
+export async function setWater(ml: number, date: string = hojeKey()): Promise<DayCheck> {
   const water = Math.max(0, Math.min(Math.round(ml), 6000));
-  return upsertDay(date, { water });
+  return naFila(date, () => upsertDay(date, { water }));
 }
 
-/** Texto salvo por dia (gratidão, sintomas). Fica na mesma coluna — ver DayCheck. */
+/**
+ * Soma (ou tira, com número negativo) água ao que está gravado. O "+200" não
+ * pode mandar o total que a tela calculou: com a tela ainda carregando, ou
+ * depois de uma leitura que falhou, ela acha que são 0 ml — e 1,4 L virava 200.
+ */
+export async function somarAgua(delta: number, date: string = hojeKey()): Promise<DayCheck> {
+  return naFila(date, async () => {
+    const current = await lerDiaParaGravar(date);
+    const water = Math.max(0, Math.min(Math.round(current.water + delta), 6000));
+    return upsertDay(date, { water }, current);
+  });
+}
+
+/**
+ * Textos que não gravaram, por "dia:id". Vive no módulo, não na tela: se ela
+ * digitou e saiu da página (ou trocou de dia) com a gravação falhando, a caixa
+ * volta com o que ela escreveu e o aviso — em vez de o texto sumir calado.
+ */
+const textosNaoSalvos = new Map<string, string>();
+
+/** O texto que ela digitou e não gravou nesse dia, se houver. */
+export function textoNaoSalvo(date: string, id: string): string | undefined {
+  return textosNaoSalvos.get(`${date}:${id}`);
+}
+
+/** Texto salvo por dia (gratidão, sintomas, carga). Fica na mesma coluna — ver DayCheck. */
 export async function setTextoDoDia(
   id: string,
   valor: string,
-  date: string = todayKey(),
+  date: string = hojeKey(),
 ): Promise<DayCheck> {
-  const current = await getDay(date);
-  const supplements = { ...current.supplements, [`txt:${id}`]: valor };
-  return upsertDay(date, { supplements });
+  const chave = `${date}:${id}`;
+  try {
+    const novo = await naFila(date, async () => {
+      const current = await lerDiaParaGravar(date);
+      const supplements = { ...current.supplements, [`txt:${id}`]: valor };
+      return upsertDay(date, { supplements }, current);
+    });
+    textosNaoSalvos.delete(chave);
+    return novo;
+  } catch (err) {
+    textosNaoSalvos.set(chave, valor);
+    throw err;
+  }
 }
 
 export function getTextoDoDia(dia: DayCheck, id: string): string {
@@ -152,18 +278,29 @@ export function getTextoDoDia(dia: DayCheck, id: string): string {
   return typeof valor === "string" ? valor : "";
 }
 
-export async function toggleWorkout(date: string = todayKey()): Promise<DayCheck> {
-  const current = await getDay(date);
-  return upsertDay(date, { workout: !current.workout });
+export async function toggleWorkout(
+  date: string = hojeKey(),
+  valor?: boolean,
+): Promise<DayCheck> {
+  return naFila(date, async () => {
+    const current = await lerDiaParaGravar(date);
+    return upsertDay(date, { workout: valor ?? !current.workout }, current);
+  });
 }
 
 export async function toggleExercise(
   exerciseId: string,
-  date: string = todayKey(),
+  date: string = hojeKey(),
+  valor?: boolean,
 ): Promise<DayCheck> {
-  const current = await getDay(date);
-  const exercises = { ...current.exercises, [exerciseId]: !current.exercises[exerciseId] };
-  return upsertDay(date, { exercises });
+  return naFila(date, async () => {
+    const current = await lerDiaParaGravar(date);
+    const exercises = {
+      ...current.exercises,
+      [exerciseId]: valor ?? !current.exercises[exerciseId],
+    };
+    return upsertDay(date, { exercises }, current);
+  });
 }
 
 export async function getWeights(): Promise<WeightEntry[]> {
@@ -178,15 +315,17 @@ export async function getWeights(): Promise<WeightEntry[]> {
   return (data as WeightRow[]).map((r) => ({ date: r.date, weight: Number(r.weight) }));
 }
 
+/** Grava a pesagem. Se não gravar, lança — a tela avisa e guarda o que ela digitou. */
 export async function addWeight(entry: WeightEntry): Promise<WeightEntry[]> {
   const { error } = await getSupabase().from("weights").upsert(entry);
-  if (error) console.error("addWeight error", error);
+  if (error) throw new Error(`Não deu para gravar o peso de ${entry.date}: ${error.message}`);
   return getWeights();
 }
 
+/** Apaga a pesagem. Se não apagar, lança — a tela avisa e a pesagem continua na lista. */
 export async function removeWeight(date: string): Promise<WeightEntry[]> {
   const { error } = await getSupabase().from("weights").delete().eq("date", date);
-  if (error) console.error("removeWeight error", error);
+  if (error) throw new Error(`Não deu para apagar o peso de ${date}: ${error.message}`);
   return getWeights();
 }
 
@@ -364,7 +503,7 @@ export async function getShopping(): Promise<Record<string, boolean>> {
 }
 
 export async function getStreak(): Promise<number> {
-  const today = new Date();
+  const today = new Date(`${hojeKey()}T12:00:00`);
   const start = new Date(today);
   start.setDate(start.getDate() - 60);
   const { data, error } = await getSupabase()
@@ -382,7 +521,7 @@ export async function getStreak(): Promise<number> {
   for (let i = 0; i < 60; i++) {
     const key = todayKey(cursor);
     const row = byDate.get(key);
-    // Dia conta na sequência se ela cumpriu alguma parte relevante do protocolo:
+    // Dia conta na sequência se ela cumpriu alguma parte relevante do plano:
     // metade das refeições, a água, o treino ou boa parte da rotina.
     const rotinaMarcada = Object.entries(row?.supplements ?? {}).filter(
       ([id, v]) => v && id.startsWith("r-"),

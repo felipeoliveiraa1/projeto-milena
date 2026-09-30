@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Mais Leve · plano da Milena",
     short_name: "Mais Leve",
-    description: "Protocolo Desinflama-se, treino e check-in diário",
+    description: "Recomposição corporal, treino e check-in diário",
     start_url: "/",
     display: "standalone",
     // Verde profundo: a abertura nativa do PWA fica igual à splash do app.

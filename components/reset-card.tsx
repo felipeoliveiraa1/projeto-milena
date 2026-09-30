@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CheckRow } from "@/components/check-row";
 import { resetar, type EscopoReset } from "@/lib/reset";
-import { todayKey } from "@/lib/date";
+import { hojeKey } from "@/lib/date";
 
 const PARTES = [
   {
@@ -39,6 +39,11 @@ const PARTES = [
     detalhe: "O álbum inteiro do antes e depois.",
   },
   {
+    chave: "bioimpedancia" as const,
+    titulo: "Exames de bioimpedância",
+    detalhe: "Os que você registrou no app. O de 12/08, ponto de partida, continua.",
+  },
+  {
     chave: "compras" as const,
     titulo: "Lista de compras",
     detalhe: "Os dias escolhidos na dieta e os itens já comprados.",
@@ -52,9 +57,10 @@ export function ResetCard() {
     pesagens: true,
     medidas: true,
     fotos: true,
+    bioimpedancia: true,
     compras: true,
   });
-  const [novoInicio, setNovoInicio] = useState(todayKey());
+  const [novoInicio, setNovoInicio] = useState(() => hojeKey());
   const [rodando, setRodando] = useState(false);
   const [resultado, setResultado] = useState<string | null>(null);
 
@@ -64,7 +70,7 @@ export function ResetCard() {
     if (selecionadas.length === 0) return;
     const lista = selecionadas.map((p) => `• ${p.titulo}`).join("\n");
     const ok = confirm(
-      `Isso apaga de vez, sem desfazer:\n\n${lista}\n\nE recomeça o protocolo em ${novoInicio
+      `Isso apaga de vez, sem desfazer:\n\n${lista}\n\nE recomeça a jornada em ${novoInicio
         .split("-")
         .reverse()
         .join("/")}.\n\nTem certeza?`,
@@ -92,9 +98,9 @@ export function ResetCard() {
           <RotateCcw className="h-4.5 w-4.5" /> Recomeçar do zero
         </CardTitle>
         <CardDescription>
-          Apaga o que você escolher e reinicia a contagem do protocolo. As suas
-          configurações — metas, fase do treino e a rotina que você montou —
-          continuam como estão.
+          Apaga o que você escolher e reinicia a contagem da jornada. As suas
+          configurações — metas, janela do jejum, fase do treino e a rotina que
+          você montou — continuam como estão.
         </CardDescription>
       </CardHeader>
 
@@ -122,12 +128,12 @@ export function ResetCard() {
 
         <label className="block space-y-1.5 pt-1">
           <span className="text-xs font-semibold text-ink-soft">
-            Recomeçar o protocolo em
+            Recomeçar a jornada em
           </span>
           <Input
             type="date"
             value={novoInicio}
-            max={todayKey()}
+            max={hojeKey()}
             onChange={(e) => setNovoInicio(e.target.value)}
             className="max-w-45"
           />

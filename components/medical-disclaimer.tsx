@@ -7,14 +7,16 @@ export function MedicalDisclaimer() {
         <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-ink-muted" />
         <p>
           Plano de referência educacional, montado sobre o histórico fornecido (pós-parto, pressão alta
-          gestacional, diabetes gestacional controlada, gordura no fígado) e adaptado ao protocolo
-          Desinflama-se. Sempre revise mudanças com seu médico e nutricionista. Em caso de mal-estar,
-          dor anormal ou pressão alterada, suspenda treino e dieta e procure orientação.
+          gestacional, diabetes gestacional controlada, gordura no fígado e diástase abdominal), o resumo
+          de alimentação para recomposição corporal e as orientações do médico para o treino. Sempre
+          revise mudanças com seu médico e nutricionista — ainda mais durante o uso do Mounjaro e na
+          preparação para a cirurgia plástica. Em caso de mal-estar, dor anormal ou pressão alterada,
+          suspenda treino e jejum e procure orientação.
         </p>
       </div>
       <p className="rounded-xl2 bg-danger-soft p-3.5 text-danger">
-        <strong>Nenhum medicamento é suspenso ou ajustado sem o médico que receitou</strong> — mesmo
-        que a pressão ou a glicemia melhorem durante o protocolo.
+        <strong>Nenhum medicamento é suspenso ou ajustado sem o médico que receitou</strong> —
+        Mounjaro, testosterona e fórmula inclusive, mesmo que o peso, a pressão ou a glicemia melhorem.
       </p>
     </div>
   );

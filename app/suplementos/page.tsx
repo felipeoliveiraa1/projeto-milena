@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 /**
- * Os suplementos passaram a fazer parte da rotina diária do protocolo.
+ * Os remédios e suplementos passaram a fazer parte da rotina diária.
  * A rota antiga continua funcionando para não quebrar atalho salvo no celular.
  */
 export default function SuplementosPage() {
