@@ -340,6 +340,20 @@ export default function ListaPage() {
                   Whey: o <strong>Chef Zero</strong>, 40 g por dia — 280 g na semana.
                 </li>
                 <li>Iogurte proteico: confira os 15–17 g de proteína no rótulo do pote.</li>
+                {/* Ajustes de 12/10: fibra e folha escura todo dia, e cores no prato. */}
+                <li>
+                  Chia ou linhaça: a linhaça vai <strong>triturada</strong> — compre assim ou
+                  bata em casa; inteira, ela passa direto. Guarde na geladeira, em pote fechado.
+                </li>
+                <li>
+                  Folhas escuras — rúcula, agrião, espinafre, couve: folha firme e verde viva, sem
+                  partes amarelas ou murchas. Agrião e rúcula duram pouco: o agrião, compre perto de
+                  sexta; a rúcula do sábado, no meio da semana.
+                </li>
+                <li>
+                  Frutas com vitamina C: o <strong>morango</strong> já está na lista; kiwi, laranja e
+                  acerola, se você gostar.
+                </li>
                 <li>Pão francês comum serve: o miolo sai em casa.</li>
                 <li>Carne magra: patinho. Para o moído, peça para moer na hora, sem a capa de gordura.</li>
                 <li>

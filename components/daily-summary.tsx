@@ -10,7 +10,7 @@ import { EVENTO_DIA_GRAVADO, getDay, getStreak } from "@/lib/storage";
 import { formatarAgua, resumoDoDia } from "@/lib/score";
 import { dataExtenso } from "@/lib/date";
 import { statusPlano, useInicio, usePlano } from "@/lib/protocol";
-import { useRotina } from "@/lib/routine";
+import { idsRotinaDoDia, useRotina } from "@/lib/routine";
 import { usePreferencias } from "@/lib/settings";
 import { useAgoraVivo } from "@/lib/now";
 import { useDia } from "@/components/day-context";
@@ -55,7 +55,12 @@ export function DailySummary() {
   }, [data]);
 
   useEffect(() => {
-    const ids = blocos.flatMap((b) => b.itens.map((i) => i.id));
+    // Lançando um dia antigo, só contam os itens que já existiam nele — como
+    // no histórico, para o mesmo dia ter a mesma nota nas duas telas.
+    const ids = idsRotinaDoDia(
+      blocos.flatMap((b) => b.itens.map((i) => i.id)),
+      data,
+    );
     // Cada gravação dispara uma busca nova: uma resposta antiga que chegue
     // depois não pode deixar o anel com o número velho.
     let valendo = true;

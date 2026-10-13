@@ -500,8 +500,8 @@ export const INTERVALO_EXAME = { minDias: 28, maxDias: 42 };
 export const DICAS_EXAME = [
   "Mesmo aparelho, de preferência na mesma clínica. Cada aparelho faz a conta do seu jeito, e trocar muda o número sem o corpo mudar.",
   "Mesmo horário do exame anterior — anote no registro para lembrar da próxima vez.",
-  "Sem comer nas 4 horas antes e sem virar muita água logo antes. De manhã, antes do café, é o mais fácil de repetir.",
-  "Sem treino, sauna ou banho quente logo antes: marque para antes do treino ou para um dia de descanso.",
+  "Sem comer nas 4 horas antes e sem virar muita água logo antes. Logo cedo, antes do café da manhã, é o mais fácil de repetir.",
+  "Sem treino, sauna ou banho quente logo antes: marque para antes do treino do dia, nunca logo depois.",
   "Sem álcool nos dois dias anteriores.",
   "Bexiga vazia: faça xixi antes de subir no aparelho.",
   "Se a menstruação já voltou, anote a fase do ciclo — a retenção de líquido desses dias pode mexer no resultado.",

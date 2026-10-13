@@ -216,7 +216,7 @@ export default function AjustesPage() {
           </CardTitle>
           <CardDescription>
             A primeira refeição abre a janela; a última vem meia hora antes de
-            ela fechar. Fora dela, só água, chá ou café sem açúcar — e os
+            ela fechar. Fora dela, só água e chá sem cafeína, sem açúcar — e os
             comprimidos da noite. Os horários das refeições se ajustam sozinhos
             a ela.
           </CardDescription>

@@ -63,7 +63,11 @@ export function WorkoutOfDay() {
   const workout = plano.dias.find((w) => w.diaSemana === day) ?? plano.dias[0];
   // O tipo do dia vem dos dados — o tempo e o lembrete do cardio também.
   const academia = workout.tipo === "academia";
-  const { cardio, respiro } = plano.entreSeries;
+  // Desde 12/10 o respiro vai até o fôlego voltar; o tempo é só o mínimo.
+  const { cardio, respiroMinimo } = plano.entreSeries;
+  // No dia seguinte ao Mounjaro e nos dias de perna, as opções de cardio
+  // encolhem: a linha já diz quais valem, antes de ela chegar à academia.
+  const cardioRestrito = workout.cardioSuave || workout.cardioDeBraco;
 
   return (
     <Card className="overflow-hidden">
@@ -95,9 +99,10 @@ export function WorkoutOfDay() {
           <p className="flex items-start gap-2.5 rounded-xl2 bg-clay-soft px-3.5 py-3 text-xs leading-relaxed text-clay-deep">
             <HeartPulse className="mt-0.5 h-4 w-4 shrink-0 text-clay" />
             <span>
-              <strong>Cardio entre todas as séries:</strong> {cardio} sem
-              pular e {respiro} de respiro antes da próxima.
-              {workout.cardioSuave &&
+              <strong>Cardio entre todas as séries:</strong> {cardio} sem pular;
+              depois, respire até conseguir falar frases curtas — no mínimo{" "}
+              {respiroMinimo}.
+              {cardioRestrito &&
                 ` Hoje, só ${listaOu(opcoesCardio(workout).map((o) => o.curto))}.`}
             </span>
           </p>

@@ -49,7 +49,7 @@ export const SHOPPING_LIST: ShoppingCategory[] = [
         id: "pr-peixe",
         nome: "Filé de peixe (tilápia, merluza ou pescada)",
         quantidade: "400 g",
-        nota: "Qualquer peixe de que você goste — frutos do mar e sardinha, não.",
+        nota: "Qualquer peixe de que você goste — frutos do mar e sardinha, não. De vez em quando, salmão ou truta.",
       },
       {
         id: "pr-ovos",
@@ -74,7 +74,7 @@ export const SHOPPING_LIST: ShoppingCategory[] = [
         id: "la-ricota",
         nome: "Ricota fresca (ou cottage)",
         quantidade: "250 g",
-        nota: "Sólida, para o café de sexta; o resto fecha a janela no sábado.",
+        nota: "Sólida, para o café da manhã de sexta; o resto fecha a janela no sábado.",
       },
       {
         id: "la-iogurte-proteico",
@@ -106,7 +106,7 @@ export const SHOPPING_LIST: ShoppingCategory[] = [
       {
         id: "ca-pao",
         nome: "Pão francês (para tirar o miolo)",
-        // Um por café: os sete dias levam pão desde que a quinta voltou a ter.
+        // Um por café da manhã: os sete dias levam pão desde que a quinta voltou a ter.
         quantidade: "7 unidades",
         nota: "Congela bem: tire o miolo, congele e esquente na hora.",
       },
@@ -136,10 +136,32 @@ export const SHOPPING_LIST: ShoppingCategory[] = [
     id: "folhas",
     nome: "Folhas",
     icone: "🥬",
+    // Folha verde-escura no almoço, todo dia (ajustes de 12/10): a rúcula vai na
+    // terça, na quarta e no sábado; o agrião, na sexta; o espinafre, refogado,
+    // na quinta. A alface segue em cinco almoços, em porção menor. fo-agriao e
+    // fo-espinafre já existiram com estes mesmos alimentos: se aparecerem
+    // riscados na lista, é marcação antiga — um toque em Desmarcar resolve.
     itens: [
       { id: "fo-alface", nome: "Alface", quantidade: "2 pés" },
-      { id: "fo-rucula", nome: "Rúcula", quantidade: "1 maço" },
+      {
+        id: "fo-rucula",
+        nome: "Rúcula",
+        quantidade: "2 maços",
+        nota: "Dura 2 a 3 dias: um maço na compra da semana, para terça e quarta; o outro no meio da semana, para o sábado.",
+      },
       { id: "fo-couve", nome: "Couve-manteiga", quantidade: "1 maço" },
+      {
+        id: "fo-agriao",
+        nome: "Agrião",
+        quantidade: "1 maço",
+        nota: "Dura 2 a 3 dias: compre perto de sexta ou troque por rúcula.",
+      },
+      {
+        id: "fo-espinafre",
+        nome: "Espinafre",
+        quantidade: "1 maço",
+        nota: "Refogado no alho, na quinta.",
+      },
     ],
   },
   {
@@ -185,10 +207,13 @@ export const SHOPPING_LIST: ShoppingCategory[] = [
     icone: "🫒",
     itens: [
       {
+        // Uma colher por dia desde 12/10: no iogurte de segunda e quinta, batida
+        // com o whey nos outros dias. Um id só para as duas sementes — a
+        // linhaça não ganha item próprio.
         id: "go-chia",
-        nome: "Chia (ou linhaça)",
-        quantidade: "1 pacote pequeno",
-        nota: "Opcional: 1 colher no iogurte ajuda o intestino — com água ao longo do dia.",
+        nome: "Chia ou linhaça triturada",
+        quantidade: "1 pacote pequeno (uns 100 g na semana — 7 colheres)",
+        nota: "Todo dia, 1 colher de sopa. A linhaça vai triturada (compre triturada ou bata em casa) e fica na geladeira, em pote fechado.",
       },
       { id: "go-azeite", nome: "Azeite extravirgem", quantidade: "1 garrafa", essencial: true },
     ],
@@ -207,15 +232,18 @@ export const SHOPPING_LIST: ShoppingCategory[] = [
   {
     id: "bebidas",
     nome: "Bebidas e rituais",
-    icone: "☕",
+    // O café saiu em 12/10, a pedido dela: a xícara da categoria virou a do chá.
+    // Saiu do catálogo junto, porque era essencial e entraria em toda lista. O
+    // id dele não volta para outra coisa: a marcação de comprado ficou no banco.
+    icone: "🍵",
     itens: [
-      { id: "be-cafe", nome: "Café em pó", quantidade: "500 g", essencial: true },
       {
         id: "be-cha",
-        nome: "Chá sem cafeína (camomila ou cidreira)",
-        quantidade: "1 caixa",
+        nome: "Chá sem cafeína (camomila, cidreira ou erva-doce)",
+        // Sem o café, o chá é a bebida quente do dia e do jejum.
+        quantidade: "2 caixas",
         // Hortelã piora o refluxo, e azia é efeito comum do Mounjaro.
-        nota: "Para o jejum da noite, sem açúcar. Hortelã, só se não tiver azia.",
+        nota: "Para o dia e para o jejum, sem açúcar. Chá verde, preto, branco e mate têm cafeína. Hortelã, só se não tiver azia.",
         essencial: true,
       },
       {

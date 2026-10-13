@@ -4,8 +4,19 @@ import type { Exercise } from "./workouts";
  * Peças que os dois planos usam do mesmo jeito. Ficam num lugar só para a dica
  * mudar junto nos dois — e num arquivo à parte porque workouts.ts importa a
  * adaptação: se a adaptação importasse valores de volta, o ciclo quebraria o
- * carregamento dos módulos.
+ * carregamento dos módulos. Por isso este arquivo também só importa tipos.
+ *
+ * As peças sem séries, repetições e descanso são completadas por cada plano
+ * ({ ...PECA, series, reps, descanso }), com o MESMO nome: a carga de hoje é
+ * guardada pelo nome, e o nome igual mantém a "Última vez" entre os planos.
  */
+
+/**
+ * Abre a dica de todo exercício de agachar, afundar ou subir no step, nos dois
+ * planos (ajustes de 12/10): joelho que entra para dentro na descida força a
+ * articulação. Vem antes da dica que o exercício já tinha.
+ */
+export const DICA_JOELHO = "Joelhos na direção das pontas dos pés.";
 
 /**
  * Deslizamento de calcanhar: igual nos dois planos, só muda o número de séries.
@@ -80,4 +91,39 @@ export const ALONGAMENTO_GERAL: Exercise = {
   equipamento: "Colchonete",
   videoId: "cvhQkEjB--o",
   semCardio: true,
+};
+
+/**
+ * A caminhada dos dois planos. Cada dia dá o ritmo — firme na quarta da
+ * adaptação, leve nos outros — e só a leve pode ser em jejum.
+ */
+export const CAMINHADA: Omit<Exercise, "series" | "reps" | "descanso"> = {
+  nome: "Caminhada",
+  beneficio: "Gasta energia sem pesar nas articulações — e dá para levar o bebê no carrinho.",
+  equipamento: "Nenhum (rua, esteira sem inclinação ou empurrando o carrinho)",
+  videoId: "pRvzvfxUrK4",
+  semCardio: true,
+  dica: "Passo de passeio: dá para conversar sem ficar ofegante.",
+};
+
+/** Ombro desenhado nos dias de costas e braços dos dois planos. */
+export const ELEVACAO_LATERAL: Omit<Exercise, "series" | "reps" | "descanso"> = {
+  nome: "Elevação lateral leve",
+  beneficio: "Ombro desenhado com halter bem leve — perto dele, a cintura parece mais fina.",
+  equipamento: "Par de halteres leves",
+  videoId: "ORparUDksUk",
+  grupos: ["costas-bracos"],
+  carga: true,
+};
+
+export const TRICEPS_COICE: Omit<Exercise, "series" | "reps" | "descanso"> = {
+  nome: "Tríceps coice com halter",
+  beneficio: "Mira o 'tchauzinho' — a parte de trás do braço — com halter leve.",
+  equipamento: "Banco reto + halter leve",
+  // Um braço por vez, joelho e mão no banco. O de antes era com os dois
+  // braços, em pé e curvada.
+  videoId: "gZhDheVmdf8",
+  grupos: ["costas-bracos"],
+  carga: true,
+  dica: "Joelho e mão do mesmo lado apoiados no banco, costas retas e cotovelo colado ao corpo; estique o braço para trás soltando o ar. Um braço de cada vez.",
 };

@@ -20,6 +20,15 @@
  * Brasil e o guia da FDA). As dicas para o enjoo vêm do material do fabricante
  * para pacientes. O que não estava nessas fontes ficou de fora.
  *
+ * Nos ajustes de 12/10, a testosterona ganhou os sinais de coágulo que a bula
+ * pede para vigiar — com as mesmas condutas de data/alarmes.ts, para nunca
+ * haver duas ordens para o mesmo sinal — e a pergunta ao médico
+ * antes de cirurgia, internação ou dias de cama, quando ficar parada favorece
+ * o coágulo em qualquer pessoa. No Mounjaro, a falta de ar ganhou duas
+ * condutas (piorando aos poucos: médico; de repente: 192), e o aviso do
+ * anticoncepcional passou a começar pelo principal: testosterona e Mounjaro
+ * não combinam com gravidez, e o método se escolhe com o ginecologista.
+ *
  * Os ids são gravados no Supabase (daily_checks.supplements) e o histórico
  * depende deles: um id nunca muda, mesmo quando o nome ou a dose mudam.
  */
@@ -125,6 +134,15 @@ export const SUPPLEMENTS: Supplement[] = [
     alertas: [
       "O bebê não pode encostar no local: o hormônio que fica na pele passa para quem toca ali. Vai pegá-lo no colo pele com pele? Lave o local com água e sabão antes. Se ele tocar sem querer, lave com água e sabão a pele dele.",
       "Pelos na região íntima ou aumento do pênis ou do clitóris no bebê podem ser sinal de que o hormônio passou para ele: avise o pediatra e o seu médico logo.",
+      // Ajustes de 12/10. Perna, 192 e "sem ir dirigindo" são as mesmas
+      // condutas de data/alarmes.ts. O pronto-socorro raramente
+      // pergunta a uma mulher se ela usa testosterona — e isso muda o que ele
+      // investiga. "Antes da próxima dose" segue o alerta da gravidez: quem
+      // decide é um médico, nunca ela sozinha.
+      "A bula da testosterona pede atenção a sinais de coágulo: uma perna só inchada, doída, quente ou vermelha — pronto-socorro no mesmo dia; falta de ar de repente, dor no peito, tosse com sangue ou desmaio — 192 (SAMU), sem ir dirigindo. No atendimento, conte que usa testosterona em gel e não passe a próxima dose antes de falar com um médico. Avise também o médico que receitou.",
+      // Cirurgia e dias de cama são a hora clássica do coágulo, para qualquer
+      // pessoa: a decisão de manter ou parar é do médico, com tempo.
+      "Cirurgia, internação ou dias de cama pela frente: pergunte ao cirurgião e ao médico que receitou se a testosterona continua. Nunca pare por conta própria.",
       "Menstruação atrasada, suspeita de gravidez ou planos de engravidar: fale com o médico antes da próxima dose. Testosterona não pode ser usada na gravidez.",
       "Espinhas, pelos novos, queda de cabelo ou voz mais grossa: avise o médico logo — a mudança na voz pode não voltar.",
     ],
@@ -209,17 +227,25 @@ export const SUPPLEMENTS: Supplement[] = [
       "Dor forte na barriga que não passa, com ou sem vômito, às vezes indo para as costas: procure atendimento na hora e fale com o médico antes da próxima aplicação.",
       // Alergia: a bula manda interromper e avisar o médico; o guia da FDA,
       // procurar ajuda na hora. "Não aplique de novo antes de falar com ele"
-      // junta as duas sem suspender o remédio por conta própria.
-      "Sinais de alergia forte — inchaço no rosto, na boca ou na garganta, dificuldade para respirar ou engolir, vermelhidão ou coceira forte pelo corpo, tontura forte, coração muito acelerado ou desmaio: procure atendimento na hora. Vergões ou coceira leves: avise o médico. Nos dois casos, não aplique de novo antes de falar com ele.",
+      // junta as duas sem suspender o remédio por conta própria. Garganta
+      // fechando, falta de ar, tontura forte ou desmaio são 192 — a mesma ordem
+      // de data/alarmes.ts: quem está assim não chega sozinha ao atendimento.
+      "Sinais de alergia forte — inchaço na boca ou na garganta, dificuldade para respirar ou engolir, tontura forte, coração muito acelerado ou desmaio: ligue 192 (SAMU), sem ir dirigindo. Inchaço no rosto ou vermelhidão e coceira fortes pelo corpo, sem esses sinais: procure atendimento na hora. Vergões ou coceira leves: avise o médico. Em todos os casos, não aplique de novo antes de falar com ele.",
       "Vômito ou diarreia que não param, ou sinais de desidratação (boca seca, pouco xixi, tontura): procure atendimento. Desidratação pesa nos rins.",
       "Dor no alto da barriga, febre, pele ou olhos amarelados ou fezes claras: avise o médico logo — pode ser a vesícula.",
-      "Caroço ou inchaço no pescoço, rouquidão que não passa, dificuldade para engolir ou falta de ar: avise o médico.",
+      // A bula fala do pescoço (tireoide): falta de ar que vem aos poucos é
+      // conversa com o médico. A de repente é emergência — a mesma ordem de
+      // data/alarmes.ts.
+      "Caroço ou inchaço no pescoço, rouquidão que não passa, dificuldade para engolir ou falta de ar que vem piorando aos poucos: avise o médico. Falta de ar de repente é outra coisa: 192 (SAMU).",
       // A bula brasileira pede falar com o médico imediatamente em piora do
       // humor ou pensamentos suicidas com remédios para perder peso — e ela
       // está a poucos meses do parto.
       "Tristeza ou desânimo que não passam, mudança fora do comum no humor ou no comportamento, ou pensamentos de se machucar ou de morrer: fale com o médico na hora, como pede a bula. Em crise, ligue 188 (CVV, 24 h, grátis) ou 192 (SAMU).",
       "Menstruação atrasada ou suspeita de gravidez: fale com o médico antes da próxima aplicação. Planeja engravidar? A bula pede parar o Mounjaro pelo menos 1 mês antes — combine com o médico.",
-      "Anticoncepcional em comprimido pode perder efeito nas 4 semanas depois de começar e depois de cada aumento de dose. Nesse período, a bula pede camisinha junto ou um método que não seja comprimido — confirme com o médico.",
+      // Ajustes de 12/10. A bula: o comprimido pode perder efeito nas 4 semanas
+      // do começo e de cada aumento de dose. A escolha do método fica com o
+      // ginecologista, que vê a lista de remédios e os exames.
+      "Testosterona e Mounjaro não combinam com gravidez: se houver chance de engravidar, combine com o médico como evitar. O método se escolhe com o ginecologista, levando a lista de remédios e os seus exames. Anticoncepcional em comprimido pode perder efeito nas 4 semanas depois de começar o Mounjaro e depois de cada aumento de dose: nesse período, camisinha junto — trocar de método, só com o ginecologista.",
       "Antes da cirurgia plástica ou de qualquer anestesia, avise o cirurgião e o anestesista: o Mounjaro faz o estômago esvaziar mais devagar, e isso importa na anestesia.",
     ],
     status: "medicamento",
@@ -233,7 +259,7 @@ export const SUPPLEMENTS: Supplement[] = [
     dias: [0], // domingo
     funcao: "Ajuda o corpo a aproveitar o cálcio e a cuidar dos ossos. A dose é a que o médico passou.",
     observacao:
-      "Vitamina D se dissolve em gordura: depois do café, que tem ovo e queijo, o corpo aproveita melhor.",
+      "Vitamina D se dissolve em gordura: depois do café da manhã, que tem ovo e queijo, o corpo aproveita melhor.",
     antes: "Era na segunda. A lista de 29/09 passou para o domingo.",
     status: "prescricao",
   },

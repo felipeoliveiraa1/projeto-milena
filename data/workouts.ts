@@ -3,21 +3,39 @@ import { ENTRE_SERIES_ADAPTACAO, TREINO_ADAPTACAO } from "./workouts-adaptacao";
 import {
   ALONGAMENTO_ADUTOR,
   ALONGAMENTO_GERAL,
+  CAMINHADA,
   DESLIZAMENTO_CALCANHAR,
+  DICA_JOELHO,
+  ELEVACAO_LATERAL,
   NOTA_DEAD_BUG,
   NOTA_PERDIGUEIRO,
   TRANSVERSO,
+  TRICEPS_COICE,
 } from "./workouts-comum";
 
 /**
- * Treino da Milena — orientação do médico recebida em 29/09/2026.
+ * Treino da Milena — orientação do médico de 29/09/2026 e ajustes de 12/10, a
+ * pedido dela: treinar todo dia, perder uns 15 kg, ganhar força, pernas
+ * musculosas e costas e braços definidos.
  *
- * O que todo dia de academia precisa ter, nos dois planos:
- * - perna (o médico pediu pernas bem fortes);
- * - cardio rápido e sem pular depois de TODA série, para a perda de peso;
- * - parte interna da coxa (flacidez) em pelo menos 3 sessões por semana;
- * - core de pouca pressão na linha do meio da barriga, soltando o ar no esforço;
- * - costas e braços com carga leve e muitas repetições: definidos, não grandes.
+ * A semana tem o mesmo esqueleto nos dois planos:
+ * - seg: pernas A (frente da coxa e bumbum) — no completo, perna pesada;
+ * - ter: costas e braços;
+ * - qua: no completo, cintura e o intervalado na bike — a única sessão forte;
+ *   na adaptação, caminhada firme;
+ * - qui: dia do Mounjaro — caminhada leve e alongamento;
+ * - sex: costas, braços e cintura, tudo calmo (dia seguinte ao Mounjaro);
+ * - sáb: pernas B (bumbum, posterior e parte interna da coxa);
+ * - dom: caminhada ao ar livre e alongamento — descanso ativo.
+ *
+ * Desde 29/09, em todo dia de academia: cardio rápido e sem pular depois de
+ * TODA série, para a perda de peso, e core de pouca pressão na linha do meio da
+ * barriga, soltando o ar no esforço. Na semana, a parte interna da coxa
+ * (flacidez) em pelo menos 3 sessões. Desde 12/10: o respiro entre as séries
+ * vai até o fôlego voltar; perna 2 vezes por semana, com 48 h ou mais entre
+ * elas, porque o músculo cresce no descanso; uma sessão forte só, porque treino
+ * forte em dias seguidos não dá tempo de o músculo se recuperar; e, nos dias de
+ * perna, cardio de braço entre as séries.
  *
  * O plano completo mora aqui; a adaptação, que é o padrão, em
  * workouts-adaptacao.ts. Os vídeos foram conferidos: existem e permitem player
@@ -75,13 +93,27 @@ export type WorkoutDay = {
   /** Minutos, contando aquecimento e o cardio entre as séries. Descanso não tem. */
   duracaoMin?: number;
   aquecimento?: string;
-  /** Como a sessão anda quando foge do padrão (circuito, intervalado...). */
+  /** Como a sessão anda quando foge do padrão (perna pesada, intervalado, dia calmo...). */
   comoFazer?: string;
   /**
-   * Quinta (aplicação do Mounjaro) e sexta: o cardio entre as séries fica só
-   * nas opções que não sacodem o estômago — o enjoo costuma vir nesses dias.
+   * Sexta, dia seguinte à aplicação do Mounjaro: o cardio entre as séries fica
+   * só nas opções que não sacodem o estômago — o enjoo costuma vir nesse dia. A
+   * quinta, dia da aplicação, é de caminhada leve desde 12/10.
    */
   cardioSuave?: boolean;
+  /**
+   * A sessão forte da semana — no completo, a quarta do intervalado. Uma só,
+   * longe da quinta e da sexta (Mounjaro) e das pernas pesadas: treino forte em
+   * dias seguidos não dá tempo de o músculo se recuperar (ajustes de 12/10).
+   */
+  intensa?: boolean;
+  /**
+   * Dia de perna: o cardio entre as séries fica só no que poupa a perna — bike,
+   * step, marcha e elíptico cansam a perna da série seguinte.
+   */
+  cardioDeBraco?: boolean;
+  /** Dia de braço: o cardio entre as séries fica sem o soco no ar e o polichinelo, que cansam o braço. */
+  cardioSemBraco?: boolean;
   /** Lembrete do dia (Mounjaro e água). Aparece também na tela inicial. */
   lembrete?: string;
   exercicios: Exercise[];
@@ -129,6 +161,10 @@ export type OpcaoCardio = {
   videoId: string;
   /** Não sacode o estômago — serve nos dias de enjoo do Mounjaro. */
   suave: boolean;
+  /** Não cansa a perna — o cardio entre as séries dos dias de perna. */
+  poupaPerna?: boolean;
+  /** Cansa o braço — fica fora dos dias de costas e braços. */
+  cansaBraco?: boolean;
 };
 
 /**
@@ -137,7 +173,7 @@ export type OpcaoCardio = {
  */
 export const CARDIO_ENTRE_SERIES: { porque: string; opcoes: OpcaoCardio[] } = {
   porque:
-    "O descanso parado vira movimento: o coração fica acelerado a sessão toda, e o treino gasta mais no mesmo tempo. Sem pular — impacto pesa no assoalho pélvico e na diástase.",
+    "O descanso parado vira movimento: o coração fica acelerado a sessão toda, e o treino gasta mais no mesmo tempo. Sem pular — impacto pesa no assoalho pélvico e na diástase. Voltar para a série pelo fôlego, e não pelo relógio, evita acumular cansaço.",
   opcoes: [
     {
       nome: "Polichinelo sem salto",
@@ -145,6 +181,8 @@ export const CARDIO_ENTRE_SERIES: { porque: string; opcoes: OpcaoCardio[] } = {
       como: "Abra um pé para o lado enquanto os braços sobem, volte e troque de lado.",
       videoId: "4Tcu8Y4iVsY",
       suave: false,
+      poupaPerna: true,
+      cansaBraco: true,
     },
     {
       nome: "Marcha com joelho alto",
@@ -166,6 +204,8 @@ export const CARDIO_ENTRE_SERIES: { porque: string; opcoes: OpcaoCardio[] } = {
       como: "Pés firmes, joelhos soltos e socos alternados para a frente, soltando o ar a cada soco.",
       videoId: "Y1h7XI1Dg6Q",
       suave: false,
+      poupaPerna: true,
+      cansaBraco: true,
     },
     {
       nome: "Bike",
@@ -184,58 +224,106 @@ export const CARDIO_ENTRE_SERIES: { porque: string; opcoes: OpcaoCardio[] } = {
   ],
 };
 
-/** Opções que valem no dia: todas, ou só as suaves na quinta e na sexta. */
+/**
+ * Opções que valem no dia: no dia seguinte ao Mounjaro, só as suaves; nos dias
+ * de perna, só as que poupam a perna; nos de braço, nenhuma que canse o braço.
+ * Toda academia da semana fica com pelo menos uma.
+ */
 export function opcoesCardio(dia: WorkoutDay): OpcaoCardio[] {
-  const todas = CARDIO_ENTRE_SERIES.opcoes;
-  return dia.cardioSuave ? todas.filter((o) => o.suave) : todas;
+  return CARDIO_ENTRE_SERIES.opcoes.filter(
+    (o) =>
+      (!dia.cardioSuave || o.suave) &&
+      (!dia.cardioDeBraco || o.poupaPerna) &&
+      (!dia.cardioSemBraco || !o.cansaBraco),
+  );
 }
 
 /* -------------------------------------------------------------------------- */
 /* Plano completo                                                             */
 /* -------------------------------------------------------------------------- */
 
-/** Mais cardio e menos respiro que na adaptação: aqui o corpo já se acostumou. */
-export const ENTRE_SERIES_COMPLETO = { cardio: "40 s", respiro: "15 s" };
+/** Mais cardio e menos respiro mínimo que na adaptação: aqui o corpo já se acostumou. */
+export const ENTRE_SERIES_COMPLETO = { cardio: "40 s", respiroMinimo: "15 s" };
 
-const ENTRE = `cardio ${ENTRE_SERIES_COMPLETO.cardio} + respiro ${ENTRE_SERIES_COMPLETO.respiro}`;
+/** A pílula de cada exercício. Desde 12/10 o respiro vai até o fôlego voltar. */
+const ENTRE = `cardio ${ENTRE_SERIES_COMPLETO.cardio} + respiro pelo fôlego`;
+
+/** Na quarta (2 séries) e no sábado (3). */
+const PERDIGUEIRO: Exercise = {
+  nome: "Perdigueiro (bird dog)",
+  series: "3",
+  reps: "10 cada lado",
+  descanso: ENTRE,
+  beneficio: "Costas e barriga trabalhando juntas, em quatro apoios, com pouca pressão na linha do meio.",
+  equipamento: "Colchonete",
+  videoId: "Nm8onc8ndVw",
+  grupos: ["cintura"],
+  diastase: NOTA_PERDIGUEIRO,
+};
+
+/** "Sem tempo?" das pernas pesadas: corta o volume, nunca o preparo. */
+const SEM_TEMPO =
+  "Sem tempo? Tire a última série de cada exercício — nunca o aquecimento nem o transverso.";
 
 export const WORKOUTS: WorkoutDay[] = [
   {
     diaSemana: 1,
     diaNome: "Segunda",
-    foco: "Pernas A — bumbum, posterior e parte interna da coxa",
+    foco: "Pernas A — frente da coxa e bumbum",
     curto: "Pernas A",
     tipo: "academia",
-    // Aquecimento + séries × (execução + cardio + respiro) + as trocas de
-    // exercício: uns 44 a 49 minutos.
-    duracaoMin: 50,
-    aquecimento: "5 min de bike leve + 10 elevações pélvicas sem peso",
+    // Aquecimento (com a série leve de aproximação) + séries × (execução + 40 s
+    // de cardio + uns 30 s de respiro; mais na barra, que espera o fôlego
+    // inteiro) + as trocas de exercício: uns 51 a 56 minutos.
+    duracaoMin: 55,
+    cardioDeBraco: true,
+    aquecimento:
+      "5 min de bike + 10 agachamentos no banco sem peso + 1 série de 8 com a barra vazia (ou metade da carga), soltando o ar na subida — essa série não leva cardio.",
+    comoFazer: `Dia de perna pesada: carga que deixa 2 repetições sobrando no fim da série e ainda deixa soltar o ar na subida. No agachamento com barra, volte para a série só com o fôlego inteiro, falando frases inteiras. ${SEM_TEMPO}`,
     exercicios: [
       TRANSVERSO,
       {
-        nome: "Stiff com halteres",
+        nome: "Agachamento com barra no suporte",
         series: "3",
-        reps: "12",
+        reps: "10–12",
         descanso: ENTRE,
-        beneficio: "Parte de trás da coxa e bumbum — a base das pernas fortes que o médico pediu.",
-        equipamento: "Par de halteres",
-        videoId: "zPhI_hpBuZE",
+        beneficio: "Força na perna inteira, com os maiores músculos do corpo trabalhando juntos.",
+        equipamento: "Barra + anilhas no suporte",
+        videoId: "rM6SDUdl9fs",
         grupos: ["perna"],
         carga: true,
-        dica: "Coluna reta o tempo todo: desça só até onde ela continuar reta e solte o ar na subida.",
+        adaptacao:
+          "Entra no lugar do leg press, que a academia não tem. Cansada ou insegura com a barra? Goblet com halter.",
+        dica: DICA_JOELHO,
+        diastase: {
+          nivel: "cuidado",
+          nota: "Carga que deixe soltar o ar na subida. Se precisar prender a respiração para subir, está pesada — volte para o goblet.",
+        },
       },
       {
-        nome: "Agachamento sumô com halter ou kettlebell",
+        nome: "Subida no step com halteres",
         series: "3",
-        reps: "12",
+        reps: "10 por perna",
         descanso: ENTRE,
-        beneficio:
-          "Pés bem afastados e pontas para fora: o agachamento que mais trabalha a parte interna da coxa.",
-        equipamento: "Um halter ou kettlebell, seguro com as duas mãos",
-        videoId: "7CTbrHuL_b4",
-        grupos: ["perna", "coxa-interna"],
+        beneficio: "Perna e bumbum, uma perna de cada vez, no movimento de subir escada.",
+        equipamento: "Step (ou banco baixo) + par de halteres",
+        videoId: "KCu2QHbnIZE",
+        grupos: ["perna"],
         carga: true,
-        dica: "Joelhos na direção das pontas dos pés. Solte o ar na subida.",
+        adaptacao:
+          "Entra no lugar do agachamento búlgaro: o mesmo trabalho de uma perna por vez, com bem menos desequilíbrio.",
+        dica: `${DICA_JOELHO} A força vem da perna de cima — sem dar impulso com a de baixo.`,
+      },
+      {
+        nome: "Cadeira extensora (módulo da estação)",
+        series: "3",
+        reps: "12–15",
+        descanso: ENTRE,
+        beneficio: "Isola a frente da coxa, que dá firmeza ao joelho.",
+        equipamento: "Estação de musculação — módulo extensora",
+        videoId: "el3oHblB5DM",
+        grupos: ["perna"],
+        carga: true,
       },
       {
         nome: "Elevação pélvica no banco com halter",
@@ -251,27 +339,17 @@ export const WORKOUTS: WorkoutDay[] = [
         dica: "Solte o ar ao subir e aperte o bumbum lá em cima, sem arquear a lombar.",
       },
       {
-        nome: "Cadeira flexora (módulo da estação)",
+        nome: "Adução em pé na polia baixa",
         series: "3",
-        reps: "15",
+        reps: "12 por perna",
         descanso: ENTRE,
-        beneficio: "Isola a parte de trás da coxa, que protege o joelho.",
-        equipamento: "Estação de musculação — módulo flexora",
-        videoId: "Zss6E3VU6X0",
-        grupos: ["perna"],
-        carga: true,
-      },
-      {
-        nome: "Adução deitada de lado com caneleira",
-        series: "3",
-        reps: "15 por perna",
-        descanso: ENTRE,
-        beneficio: "Trabalho direto na parte interna da coxa, onde está a flacidez.",
-        equipamento: "Caneleira + colchonete",
-        videoId: "Vgw2jCzpyxY",
+        beneficio: "Parte interna da coxa com carga ajustável, puxando a perna para dentro.",
+        equipamento: "Estação — polia baixa + tornozeleira de polia",
+        videoId: "ivCztwt2Vdo",
         grupos: ["perna", "coxa-interna"],
         carga: true,
-        adaptacao: "Entra no lugar da cadeira adutora, que a academia não tem.",
+        adaptacao:
+          "Precisa de uma tornozeleira que prenda no cabo. Se não tiver como prender, faça a adução deitada com caneleira no lugar.",
       },
       {
         nome: "Dead bug (deitada, alterna braço e perna)",
@@ -289,37 +367,23 @@ export const WORKOUTS: WorkoutDay[] = [
   {
     diaSemana: 2,
     diaNome: "Terça",
-    foco: "Costas e braços — definir sem crescer",
+    foco: "Costas e braços — definir",
     curto: "Costas + braços",
     tipo: "academia",
-    // Mesma conta da segunda: uns 41 a 46 minutos.
-    duracaoMin: 45,
+    // Mesma conta da segunda, sem a série de aproximação: uns 37 a 41 minutos.
+    duracaoMin: 40,
+    cardioSemBraco: true,
     aquecimento: "5 min de elíptico + círculos de ombro",
     comoFazer:
-      "Carga leve a moderada: termine cada série com 2 ou 3 repetições sobrando. Nada de série pesada de poucas repetições.",
+      "Carga moderada: termine cada série com 2 ou 3 repetições sobrando. Chegou ao maior número do card em todas as séries? Na próxima, suba o menor passo. Nada pesado acima da cabeça.",
     exercicios: [
       TRANSVERSO,
       {
-        nome: "Agachamento goblet (halter ou kettlebell)",
-        series: "3",
-        reps: "15",
-        descanso: ENTRE,
-        beneficio:
-          "A perna entra em todo dia de academia, como o médico pediu — hoje num agachamento moderado.",
-        equipamento: "Halter ou kettlebell",
-        videoId: "ge1vdJRP0UA",
-        grupos: ["perna"],
-        carga: true,
-        adaptacao:
-          "Versão do agachamento com o peso na frente do peito: protege mais a lombar e não depende de barra.",
-        dica: "Solte o ar na subida.",
-      },
-      {
         nome: "Puxada alta na polia (pegada aberta)",
-        series: "2",
-        reps: "15–20",
+        series: "3",
+        reps: "12–15",
         descanso: ENTRE,
-        beneficio: "Costas desenhadas e postura de ombro aberto, com carga leve.",
+        beneficio: "Costas desenhadas e postura de ombro aberto, com carga moderada.",
         equipamento: "Estação — polia alta com barra",
         videoId: "mPmfwbc_svw",
         grupos: ["costas-bracos"],
@@ -327,8 +391,8 @@ export const WORKOUTS: WorkoutDay[] = [
       },
       {
         nome: "Remada unilateral com halter (serrote)",
-        series: "2",
-        reps: "15 por lado",
+        series: "3",
+        reps: "12 por lado",
         descanso: ENTRE,
         beneficio: "Um lado das costas de cada vez: define e acerta a diferença entre os lados.",
         equipamento: "Banco reto + halter",
@@ -340,7 +404,7 @@ export const WORKOUTS: WorkoutDay[] = [
       {
         nome: "Crucifixo inverso com halteres",
         series: "2",
-        reps: "15–20",
+        reps: "15",
         descanso: ENTRE,
         beneficio: "Parte de trás do ombro e meio das costas — tira o ombro da frente.",
         equipamento: "Banco ajustável inclinado + halteres leves",
@@ -352,164 +416,7 @@ export const WORKOUTS: WorkoutDay[] = [
         carga: true,
         dica: "Deitada de barriga para baixo no banco inclinado (uns 30 a 45°), braços pendurados; abra os braços até a linha dos ombros soltando o ar.",
       },
-      {
-        nome: "Tríceps na corda (polia alta)",
-        series: "2",
-        reps: "15–20",
-        descanso: ENTRE,
-        beneficio: "A parte de trás do braço, a que você quer firmar, com carga leve.",
-        equipamento: "Estação — polia alta + corda",
-        videoId: "KhK5HWJfsrQ",
-        grupos: ["costas-bracos"],
-        carga: true,
-      },
-      {
-        nome: "Tríceps coice com halter",
-        series: "2",
-        reps: "15 por braço",
-        descanso: ENTRE,
-        beneficio: "Mira o 'tchauzinho' — a parte de trás do braço — com halter leve.",
-        equipamento: "Banco reto + halter leve",
-        // Um braço por vez, joelho e mão no banco. O de antes era com os dois
-        // braços, em pé e curvada.
-        videoId: "gZhDheVmdf8",
-        grupos: ["costas-bracos"],
-        carga: true,
-        dica: "Joelho e mão do mesmo lado apoiados no banco, costas retas e cotovelo colado ao corpo; estique o braço para trás soltando o ar. Um braço de cada vez.",
-      },
-      {
-        nome: "Rosca martelo leve",
-        series: "2",
-        reps: "15",
-        descanso: ENTRE,
-        beneficio: "Frente do braço firme — uma rosca só, leve, sem buscar volume.",
-        equipamento: "Par de halteres leves",
-        videoId: "0qkQy8V2FC0",
-        grupos: ["costas-bracos"],
-        carga: true,
-      },
-    ],
-  },
-  {
-    diaSemana: 3,
-    diaNome: "Quarta",
-    foco: "Pernas B — frente da coxa e parte interna",
-    curto: "Pernas B",
-    tipo: "academia",
-    // Mesma conta da segunda: uns 47 a 52 minutos.
-    duracaoMin: 50,
-    aquecimento: "5 min de bike + 10 agachamentos no banco sem peso",
-    exercicios: [
-      TRANSVERSO,
-      {
-        nome: "Agachamento com barra no suporte",
-        series: "3",
-        reps: "12",
-        descanso: ENTRE,
-        beneficio: "Força na perna inteira, com os maiores músculos do corpo trabalhando juntos.",
-        equipamento: "Barra + anilhas no suporte",
-        videoId: "rM6SDUdl9fs",
-        grupos: ["perna"],
-        carga: true,
-        adaptacao:
-          "Entra no lugar do leg press, que a academia não tem. Cansada ou insegura com a barra? Goblet com halter.",
-        diastase: {
-          nivel: "cuidado",
-          nota: "Carga que deixe soltar o ar na subida. Se precisar prender a respiração para subir, está pesada — volte para o goblet.",
-        },
-      },
-      {
-        nome: "Afundo lateral com halter",
-        series: "3",
-        reps: "10 por lado",
-        descanso: ENTRE,
-        beneficio: "Abre a perna para o lado: a parte interna da coxa trabalha esticando e firmando.",
-        equipamento: "Halteres leves (um em cada mão, ou um só no peito)",
-        videoId: "Cy51YCM6BnY",
-        grupos: ["perna", "coxa-interna"],
-        carga: true,
-        dica: "O peso vai para a perna que dobra; a outra fica esticada, com o pé inteiro no chão.",
-      },
-      {
-        nome: "Cadeira extensora (módulo da estação)",
-        series: "3",
-        reps: "15",
-        descanso: ENTRE,
-        beneficio: "Isola a frente da coxa, que dá firmeza ao joelho.",
-        equipamento: "Estação de musculação — módulo extensora",
-        videoId: "el3oHblB5DM",
-        grupos: ["perna"],
-        carga: true,
-      },
-      {
-        nome: "Subida no step com halteres",
-        series: "3",
-        reps: "10 por perna",
-        descanso: ENTRE,
-        beneficio: "Perna e bumbum, uma perna de cada vez, no movimento de subir escada.",
-        equipamento: "Step (ou banco baixo) + par de halteres",
-        videoId: "KCu2QHbnIZE",
-        grupos: ["perna"],
-        carga: true,
-        adaptacao:
-          "Entra no lugar do agachamento búlgaro: o mesmo trabalho de uma perna por vez, com bem menos desequilíbrio.",
-        dica: "A força vem da perna de cima — sem dar impulso com a de baixo.",
-      },
-      {
-        nome: "Adução em pé na polia baixa",
-        series: "3",
-        reps: "12 por perna",
-        descanso: ENTRE,
-        beneficio: "Parte interna da coxa com carga ajustável, puxando a perna para dentro.",
-        equipamento: "Estação — polia baixa + tornozeleira de polia",
-        videoId: "ivCztwt2Vdo",
-        grupos: ["perna", "coxa-interna"],
-        carga: true,
-        adaptacao:
-          "Precisa de uma tornozeleira que prenda no cabo. Se não tiver como prender, faça a adução deitada com caneleira no lugar.",
-      },
-      {
-        nome: "Perdigueiro (bird dog)",
-        series: "3",
-        reps: "10 cada lado",
-        descanso: ENTRE,
-        beneficio: "Costas e barriga trabalhando juntas, em quatro apoios, com pouca pressão na linha do meio.",
-        equipamento: "Colchonete",
-        videoId: "Nm8onc8ndVw",
-        grupos: ["cintura"],
-        diastase: NOTA_PERDIGUEIRO,
-      },
-    ],
-  },
-  {
-    diaSemana: 4,
-    diaNome: "Quinta",
-    foco: "Cintura + cardio intervalado de baixo impacto",
-    curto: "Cintura + cardio",
-    tipo: "academia",
-    // Os 12 minutos do intervalado pesam: com a cintura, uns 43 a 45 minutos.
-    duracaoMin: 45,
-    cardioSuave: true,
-    lembrete:
-      "Dia do Mounjaro: nada que sacuda o estômago. Água em goles — os 200 ml por hora continuam valendo. Se o enjoo apertar, troque a sessão por uma caminhada leve.",
-    aquecimento: "5 min de bike bem leve",
-    comoFazer:
-      "Primeiro o intervalado; depois a cintura, com o cardio entre as séries na bike, no elíptico ou em marcha.",
-    exercicios: [
-      TRANSVERSO,
-      {
-        nome: "Bike intervalada",
-        series: "6 ciclos",
-        reps: "1 min forte + 1 min leve",
-        descanso: "—",
-        beneficio: "O coração acelera bastante e o impacto é zero — o assoalho pélvico agradece.",
-        equipamento: "Bike vertical ou horizontal (ou o elíptico)",
-        videoId: "dMJ5LO5NwY8",
-        semCardio: true,
-        adaptacao:
-          "Entra no lugar do HIIT de corrida na esteira: o mesmo estímulo para o coração, sem impacto.",
-        dica: "'Forte' é quando conversar fica difícil, mas não impossível. Enjoou? Fique no leve.",
-      },
+      { ...TRICEPS_COICE, series: "2", reps: "15 por braço", descanso: ENTRE },
       {
         nome: "Pallof press com elástico",
         series: "2",
@@ -522,6 +429,26 @@ export const WORKOUTS: WorkoutDay[] = [
         grupos: ["cintura"],
         dica: "Elástico preso na altura do peito. Empurre as mãos para a frente soltando o ar, sem deixar o tronco girar.",
       },
+    ],
+  },
+  {
+    diaSemana: 3,
+    diaNome: "Quarta",
+    foco: "Cintura + intervalado na bike",
+    curto: "Cintura + bike",
+    tipo: "academia",
+    // Aquecimento e cintura, uns 28 minutos; o intervalado, com o pedal leve
+    // antes e depois, uns 17: cerca de 45 — até uns 50 se o leve pedir 2 minutos.
+    duracaoMin: 45,
+    // A única sessão forte da semana, 48 h depois da perna A e 72 h antes da
+    // perna B. Sem cardioSuave: a cintura vem antes do cansaço, com o cardio
+    // normal entre as séries — e o motivo do "suave" é o Mounjaro.
+    intensa: true,
+    aquecimento: "5 min de bike leve",
+    comoFazer:
+      "A única sessão forte da semana. Primeiro a cintura, com calma e soltando o ar; o intervalado fica para o fim. Na bike, 2 minutos leves antes do primeiro forte. No forte, dá para falar só palavras soltas. O leve dura até o fôlego voltar — 1 minuto, ou até 2 se precisar; se não voltar, fique no leve ou pare por hoje. Terminou: 3 a 5 minutos de pedal leve, até conseguir falar frases inteiras, antes de descer. Enjoou ou dormiu muito mal? Hoje o forte vira leve. Doente (vômito, diarreia, febre): descanso.",
+    exercicios: [
+      TRANSVERSO,
       {
         nome: "Carregar um halter de um lado só (suitcase carry)",
         series: "2",
@@ -534,17 +461,6 @@ export const WORKOUTS: WorkoutDay[] = [
         grupos: ["cintura"],
         carga: true,
         dica: "Ombros na mesma altura e tronco reto, sem entortar para o lado do peso.",
-      },
-      {
-        nome: "Dead bug (deitada, alterna braço e perna)",
-        series: "2",
-        reps: "10 cada lado",
-        descanso: ENTRE,
-        beneficio: "Barriga firme por dentro, com pouca pressão na linha do meio.",
-        equipamento: "Colchonete",
-        videoId: "0loS0bRNqfs",
-        grupos: ["cintura"],
-        diastase: NOTA_DEAD_BUG,
       },
       {
         nome: "Prancha inclinada no banco",
@@ -579,24 +495,141 @@ export const WORKOUTS: WorkoutDay[] = [
         adaptacao:
           "Sem cadeira adutora na academia, apertar algo entre os joelhos é o que faz a parte interna da coxa trabalhar aqui.",
       },
+      { ...PERDIGUEIRO, series: "2" },
+      {
+        nome: "Bike intervalada",
+        series: "6 ciclos",
+        reps: "1 min forte + 1 a 2 min leve",
+        descanso: "—",
+        beneficio: "O coração acelera bastante e o impacto é zero — o assoalho pélvico agradece.",
+        equipamento: "Bike vertical ou horizontal (ou o elíptico)",
+        videoId: "dMJ5LO5NwY8",
+        semCardio: true,
+        adaptacao:
+          "Entra no lugar do HIIT de corrida na esteira: o mesmo estímulo para o coração, sem impacto.",
+        dica: "Nas 2 primeiras semanas do completo, 4 ciclos. No forte, só palavras soltas; no leve, pedal solto até o fôlego voltar. Banco na altura em que o joelho fica quase esticado embaixo. Enjoou ou ficou tonta? Fique no leve e encerre. Veio tremor, suor frio ou fraqueza: desça com cuidado, sente e tome o açúcar rápido do card de segurança.",
+      },
     ],
+  },
+  {
+    diaSemana: 4,
+    diaNome: "Quinta",
+    foco: "Caminhada leve + alongamento",
+    curto: "Caminhada",
+    tipo: "caminhada",
+    duracaoMin: 35,
+    lembrete:
+      "Dia do Mounjaro. Caminhada leve e água em goles ao longo do dia — os 200 ml por hora de sempre. Vomitou ou teve diarreia? Hoje é descanso.",
+    exercicios: [
+      {
+        ...CAMINHADA,
+        nome: "Caminhada leve",
+        series: "1",
+        reps: "30 min",
+        descanso: "—",
+        beneficio: "Mantém o corpo em movimento sem cobrar disposição de treino.",
+      },
+      ALONGAMENTO_ADUTOR,
+      ALONGAMENTO_GERAL,
+    ],
+    observacao:
+      "Dia leve de propósito: o Mounjaro tira a fome e o corpo se recupera da quarta. A caminhada leve pode ser em jejum, antes do café da manhã.",
   },
   {
     diaSemana: 5,
     diaNome: "Sexta",
-    foco: "Pernas C — corpo todo em circuito",
-    curto: "Circuito",
+    foco: "Costas, braços e cintura — calmo",
+    curto: "Costas + cintura",
     tipo: "academia",
-    // Em circuito não há troca de aparelho entre as séries: uns 38 a 42 minutos.
+    // Mesma conta da terça, sem pressa entre as séries: uns 37 a 41 minutos.
     duracaoMin: 40,
+    // Dia seguinte à aplicação: o cardio entre as séries fica só nas opções
+    // que não sacodem o estômago — e, por ser dia de braço, sem o soco no ar.
     cardioSuave: true,
+    cardioSemBraco: true,
     lembrete:
-      "Dia seguinte ao Mounjaro, quando o enjoo costuma aparecer: tudo calmo e água em goles. Não está bem? Caminhada leve no lugar — conta como treino.",
+      "Dia seguinte ao Mounjaro, quando o enjoo costuma aparecer: tudo calmo e água em goles. Só enjoo leve? Caminhada leve no lugar — conta como treino. Vomitou, teve diarreia ou febre? Hoje é descanso e água em goles; se não passar, atendimento.",
     aquecimento: "5 min de elíptico leve",
     comoFazer:
-      "Depois da respiração, em circuito: uma série de cada exercício, na ordem, com o cardio entre eles. Terminou a lista, respire 1 minuto e comece a próxima volta — são 3 voltas.",
+      "Dia calmo: a carga da última vez neste exercício, ou um pouco menos, com 3 repetições sobrando e sem pressa entre as séries. Tudo sentada, em pé ou deitada de costas — nada de barriga apoiada no banco.",
     exercicios: [
       TRANSVERSO,
+      {
+        nome: "Remada baixa na polia (sentada)",
+        series: "3",
+        reps: "12–15",
+        descanso: ENTRE,
+        beneficio: "Meio das costas e ombros para trás, sentada e sem sacudir o estômago.",
+        equipamento: "Estação — polia baixa",
+        videoId: "f8AVh4VBbos",
+        grupos: ["costas-bracos"],
+        carga: true,
+      },
+      {
+        nome: "Tríceps na corda (polia alta)",
+        series: "3",
+        reps: "12–15",
+        descanso: ENTRE,
+        beneficio: "A parte de trás do braço, a que você quer firmar, com carga moderada.",
+        equipamento: "Estação — polia alta + corda",
+        videoId: "KhK5HWJfsrQ",
+        grupos: ["costas-bracos"],
+        carga: true,
+      },
+      { ...ELEVACAO_LATERAL, series: "2", reps: "15", descanso: ENTRE },
+      {
+        nome: "Rosca martelo leve",
+        series: "2",
+        reps: "12–15",
+        descanso: ENTRE,
+        beneficio: "Frente do braço firme — uma rosca só, leve, sem buscar volume.",
+        equipamento: "Par de halteres leves",
+        videoId: "0qkQy8V2FC0",
+        grupos: ["costas-bracos"],
+        carga: true,
+      },
+      { ...DESLIZAMENTO_CALCANHAR, series: "3", descanso: ENTRE },
+    ],
+  },
+  {
+    diaSemana: 6,
+    diaNome: "Sábado",
+    foco: "Pernas B — bumbum, posterior e parte interna",
+    curto: "Pernas B",
+    tipo: "academia",
+    // Mesma conta da segunda: uns 52 a 57 minutos.
+    duracaoMin: 55,
+    cardioDeBraco: true,
+    aquecimento:
+      "5 min de bike leve + 10 elevações pélvicas sem peso + 1 série de 8 no stiff com metade da carga — essa série não leva cardio.",
+    comoFazer: `Dia de perna pesada: carga que deixa 2 repetições sobrando no fim da série e ainda deixa soltar o ar na subida. No stiff, volte para a série só com o fôlego inteiro, falando frases inteiras. ${SEM_TEMPO}`,
+    exercicios: [
+      TRANSVERSO,
+      {
+        nome: "Stiff com halteres",
+        series: "3",
+        reps: "10–12",
+        descanso: ENTRE,
+        beneficio: "Parte de trás da coxa e bumbum — a base das pernas fortes que o médico pediu.",
+        equipamento: "Par de halteres",
+        videoId: "zPhI_hpBuZE",
+        grupos: ["perna"],
+        carga: true,
+        dica: "Coluna reta o tempo todo: desça só até onde ela continuar reta e solte o ar na subida.",
+      },
+      {
+        nome: "Agachamento sumô com halter ou kettlebell",
+        series: "3",
+        reps: "12",
+        descanso: ENTRE,
+        beneficio:
+          "Pés bem afastados e pontas para fora: o agachamento que mais trabalha a parte interna da coxa.",
+        equipamento: "Um halter ou kettlebell, seguro com as duas mãos",
+        videoId: "7CTbrHuL_b4",
+        grupos: ["perna", "coxa-interna"],
+        carga: true,
+        dica: `${DICA_JOELHO} Solte o ar na subida.`,
+      },
       {
         nome: "Afundo com halteres (parado no lugar)",
         series: "3",
@@ -607,96 +640,50 @@ export const WORKOUTS: WorkoutDay[] = [
         videoId: "7MKHBgJcX5I",
         grupos: ["perna"],
         carga: true,
-        dica: "Tronco em pé e joelho de trás descendo reto em direção ao chão. Solte o ar ao subir.",
+        dica: `${DICA_JOELHO} Tronco em pé e joelho de trás descendo reto em direção ao chão. Solte o ar ao subir.`,
       },
       {
-        nome: "Agachamento sumô leve",
+        nome: "Cadeira flexora (módulo da estação)",
         series: "3",
-        reps: "15",
+        reps: "12–15",
         descanso: ENTRE,
-        beneficio: "Mais uma vez na semana para a parte interna da coxa, agora com carga leve.",
-        equipamento: "Kettlebell ou halter leve",
-        videoId: "7CTbrHuL_b4",
+        beneficio: "Isola a parte de trás da coxa, que protege o joelho.",
+        equipamento: "Estação de musculação — módulo flexora",
+        videoId: "Zss6E3VU6X0",
+        grupos: ["perna"],
+        carga: true,
+      },
+      {
+        nome: "Adução deitada de lado com caneleira",
+        series: "3",
+        reps: "15 por perna",
+        descanso: ENTRE,
+        beneficio: "Trabalho direto na parte interna da coxa, onde está a flacidez.",
+        equipamento: "Caneleira + colchonete",
+        videoId: "Vgw2jCzpyxY",
         grupos: ["perna", "coxa-interna"],
         carga: true,
+        adaptacao: "Entra no lugar da cadeira adutora, que a academia não tem.",
       },
-      {
-        nome: "Remada baixa na polia (sentada)",
-        series: "3",
-        reps: "15",
-        descanso: ENTRE,
-        beneficio: "Meio das costas e ombros para trás, sentada e sem sacudir o estômago.",
-        equipamento: "Estação — polia baixa",
-        videoId: "f8AVh4VBbos",
-        grupos: ["costas-bracos"],
-        carga: true,
-      },
-      {
-        nome: "Elevação lateral leve",
-        series: "3",
-        reps: "15",
-        descanso: ENTRE,
-        beneficio: "Ombro desenhado com halter bem leve — perto dele, a cintura parece mais fina.",
-        equipamento: "Par de halteres leves",
-        videoId: "ORparUDksUk",
-        grupos: ["costas-bracos"],
-        carga: true,
-      },
-      { ...DESLIZAMENTO_CALCANHAR, series: "3", descanso: ENTRE },
+      PERDIGUEIRO,
     ],
-  },
-  {
-    diaSemana: 6,
-    diaNome: "Sábado",
-    foco: "Caminhada inclinada + alongamento",
-    curto: "Caminhada",
-    tipo: "caminhada",
-    duracaoMin: 45,
-    exercicios: [
-      {
-        nome: "Caminhada inclinada na esteira",
-        series: "1",
-        reps: "30–40 min",
-        descanso: "—",
-        beneficio:
-          "Gasta bastante em ritmo de conversa e sem impacto. Aeróbico regular também ajuda o fígado e a pressão.",
-        equipamento: "Esteira",
-        // Animação curta: esteira inclinada, tronco em pé e braços soltos, sem
-        // segurar no painel. O vídeo de antes era só conversa sobre vantagens.
-        videoId: "uqR_AdvB_h8",
-        semCardio: true,
-        dica: "Inclinação que acelere a respiração sem tirar a conversa. Inclinada já não é leve: faça dentro da janela alimentar.",
-      },
-      ALONGAMENTO_ADUTOR,
-      ALONGAMENTO_GERAL,
-    ],
-    observacao: "Sem se segurar no painel da esteira: se precisar, diminua a inclinação.",
   },
   {
     diaSemana: 0,
     diaNome: "Domingo",
-    foco: "Descanso",
-    curto: "Descanso",
-    tipo: "descanso",
+    foco: "Caminhada ao ar livre + alongamento",
+    curto: "Caminhada",
+    tipo: "caminhada",
+    // Caminhada, borboleta e alongamento dão uns 40 a 50 minutos. O rolo ficou
+    // na observação: item opcional na lista deixava o dia em 75%.
+    duracaoMin: 45,
     exercicios: [
-      {
-        ...ALONGAMENTO_GERAL,
-        nome: "Alongamento leve (opcional)",
-        reps: "10 min",
-        beneficio: "Só se der vontade. Descansar também faz parte do resultado.",
-      },
-      {
-        nome: "Liberação com o rolo (opcional)",
-        series: "1",
-        reps: "5–10 min",
-        descanso: "—",
-        beneficio: "Solta a musculatura da semana e alivia quadril e lombar.",
-        equipamento: "Foam roller (rolo azul da academia)",
-        videoId: "xGEo2H6jSYk",
-        semCardio: true,
-      },
+      { ...CAMINHADA, series: "1", reps: "30–40 min", descanso: "—" },
+      ALONGAMENTO_ADUTOR,
+      ALONGAMENTO_GERAL,
     ],
-    observacao: "Domingo é descanso de verdade. Se der vontade de se mexer, só caminhada — nada de academia.",
+    observacao:
+      "Descanso ativo, em passo de passeio. Como é leve, pode ser em jejum, antes do café da manhã. Sobrou tempo? 5 a 10 minutos de rolo (o azul da academia) soltam o quadril e a lombar.",
   },
 ];
 
@@ -713,30 +700,58 @@ export type Plano = {
   detalhe: string;
   dias: WorkoutDay[];
   /**
-   * Prefixo dos ids de check, para um plano não marcar o exercício do outro.
-   * Mudou em 29/09 ("ra"/"rc"): os checks do treino antigo não podem cair num
-   * exercício novo que ficou na mesma posição.
+   * Prefixo dos ids de check, para um plano não marcar o exercício do outro. O
+   * id é a posição do exercício no dia, então semana nova pede prefixo novo: os
+   * checks do treino antigo não podem cair num exercício novo que ficou na
+   * mesma posição. Mudou em 29/09 ("ra"/"rc") e de novo em 12/10 ("da"/"dc"),
+   * quando a semana virou treino todo dia. Os de antes ("", "a", "ra" e "rc")
+   * continuam gravados no banco: nunca reaproveitar.
    */
   prefixo: string;
-  /** Quanto dura o cardio e o respiro depois de cada série neste plano. */
-  entreSeries: { cardio: string; respiro: string };
+  /**
+   * O cardio depois de cada série e o respiro mínimo antes da próxima. Desde
+   * 12/10 o respiro vai até o fôlego voltar (dá para falar frases curtas); o
+   * tempo daqui é só o piso.
+   */
+  entreSeries: { cardio: string; respiroMinimo: string };
 };
 
+/** Espaço que não quebra a linha (U+00A0). */
+const NBSP = " ";
+/** Junção invisível (U+2060): também não deixa a linha quebrar ali. */
+const JUNTA = "⁠";
+
+/** "4 idas", "1 caminhada" — o número nunca se separa da palavra. */
+function quantos(n: number, um: string, varios: string): string {
+  return `${n}${NBSP}${n === 1 ? um : varios}`;
+}
+
 /**
- * "3 idas por semana · 30–35 min", contado nos próprios dias de academia:
- * assim o resumo do plano não desencontra do "cerca de N min" de cada dia.
+ * "Todo dia · 4 idas + 3 caminhadas · 30–40 min", contado nos próprios dias:
+ * assim o resumo do plano não desencontra do "cerca de N min" de cada dia. A
+ * faixa vai do dia mais curto ao mais longo, caminhadas incluídas; sem nenhum
+ * dia com duração, fica sem faixa.
  *
  * Os caracteres invisíveis seguram as partes juntas numa tela estreita: o
- * espaço   antes do "·" e do "min" não quebra, e o ⁠ depois do
- * travessão também não — o "min" nunca fica sozinho na linha de baixo.
+ * espaço antes do "·", do "+" e do "min", e entre o número e a palavra, não
+ * quebra (U+00A0), e a junção depois do travessão (U+2060) também não — o
+ * "min" nunca fica sozinho na linha de baixo.
  */
 function resumoDoPlano(dias: WorkoutDay[]): string {
-  const idas = dias.filter((d) => d.tipo === "academia");
-  const minutos = idas.flatMap((d) => (d.duracaoMin ? [d.duracaoMin] : []));
-  const de = Math.min(...minutos);
-  const ate = Math.max(...minutos);
-  const faixa = de === ate ? `${de}` : `${de}–⁠${ate}`;
-  return `${idas.length} ${idas.length === 1 ? "ida" : "idas"} por semana · ${faixa} min`;
+  const comTreino = dias.filter((d) => d.tipo !== "descanso").length;
+  const idas = dias.filter((d) => d.tipo === "academia").length;
+  const caminhadas = dias.filter((d) => d.tipo === "caminhada").length;
+  const partes = [
+    comTreino === 7 ? "Todo dia" : quantos(comTreino, "dia", "dias"),
+    `${quantos(idas, "ida", "idas")}${NBSP}+ ${quantos(caminhadas, "caminhada", "caminhadas")}`,
+  ];
+  const minutos = dias.flatMap((d) => (d.duracaoMin ? [d.duracaoMin] : []));
+  if (minutos.length > 0) {
+    const de = Math.min(...minutos);
+    const ate = Math.max(...minutos);
+    partes.push(`${de === ate ? de : `${de}–${JUNTA}${ate}`}${NBSP}min`);
+  }
+  return partes.join(`${NBSP}· `);
 }
 
 export const PLANOS: Record<FaseTreino, Plano> = {
@@ -745,9 +760,9 @@ export const PLANOS: Record<FaseTreino, Plano> = {
     nome: "Adaptação",
     resumo: resumoDoPlano(TREINO_ADAPTACAO),
     detalhe:
-      "Para começar sem odiar academia: máquinas e movimentos simples, 2 a 3 séries com carga leve e um cardio curtinho entre as séries. Nos outros dias, caminhada.",
+      "Para começar sem odiar academia: 4 idas com máquinas e movimentos simples, 2 a 3 séries com carga leve e cardio curtinho entre as séries. Nos outros 3 dias, caminhada — todo dia tem treino.",
     dias: TREINO_ADAPTACAO,
-    prefixo: "ra",
+    prefixo: "da",
     entreSeries: ENTRE_SERIES_ADAPTACAO,
   },
   completo: {
@@ -755,9 +770,9 @@ export const PLANOS: Record<FaseTreino, Plano> = {
     nome: "Completo",
     resumo: resumoDoPlano(WORKOUTS),
     detalhe:
-      "Perna em todas as idas, costas e braços leves, cintura com intervalado na bike e caminhada inclinada no sábado. Vale quando as 3 idas da adaptação já parecerem fáceis.",
+      "Pernas pesadas na segunda e no sábado, costas e braços na terça e na sexta, o intervalado na bike na quarta — a única sessão forte — e caminhada na quinta e no domingo. Passe para ele quando fizer as 4 idas da adaptação inteiras por 2 semanas seguidas, com a carga subindo e sem morrinho na barriga, escape de urina ou peso na vagina — se tiver fisioterapeuta pélvica, com o ok dela. Nas 2 primeiras semanas: 2 séries nos exercícios com carga, goblet no lugar da barra e 4 ciclos na bike.",
     dias: WORKOUTS,
-    prefixo: "rc",
+    prefixo: "dc",
     entreSeries: ENTRE_SERIES_COMPLETO,
   },
 };
@@ -778,12 +793,15 @@ export function comCardio(dia: WorkoutDay): Exercise[] {
   return dia.tipo === "academia" ? dia.exercicios.filter((e) => !e.semCardio) : [];
 }
 
-/** "6 exercícios · cerca de 30 min" — a mesma legenda na tela inicial e no treino. */
+/**
+ * "6 exercícios · cerca de 30 min" — a mesma legenda na tela inicial e no
+ * treino. Caminhada é treino do dia, não "sem academia".
+ */
 export function legendaDoDia(dia: WorkoutDay): string {
   if (dia.tipo === "descanso") return "Descanso · alongamento opcional";
   const n = dia.exercicios.length;
   const itens =
-    dia.tipo === "academia" ? `${n} ${n === 1 ? "exercício" : "exercícios"}` : "Sem academia";
+    dia.tipo === "academia" ? `${n} ${n === 1 ? "exercício" : "exercícios"}` : "Caminhada";
   return dia.duracaoMin ? `${itens} · cerca de ${dia.duracaoMin} min` : itens;
 }
 
@@ -795,26 +813,27 @@ export function legendaDoDia(dia: WorkoutDay): string {
 export type Medida = Grupo | "caminhada" | "cardio";
 
 /**
- * Quase tudo veio da orientação médica de 29/09; costas e braços "definidos,
- * mas magros" foi pedido dela — e o card diz isso.
+ * Quase tudo veio da orientação médica de 29/09. Costas e braços definidos e
+ * treinar todos os dias foram pedidos dela (o segundo em 12/10, junto com os
+ * 15 kg da perda de peso) — e o card diz isso. Um só para os dois planos: onde
+ * a resposta muda com o plano, o texto diz.
  */
 export const PEDIDOS_MEDICO: { pedido: string; resposta: string; medida?: Medida }[] = [
   {
     pedido: "Fortalecer bastante as pernas",
     resposta:
-      "Perna em todo dia de academia, nos dois planos: agachamentos, cadeiras extensora e flexora, elevação pélvica e subida no step — e, no completo, também stiff e afundo.",
+      "Perna 2 vezes por semana, segunda e sábado, com carga que sobe aos poucos — no completo, perna pesada — e 48 horas ou mais entre elas: o músculo cresce no descanso. Num terceiro dia, um exercício leve de perna.",
     medida: "perna",
   },
   {
-    pedido: "Perda de peso",
+    pedido: "Perda de peso — perder 15 kg",
     resposta:
-      "Cardio entre as séries e caminhada nos outros dias; no completo, também intervalado na bike e caminhada inclinada. E quem segura o metabolismo enquanto o peso cai é o músculo — por isso a perna forte vem junto.",
-    medida: "caminhada",
+      "Cardio entre as séries e caminhada nos dias sem academia; no completo, também o intervalado na bike. Quem segura o metabolismo enquanto o peso cai é o músculo — por isso a perna forte vem junto. Gordura não sai de um lugar só: barriga e braços afinam com o corpo todo.",
   },
   {
     pedido: "Parte interna da coxa, com flacidez",
     resposta:
-      "Pelo menos 3 sessões por semana: sumô, adução deitada de lado e elevação pélvica apertando uma almofada — e, no completo, também afundo lateral e adução na polia. Cadeira adutora a academia não tem.",
+      "Pelo menos 3 sessões por semana: sumô, adução e elevação pélvica apertando uma almofada. Cadeira adutora a academia não tem.",
     medida: "coxa-interna",
   },
   {
@@ -829,16 +848,22 @@ export const PEDIDOS_MEDICO: { pedido: string; resposta: string; medida?: Medida
     medida: "cintura",
   },
   {
-    pedido: "Costas e braços definidos, mas magros (pedido seu)",
+    pedido: "Costas e braços definidos (pedido seu)",
     resposta:
-      "Carga leve a moderada, 15 a 20 repetições e poucas séries, sem desenvolvimento pesado acima da cabeça. Braço grande pede carga pesada, muitas séries e comida sobrando — o contrário deste plano.",
+      "Na adaptação, carga leve, para aprender o movimento. No completo, carga moderada: 12 a 15 repetições, terminando com 2 ou 3 sobrando. Ficou fácil chegar em 15, sobe um pouco. Nada pesado acima da cabeça. O braço afina com a gordura do corpo todo saindo; a carga é o que desenha.",
     medida: "costas-bracos",
   },
   {
     pedido: "Cardio rápido entre as séries",
     resposta:
-      "Depois de cada série, 30 a 40 s de cardio sem pular, 15 a 20 s de respiro e a próxima série. Vem marcado em cada exercício.",
+      "Depois de cada série, 30 a 40 s de cardio sem pular e um respiro até o fôlego voltar — quando der para falar frases curtas, no mínimo 15 a 20 s. Nos dias de perna, cardio de braço.",
     medida: "cardio",
+  },
+  {
+    pedido: "Treinar todos os dias (pedido seu)",
+    resposta:
+      "Todo dia tem treino: academia nas idas e caminhada nos outros dias. Os músculos se revezam e a sessão forte é uma só, para dar tempo de recuperar. Dia de doença é descanso — não quebra o plano.",
+    medida: "caminhada",
   },
 ];
 
@@ -873,13 +898,75 @@ export const DIASTASE = {
 };
 
 /* -------------------------------------------------------------------------- */
-/* O que mudou em 29/09                                                       */
+/* O que mudou                                                                */
 /* -------------------------------------------------------------------------- */
+
+/** Dia dos ajustes que ela pediu: treino todo dia, pernas musculosas, força. */
+export const AJUSTE_DATA = "12/10";
+
+/**
+ * Nada é trocado em silêncio: cada mudança de 12/10, com o porquê. Vem primeiro
+ * na tela. O `oQue` é a key da lista — não pode repetir nem aqui nem na de 29/09.
+ */
+export const MUDANCAS_TREINO_1210: { oQue: string; porque: string }[] = [
+  {
+    oQue: "Treino todo dia",
+    porque:
+      "Pedido seu. Academia nas idas e caminhada nos outros dias; na adaptação, umas 4 h por semana, quase metade caminhando. O Dr. Henry falava em começar com 3 h e chegar a 5–6 h — vale mostrar este plano a ele na próxima consulta.",
+  },
+  {
+    oQue: "Perna 2 vezes por semana, em vez de perna em toda ida",
+    porque:
+      "Pernas musculosas pedem carga e descanso: segunda e sábado são de perna, com 48 h ou mais entre elas.",
+  },
+  {
+    oQue: "Costas e braços no completo: carga moderada, 12 a 15 repetições",
+    porque:
+      "Pedido seu: costas e braços definidos. Antes era carga leve e 15 a 20 repetições. Na adaptação, a carga segue leve, para aprender o movimento.",
+  },
+  {
+    oQue: "Respiro pelo fôlego",
+    porque:
+      "O respiro de tempo fixo virou 'até o fôlego voltar', com o mínimo de antes. Voltar pelo fôlego evita acumular cansaço.",
+  },
+  {
+    oQue: "Uma sessão forte só, na quarta",
+    porque:
+      "Treino forte em dias seguidos não dá tempo de o músculo se recuperar. O intervalado saiu da quinta, dia do Mounjaro, e ficou longe das pernas pesadas.",
+  },
+  {
+    oQue: "Cardio de braço nos dias de perna",
+    porque:
+      "Bike, step, marcha e elíptico cansam a perna da série seguinte. Nos dias de costas e braços é o contrário: sem soco no ar nem polichinelo, que cansam o braço.",
+  },
+  {
+    oQue: "Domingo deixou de ser descanso",
+    porque:
+      "Caminhada ao ar livre e alongamento: descanso ativo. Doente, descanse de verdade.",
+  },
+  {
+    oQue: "Saíram o afundo lateral, o goblet, o sumô leve, o circuito de sexta e a caminhada inclinada de sábado",
+    porque:
+      "Com perna pesada 2 vezes por semana, cada sessão de perna ficou com os exercícios que mais rendem; o goblet segue como plano B da barra; o sábado virou perna e o domingo, caminhada.",
+  },
+  {
+    oQue: "Dica de joelho nos agachamentos, afundos e no step",
+    porque: "Joelho na direção da ponta do pé, sem entrar para dentro.",
+  },
+  {
+    oQue: "Sinais para parar e procurar ajuda dentro do treino",
+    porque: "Antes eles ficavam só na Rotina.",
+  },
+];
 
 /** Dia em que chegou a orientação do médico que refez os dois planos. */
 export const ORIENTACAO_DATA = "29/09";
 
-/** Nada é trocado em silêncio: cada mudança do plano novo, com o porquê. */
+/**
+ * Histórico: o que mudou em 29/09, com a orientação do médico. O que a semana
+ * de 12/10 desfez saiu daqui (perna em toda ida, as 5 idas do completo, os 30 a
+ * 35 minutos da adaptação) — está na lista de cima.
+ */
 export const MUDANCAS_TREINO: { oQue: string; porque: string }[] = [
   {
     oQue: "Cardio rápido entre todas as séries",
@@ -887,14 +974,9 @@ export const MUDANCAS_TREINO: { oQue: string; porque: string }[] = [
       "Pedido do médico para acelerar a perda de gordura. O descanso parado virou 30 a 40 s de cardio sem pular.",
   },
   {
-    oQue: "Perna em todo dia de academia, nos dois planos",
-    porque:
-      "O médico pediu pernas bem fortes. E é o músculo que segura o metabolismo enquanto o peso cai.",
-  },
-  {
     oQue: "Parte interna da coxa em 3 ou mais dias por semana",
     porque:
-      "Pela flacidez nessa região. Sem cadeira adutora, entram sumô, adução com caneleira, afundo lateral, adução na polia e a elevação pélvica apertando uma almofada.",
+      "Pela flacidez nessa região. Sem cadeira adutora, entram sumô, adução com caneleira, adução na polia e a elevação pélvica apertando uma almofada.",
   },
   {
     oQue: "Saíram a prancha no chão e o mountain climber",
@@ -913,7 +995,7 @@ export const MUDANCAS_TREINO: { oQue: string; porque: string }[] = [
   {
     oQue: "Saíram supino, voador e desenvolvimento de ombro",
     porque:
-      "Você pediu costas e braços definidos, mas magros. O treino de cima virou costas e tríceps leves, com 15 a 20 repetições, e nada pesado acima da cabeça.",
+      "O treino de cima ficou com o que puxa — costas e a parte de trás do ombro, que seguram a postura de quem carrega bebê — e nada pesado acima da cabeça. Em 12/10, no completo, a carga de costas e braços passou a moderada — veja acima.",
   },
   {
     oQue: "Menos bíceps: saíram rosca direta, rosca alternada e tríceps testa",
@@ -923,21 +1005,11 @@ export const MUDANCAS_TREINO: { oQue: string; porque: string }[] = [
   {
     oQue: "Saíram o coice de glúteo, a abdução com caneleira e a panturrilha",
     porque:
-      "Para caber a parte interna da coxa e o cardio sem a sessão passar de uns 50 minutos. O bumbum segue com stiff, elevação pélvica, afundo e subida no step.",
+      "Para caber a parte interna da coxa e o cardio sem a sessão ficar longa demais. O bumbum segue com stiff, elevação pélvica, afundo e subida no step.",
   },
   {
     oQue: "O agachamento búlgaro virou subida no step",
     porque: "O mesmo trabalho de uma perna por vez, com bem menos desequilíbrio.",
-  },
-  {
-    oQue: "Completo: de 6 dias de academia para 5, mais a caminhada inclinada no sábado",
-    porque:
-      "Com perna em todo dia de academia, cinco idas já dão bastante trabalho. O sábado fica para o aeróbico, sem carga.",
-  },
-  {
-    oQue: "Adaptação: de 25 para 30 a 35 minutos",
-    porque:
-      "O cardio entre as séries ocupa o lugar do descanso, e cada ida ganhou parte interna da coxa e core de pouca pressão na barriga.",
   },
   {
     oQue: "Saiu a promessa de queimar a gordura da barriga",

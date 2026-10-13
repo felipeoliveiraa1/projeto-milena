@@ -68,6 +68,9 @@ const BADGE_MUDANCA: Record<Mudanca["tipo"], { texto: string; classe: string }> 
   plano: { texto: "Plano novo", classe: "bg-plum-soft text-plum" },
   preferencia: { texto: "Preferência sua", classe: "bg-brand-soft text-brand" },
   medico: { texto: "Médico", classe: "bg-gold-soft text-gold" },
+  // Terracota, a cor da nutrição: o que mudou em 12/10 não se confunde com o
+  // plano de 29/09.
+  ajuste: { texto: "Ajuste de 12/10", classe: "bg-clay-soft text-clay-deep" },
 };
 
 const ICONE_META: Record<Meta["id"], typeof Egg> = {
@@ -257,8 +260,8 @@ export default function DietaPage() {
             <Clock className="h-4.5 w-4.5 text-clay" /> Estrutura do dia
           </CardTitle>
           <CardDescription>
-            A tabela do resumo, nos horários da sua janela. A única mudança: a “Noite” veio
-            para antes do jejum.
+            A tabela do resumo, nos horários da sua janela. Duas mudanças: a “Noite” veio para
+            antes do jejum e, em 12/10, o café (a bebida) saiu.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -640,8 +643,8 @@ export default function DietaPage() {
             <GitCompareArrows className="h-4.5 w-4.5 text-plum" /> O que mudou e por quê
           </CardTitle>
           <CardDescription>
-            Até setembro o app seguia o Desinflama-se. O plano novo troca muita coisa — e nada
-            foi trocado em silêncio: cada mudança está aqui.
+            Até setembro o app seguia o Desinflama-se; em 29/09 veio o plano novo e, em 12/10, os
+            ajustes que você pediu. Nada foi trocado em silêncio: cada mudança está aqui.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">

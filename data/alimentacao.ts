@@ -9,6 +9,10 @@
  * e as sugestões de ajuste), está escrito o porquê. O cardápio da semana
  * (data/meals.ts), a lista de compras (data/shopping.ts) e o preparo
  * (data/prep.ts) derivam daqui.
+ *
+ * Em 12/10 vieram os ajustes que ela pediu: o café (a bebida) saiu, a fibra e
+ * a folha verde-escura passaram a ser de todo dia e o prato ganhou cores. Cada
+ * um está em MUDANCAS, com o antes, o agora e o porquê.
  */
 
 import type { RefeicaoId } from "./meals";
@@ -103,10 +107,11 @@ export const JEJUM = {
   pode: [
     { item: "Água", detalhe: "No mesmo ritmo de 200 ml por hora, até dormir." },
     {
-      item: "Chá e café sem açúcar",
+      // O café saiu do plano em 12/10, a pedido dela — e, com ele, a cafeína.
+      item: "Chá sem cafeína, sem açúcar",
       // Hortelã piora o refluxo, e azia é efeito comum do Mounjaro.
       detalhe:
-        "Café preto. À noite, prefira os chás sem cafeína: camomila ou cidreira. Hortelã, só se não tiver azia.",
+        "Camomila, cidreira ou erva-doce. Chá verde, preto, branco e mate têm cafeína — ficam de fora. Hortelã, só se não tiver azia.",
     },
     {
       item: "Os comprimidos da noite",
@@ -118,8 +123,9 @@ export const JEJUM = {
    * Quando o jejum faz mal. Tremor e suor frio podem ser açúcar baixo, e a
    * regra é açúcar rápido e sozinho (ADA e SBD): proteína, gordura e fibra
    * atrasam a subida — e o Mounjaro já deixa o estômago mais lento. É o mesmo
-   * socorro de SEGURANCA (data/protocol.ts), em passo a passo: mudou um, mude
-   * o outro.
+   * socorro de SEGURANCA (data/protocol.ts) e do card de segurança do treino
+   * (AJUSTES_TREINO, em data/alarmes.ts), em passo a passo: mudou um, mude os
+   * outros.
    */
   socorro: {
     quando: "Tremor, suor frio, fraqueza ou tontura podem ser açúcar baixo:",
@@ -129,18 +135,19 @@ export const JEJUM = {
       "Passou? Aí sim um lanche com proteína — o iogurte proteico ou um ovo.",
     ],
     atendimento:
-      "Não melhorou, confusão ou desmaio: procure atendimento. E, em qualquer caso, avise o médico.",
+      "Não melhorou: procure atendimento. Confusão ou desmaio: ligue 192 (SAMU). E, em qualquer caso, avise o médico.",
     dicas: [
       "Tem glicosímetro? Abaixo de 70 mg/dL é baixa.",
       "Só tontura, sem tremor nem suor: sente ou deite e beba água. Não passou? Siga os passos acima.",
-      "Dor de cabeça forte: meça a pressão, se tiver aparelho, e passe o número ao médico.",
+      "Dor de cabeça forte e diferente da de costume: meça a pressão, se tiver aparelho, e procure atendimento no mesmo dia. Fortíssima e de repente: 192 (SAMU).",
     ],
     // Fica à mão, não na compra da semana: é socorro, não comida do cardápio.
     aMao: "Deixe à mão sachês de açúcar ou uma caixinha de suco comum. É o socorro — não é para o dia a dia.",
   },
-  // O mesmo "quando treinar" da tela de treino (app/treino/page.tsx).
+  // O mesmo "quando treinar" da tela de treino (app/treino/page.tsx), lá com os
+  // horários da janela no meio: mudou um, mude o outro.
   treino:
-    "Academia dentro da janela: depois do café ou entre o almoço e o lanche. Em jejum, só caminhada leve.",
+    "Academia dentro da janela: depois do café da manhã ou entre o almoço e o lanche — de barriga cheia, espere uma hora ou mais, porque com o Mounjaro a digestão é lenta. Em jejum, só caminhada leve.",
 };
 
 /* -------------------------------------------------------------------------- */
@@ -162,15 +169,16 @@ export type LinhaEstrutura = {
 };
 
 /**
- * A tabela do resumo, linha por linha. A única troca é a última: a "Noite"
- * virou "Fecha a janela" e veio para antes do jejum, com a mesma lista.
+ * A tabela do resumo, linha por linha. São duas trocas: a "Noite" virou "Fecha
+ * a janela" e veio para antes do jejum, com a mesma lista; e o café (a bebida)
+ * saiu do café da manhã em 12/10, a pedido dela — a nota da linha avisa.
  */
 export const ESTRUTURA_DIA: LinhaEstrutura[] = [
   {
     id: "cafe",
     nome: "Café da manhã",
     papel: "Quebra o jejum",
-    base: "Pão sem miolo + 1 ovo + 50–60 g de queijo branco/minas + café",
+    base: "Pão sem miolo + 1 ovo + 50–60 g de queijo branco/minas",
     trocas: [
       "1 ovo + 2 claras",
       "Ricota sólida",
@@ -178,7 +186,7 @@ export const ESTRUTURA_DIA: LinhaEstrutura[] = [
       "Queijo minas com mais proteína e menos gordura saturada",
     ],
     proteina: "15–20 g",
-    nota: "Entre os queijos avaliados, o minas do pote preto foi o melhor para o dia a dia: equilíbrio entre proteína, calorias, gordura saturada e sódio. O creme de ricota light pode entrar pelo sabor, mas não deve ser contado como fonte principal de proteína.",
+    nota: "Entre os queijos avaliados, o minas do pote preto foi o melhor para o dia a dia: equilíbrio entre proteína, calorias, gordura saturada e sódio. O creme de ricota light pode entrar pelo sabor, mas não deve ser contado como fonte principal de proteína. No resumo, o café da manhã vinha com uma xícara de café; a bebida saiu em 12/10.",
   },
   {
     id: "almoco",
@@ -271,14 +279,14 @@ export const SUGESTOES: Sugestao[] = [
   {
     id: "cheia",
     titulo: "O lanche segura até a noite?",
-    texto: "Se na hora de fechar você costuma estar cheia, pule o fechamento e leve a proteína dele para mais cedo: 2 claras a mais no café e 150 g de frango, carne ou peixe no almoço, em vez de 120 g.",
+    texto: "Se na hora de fechar você costuma estar cheia, pule o fechamento e leve a proteína dele para mais cedo: 2 claras a mais no café da manhã e 150 g de frango, carne ou peixe no almoço, em vez de 120 g.",
     porque: "As 2 claras e os 30 g a mais de frango, carne ou peixe devolvem uns 15 g de proteína — e a meta de 90–100 g é o que protege o músculo.",
     origem: "app",
   },
   {
     id: "whey",
     titulo: "Whey não se pula",
-    texto: "Nem nos dias sem fome. Muito cheia? Diminua a fruta (½ banana), não o whey.",
+    texto: "Nem nos dias sem fome. Muito cheia? Tire a chia e diminua a fruta — o whey fica.",
     porque: "É o jeito mais fácil de bater proteína com o estômago pequeno: 32 g num copo.",
     origem: "app",
   },
@@ -299,14 +307,31 @@ export const SUGESTOES: Sugestao[] = [
   {
     id: "fibra",
     titulo: "Fibra e água todo dia",
-    texto: "Legumes no almoço, fruta no lanche e, se quiser, 1 colher de chia ou linhaça no iogurte.",
-    porque: "Intestino preso é comum com o Mounjaro, e a fibra só funciona com água junto.",
+    // Ajustes de 12/10: a chia deixou de ser opcional. Seca, ela incha quando
+    // encontra água e pode entalar — por isso vai sempre molhada. E fibra sem
+    // água prende o intestino em vez de soltar.
+    texto: "Todo dia, 1 colher de sopa de chia ou linhaça triturada: no iogurte quando ele fecha a janela, batida com o whey nos outros dias. Na primeira semana, meia colher. Sempre misturada em algo úmido, nunca seca — no iogurte, misture e espere uns minutos — e com água ao longo do dia.",
+    porque: "Ajuda o intestino, o açúcar e as gorduras do sangue. Intestino preso há 3 dias ou mais, ou barriga estufada: tire a chia até normalizar e reforce a água. Dor forte na barriga ou vômito que não para: procure atendimento — é um dos alertas do Mounjaro.",
+    origem: "app",
+  },
+  {
+    id: "folha-escura",
+    titulo: "Folha verde-escura todo dia",
+    texto: "No almoço, todo dia, uma folha escura — rúcula, couve, agrião, espinafre ou brócolis — no lugar de parte da alface.",
+    porque: "Mais fibra e mais variedade no prato. Muita gente acha a folha escura amarga: refogue no alho e no azeite, ponha limão ou misture com alface e tomate.",
+    origem: "app",
+  },
+  {
+    id: "cores",
+    titulo: "Cores no prato",
+    texto: "Varie as cores dos legumes e das frutas. O morango, que já está no plano, é ótima fonte de vitamina C; kiwi, laranja e acerola entram se você gostar. Sem suplemento novo.",
+    porque: "Cada cor traz vitaminas diferentes: variar é o jeito mais simples de não faltar nada — pela comida, sem cápsula.",
     origem: "app",
   },
   {
     id: "quinta-sexta",
     titulo: "Quinta e sexta: comida que desce fácil",
-    texto: "No dia da aplicação e no seguinte, a fome costuma cair mais. O cardápio desses dois dias traz a proteína em formas macias — peixe, frango desfiado, iogurte proteico, omelete. Sem fome? Tire o pão do café ou diminua a fruta do lanche; a proteína fica.",
+    texto: "No dia da aplicação e no seguinte, a fome costuma cair mais. O cardápio desses dois dias traz a proteína em formas macias — peixe, frango desfiado, iogurte proteico, omelete. Sem fome? Tire o pão do café da manhã ou diminua a fruta do lanche; a proteína fica.",
     porque: "Comida macia desce melhor quando o estômago esvazia devagar. Se algo tiver que sobrar, que seja o pão ou a fruta — nunca a proteína.",
     origem: "app",
   },
@@ -397,7 +422,7 @@ export const EVITAR = [
     item: "Comer depois que a janela fecha",
     // Os comprimidos da noite (B12 e colágeno) entram no jejum: sem essa
     // ressalva, o texto ao pé da letra manda pular o que o médico passou.
-    detalhe: "Da última refeição até o café da manhã, só água, chá e café sem açúcar — e os comprimidos da noite, no horário de sempre. Passou mal? Aí o jejum se quebra: o passo a passo está no card do jejum.",
+    detalhe: "Da última refeição até o café da manhã, só água e chá sem cafeína, sem açúcar — e os comprimidos da noite, no horário de sempre. Passou mal? Aí o jejum se quebra: o passo a passo está no card do jejum.",
   },
   {
     item: "Açúcar e doces",
@@ -406,6 +431,18 @@ export const EVITAR = [
   {
     item: "Álcool",
     detalhe: "Quem paga a conta é o fígado, que já tem gordura.",
+  },
+  {
+    // Ajustes de 12/10, a pedido dela. A dor de cabeça forte e diferente da de
+    // costume fica fora da conta do café de propósito: com histórico de pressão
+    // alta, ela pede o aparelho de pressão e atendimento no mesmo dia, como no
+    // socorro do jejum; a fortíssima de repente é 192, como em data/alarmes.ts.
+    item: "Café e outras fontes de cafeína",
+    detalhe: "Saíram do plano em 12/10: cafeína atrapalha o sono e aumenta a ansiedade. Também têm cafeína: chá verde, preto, branco e mate (chimarrão e tereré), refrigerante de cola, energético, guaraná em pó e alguns remédios para dor de cabeça (está na bula). Tomava muito café? Tire aos poucos, ao longo de uma semana: dor de cabeça leve e cansaço nos primeiros dias são comuns e passam sozinhos. Dor de cabeça forte e diferente da de costume — ainda mais com visão embaralhada — não é do café: meça a pressão, se tiver aparelho, e procure atendimento no mesmo dia; fortíssima e de repente, 192 (SAMU). A que passa de uma semana também não é: fale com o médico. Remédio ou fórmula com cafeína: conte ao médico que o café saiu — sem mudar nada por conta própria.",
+  },
+  {
+    item: "Pré-treino, termogênico e chá para emagrecer",
+    detalhe: "Pré-treino e termogênico costumam ter muita cafeína e outros estimulantes; chá seca-barriga costuma ser diurético ou laxante. Com histórico de pressão alta e o Mounjaro, podem subir a pressão, disparar o coração e desidratar. Nenhum entra sem o médico.",
   },
 ];
 
@@ -424,19 +461,62 @@ export const CRITERIOS_ROTULO = [
 export type Mudanca = {
   id: string;
   tema: string;
-  /** "seguranca" aparece primeiro e em vermelho. */
-  tipo: "seguranca" | "plano" | "preferencia" | "medico";
+  /**
+   * "seguranca" aparece em vermelho. "ajuste" é o que mudou em 12/10, a pedido
+   * dela, e vem no topo da lista.
+   */
+  tipo: "seguranca" | "plano" | "preferencia" | "medico" | "ajuste";
   antes: string;
   agora: string;
   porque: string;
 };
 
 /**
- * Até setembro o app seguia o Desinflama-se. O plano novo muda muita coisa, e
- * nada foi trocado em silêncio: cada mudança está aqui com o antes, o agora e
- * o porquê — e aparece na tela /dieta.
+ * Até setembro o app seguia o Desinflama-se; em 29/09 veio o plano novo e, em
+ * 12/10, os ajustes que ela pediu. Nada foi trocado em silêncio: cada mudança
+ * está aqui com o antes, o agora e o porquê — e aparece na tela /dieta, com os
+ * ajustes de 12/10 primeiro. O id é a key na tela: não pode repetir.
  */
 export const MUDANCAS: Mudanca[] = [
+  {
+    id: "cafe-fora",
+    tema: "O café sai",
+    tipo: "ajuste",
+    antes: "Uma xícara de café no café da manhã, e café liberado também no jejum.",
+    agora:
+      "Sem café. No jejum, só água e chá sem cafeína, sem açúcar — camomila, cidreira ou erva-doce.",
+    porque:
+      "Pedido seu. Cafeína atrapalha o sono e aumenta a ansiedade — e ela também está no chá verde, preto, branco e mate, no refrigerante de cola e no energético. Tomava muito? Tire aos poucos, ao longo de uma semana.",
+  },
+  {
+    id: "fibra-todo-dia",
+    tema: "Fibra todo dia",
+    tipo: "ajuste",
+    antes: "1 colher de chia no iogurte, se quisesse, só na segunda e na quinta.",
+    agora:
+      "1 colher de sopa de chia ou linhaça triturada todo dia: no iogurte quando ele fecha a janela, batida com o whey nos outros dias.",
+    porque:
+      "Ajuda o intestino, o açúcar e as gorduras do sangue. Sempre misturada em algo úmido e com água ao longo do dia; na primeira semana, meia colher.",
+  },
+  {
+    id: "folha-escura",
+    tema: "Folha verde-escura no almoço, todo dia",
+    tipo: "ajuste",
+    antes: "Quarta, quinta e sexta só tinham alface na salada.",
+    agora:
+      "Rúcula na quarta, espinafre refogado na quinta e agrião na sexta. Os outros dias já tinham brócolis, rúcula ou couve.",
+    porque:
+      "Mais fibra e mais variedade no prato. Muita gente acha a folha escura amarga: refogue no alho e no azeite, ponha limão ou misture com alface e tomate.",
+  },
+  {
+    id: "cores",
+    tema: "Cores no prato",
+    tipo: "ajuste",
+    antes: "Frutas e legumes variavam sem uma regra.",
+    agora:
+      "Variar as cores dos legumes e das frutas. O morango já é ótima fonte de vitamina C; kiwi, laranja e acerola entram se você gostar.",
+    porque: "Cada cor traz vitaminas diferentes — pela comida, sem suplemento novo.",
+  },
   {
     id: "remedios",
     tema: "Remédios",
@@ -471,7 +551,7 @@ export const MUDANCAS: Mudanca[] = [
     tipo: "plano",
     antes: "Sem glúten: no lugar do pão, tapioca, crepioca, cuscuz e pãozinho de aveia.",
     agora: "Pão sem miolo no café da manhã, com ovo e queijo.",
-    porque: "Sem o miolo sobra pouco pão: ele vira apoio, e a proteína é o centro do café.",
+    porque: "Sem o miolo sobra pouco pão: ele vira apoio, e a proteína é o centro do café da manhã.",
   },
   {
     id: "gluten-adocante",
@@ -507,7 +587,7 @@ export const MUDANCAS: Mudanca[] = [
     tipo: "plano",
     antes: "Jantar mais leve por volta das 19:30: sopa, omelete, peixe com legumes.",
     agora:
-      "A última refeição é pequena e proteica e fecha a janela, meia hora antes do jejum. Depois, só água, chá e café sem açúcar — e os comprimidos da noite, no horário de sempre.",
+      "A última refeição é pequena e proteica e fecha a janela, meia hora antes do jejum. Depois, só água e chá sem cafeína, sem açúcar — e os comprimidos da noite, no horário de sempre.",
     porque:
       "A medicação tira a fome à noite, e o jantar completo causa desconforto. No resumo essa refeição se chama Noite — o app só antecipou.",
   },
@@ -527,7 +607,7 @@ export const MUDANCAS: Mudanca[] = [
     antes:
       "Tofu, tapioca, crepioca, cuscuz, quinoa, batata-doce, grão-de-bico, patê de atum/frango e leite de amêndoas.",
     agora:
-      "O cardápio usa o que está no resumo — a chia opcional no iogurte é sugestão do app, para o intestino.",
+      "O cardápio usa o que está no resumo, mais os ajustes de 12/10 do começo da lista. A chia, sugestão do app para o intestino, era opcional no iogurte; em 12/10 deixou de ser e passou a entrar todo dia.",
     porque:
       "Eram as trocas para 15 dias sem leite e sem glúten. Não viraram proibidos — só deixaram de ser necessários.",
   },

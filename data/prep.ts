@@ -37,7 +37,9 @@ export const ESTRATEGIA = {
     "Porcione o patinho e o peixe crus, uma refeição por pacote, e congele.",
     "Enquanto isso, higienize e seque as folhas.",
     "Resfrie rápido antes de congelar e etiquete tudo com nome e data.",
-    "No meio da semana: passe para a geladeira o que vai até domingo e cozinhe mais ovos, se precisar.",
+    // Agrião (sexta) e rúcula (sábado) duram 2 a 3 dias: comprados no mutirão,
+    // não chegam ao fim da semana.
+    "No meio da semana: passe para a geladeira o que vai até domingo, cozinhe mais ovos, se precisar, e compre agrião e rúcula frescos para o fim da semana.",
   ],
   dica: "Uma balança de cozinha ajuda nas duas medidas que mais importam: 120 g de frango, carne ou peixe no almoço e 40 g de whey no lanche.",
 };
@@ -100,6 +102,12 @@ export const PREPARO: PrepGrupo[] = [
         nome: "Couve",
         como: "Lave, seque, tire os talos grossos e fatie. Congela crua, pronta para refogar.",
       },
+      {
+        // Folha escura de quinta desde os ajustes de 12/10.
+        id: "p-espinafre",
+        nome: "Espinafre",
+        como: "O melhor é refogar no alho no dia de comer. Para guardar, branqueie (1–2 min na água fervente), resfrie no gelo, esprema bem e congele em porções — vai direto do congelador para a panela.",
+      },
       { id: "p-cheiro-verde", nome: "Cheiro-verde", como: "Lave, seque bem, pique e congele solto." },
       { id: "p-cebola", nome: "Cebola picada", como: "Congele picada, pronta para o refogado." },
       {
@@ -138,9 +146,18 @@ export const PREPARO: PrepGrupo[] = [
       {
         id: "p-iogurte",
         nome: "Iogurte proteico",
-        como: "Fechado na geladeira até a hora de comer.",
+        // A chia vai sempre molhada, nunca seca: no iogurte, ela precisa de uns
+        // minutos para hidratar antes de descer.
+        como: "Fechado na geladeira até a hora de comer. Com a chia ou a linhaça: misture e espere uns minutos antes de comer.",
       },
       { id: "p-folhas", nome: "Folhas", como: "Higienize, seque muito bem e guarde em pote com papel-toalha." },
+      {
+        // Folhas escuras de terça, quarta, sexta e sábado desde os ajustes de 12/10.
+        id: "p-agriao-rucula",
+        nome: "Agrião e rúcula",
+        como: "Mais delicados que a alface: higienize, seque muito bem e guarde em pote com papel-toalha.",
+        validade: "2 a 3 dias",
+      },
       { id: "p-tomate-pepino", nome: "Tomate e pepino", como: "Guarde inteiros e corte perto de comer." },
       {
         id: "p-legumes-prontos",
@@ -175,7 +192,8 @@ export const PREPARO: PrepGrupo[] = [
       {
         id: "p-whey",
         nome: "Whey do lanche",
-        como: "Bata na hora de tomar. O pó fica fora da geladeira, com o pote bem fechado.",
+        // Na segunda e na quinta a chia vai no iogurte, não aqui: uma vez por dia.
+        como: "Bata na hora de tomar — com a colher de chia ou linhaça, nos dias em que ela vai no whey — e tome logo, porque a chia engrossa. O pó fica fora da geladeira, com o pote bem fechado.",
       },
       {
         id: "p-salada-temperada",

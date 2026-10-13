@@ -61,7 +61,7 @@ import {
   type DayCheck,
 } from "@/lib/storage";
 import { setInicio, statusPlano, useInicio } from "@/lib/protocol";
-import { novoId, useRotina } from "@/lib/routine";
+import { idsRotinaDoDia, novoId, useRotina } from "@/lib/routine";
 import { useDia } from "@/components/day-context";
 import { DaySwitch } from "@/components/day-switch";
 import { dataCurta, diaDaSemana, hojeKey } from "@/lib/date";
@@ -115,7 +115,7 @@ export default function RotinaPage() {
   const [rascunho, setRascunho] = useState<RotinaBloco[] | null>(null);
   const inicio = useInicio();
   const novaData = rascunhoData ?? inicio;
-  const { blocos, origem, salvar, restaurar } = useRotina();
+  const { blocos, origem, carregando, salvar, restaurar } = useRotina();
   const { data, ehHoje } = useDia();
   // O último valor que o banco confirmou para cada item e o número do último
   // toque nele (chave: dia + item). Se um toque não grava, a marca volta para o
@@ -209,7 +209,15 @@ export default function RotinaPage() {
   }
 
   const diaDaSemanaAtual = diaDaSemana(new Date(`${data}T00:00:00`));
-  const itensTodos = blocos.flatMap((b) => b.itens);
+  // A rotina do dia na tela: num dia antigo, item que entrou depois (ver
+  // ROTINA_DESDE) não aparece nem conta — como no histórico e no anel do dia.
+  // O editor continua trabalhando com a rotina inteira.
+  const idsDoDia = new Set(idsRotinaDoDia(blocos.flatMap((b) => b.itens.map((i) => i.id)), data));
+  const blocosDoDia = blocos.map((b) => ({
+    ...b,
+    itens: b.itens.filter((i) => idsDoDia.has(i.id)),
+  }));
+  const itensTodos = blocosDoDia.flatMap((b) => b.itens);
   const totalFeitos = dia
     ? itensTodos.filter((i) => dia.supplements[i.id] === true).length
     : 0;
@@ -332,8 +340,17 @@ export default function RotinaPage() {
             </Button>
           </>
         ) : (
-          <Button size="sm" variant="outline" onClick={() => setRascunho(structuredClone(blocos))}>
-            <Pencil className="h-4 w-4" /> Editar rotina
+          // Enquanto a rotina carrega, a tela mostra a de fábrica: um rascunho
+          // aberto agora sairia dela e, salvo, gravaria por cima da rotina dela.
+          // O rascunho leva o bloco inteiro, `recebidos` inclusive.
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={carregando}
+            aria-busy={carregando}
+            onClick={() => setRascunho(structuredClone(blocos))}
+          >
+            <Pencil className="h-4 w-4" /> {carregando ? "Carregando a rotina…" : "Editar rotina"}
           </Button>
         )}
         {origem === "aparelho" && (
@@ -347,7 +364,7 @@ export default function RotinaPage() {
       {rascunho ? (
         <EditorRotina blocos={rascunho} onChange={setRascunho} />
       ) : (
-        blocos.map((bloco) => {
+        blocosDoDia.map((bloco) => {
           const Icone = ICONE_BLOCO[bloco.id] ?? ListChecks;
           const feitos = dia
             ? bloco.itens.filter((i) => dia.supplements[i.id] === true).length

@@ -23,7 +23,7 @@ import {
   type DayCheck,
 } from "@/lib/storage";
 import { usePeriodoAgora } from "@/lib/protocol";
-import { useRotina } from "@/lib/routine";
+import { idsRotinaDoDia, useRotina } from "@/lib/routine";
 import { useDia } from "@/components/day-context";
 import { diaDaSemana } from "@/lib/date";
 import { cn } from "@/lib/utils";
@@ -147,9 +147,11 @@ export function RoutineNow() {
   const falhou = (id: string) => naoSalvou?.data === data && naoSalvou.id === id;
 
   // Num dia que já passou não existe "agora": mostra a rotina inteira para ela
-  // conseguir lançar tudo de uma vez.
+  // conseguir lançar tudo de uma vez — só com os itens que já existiam nele,
+  // como no histórico, para o mesmo dia ter a mesma nota nas duas telas.
   const doPeriodo = ehHoje ? blocos.filter((b) => b.periodo === periodo) : blocos;
-  const itens = doPeriodo.flatMap((b) => b.itens);
+  const idsDoDia = new Set(idsRotinaDoDia(doPeriodo.flatMap((b) => b.itens.map((i) => i.id)), data));
+  const itens = doPeriodo.flatMap((b) => b.itens).filter((i) => idsDoDia.has(i.id));
   const feitos = dia ? itens.filter((i) => dia.supplements[i.id] === true).length : 0;
   const pct = itens.length > 0 ? Math.round((feitos / itens.length) * 100) : 0;
   const { texto, Icone } = ehHoje ? TITULO[periodo] : { texto: "Rotina do dia", Icone: Sun };

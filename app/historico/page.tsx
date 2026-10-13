@@ -24,7 +24,7 @@ import { getPeriodo, getTextoDoDia, type DayCheck } from "@/lib/storage";
 import { formatarAgua, resumoDoDia } from "@/lib/score";
 import { useInicio, usePlano } from "@/lib/protocol";
 import { usePreferencias } from "@/lib/settings";
-import { useRotina } from "@/lib/routine";
+import { idsRotinaDoDia, useRotina } from "@/lib/routine";
 import { useAgoraVivo } from "@/lib/now";
 import { useDia } from "@/components/day-context";
 import { hojeKey, todayKey, dataExtenso } from "@/lib/date";
@@ -79,13 +79,15 @@ export default function HistoricoPage() {
     return lista.reverse();
   }, [inicio, status]);
 
+  // Cada dia conta só os itens que já existiam nele: um item que entrou na
+  // rotina depois não tira pontos dos dias de antes.
   const resumos = useMemo(
     () =>
       linha.map((item) => ({
         ...item,
         resumo: resumoDoDia(dias[item.data], {
           metaAgua: prefs.aguaMetaMl,
-          idsRotina,
+          idsRotina: idsRotinaDoDia(idsRotina, item.data),
         }),
       })),
     [linha, dias, prefs.aguaMetaMl, idsRotina],
@@ -259,7 +261,7 @@ export default function HistoricoPage() {
 
               {estaAberto && (
                 <CardContent className="animate-rise space-y-3 border-t border-line/70 pt-4">
-                  <Detalhe dia={dia} blocos={blocos} />
+                  <Detalhe dia={dia} data={data} blocos={blocos} />
                   <Button
                     variant="outline"
                     className="w-full"
@@ -285,9 +287,12 @@ export default function HistoricoPage() {
 
 function Detalhe({
   dia,
-  blocos,
+  data,
+  blocos: blocosAtuais,
 }: {
   dia: DayCheck | undefined;
+  /** O dia aberto (AAAA-MM-DD): a rotina mostrada é a que existia nele. */
+  data: string;
   blocos: RotinaBloco[];
 }) {
   if (!dia) {
@@ -296,7 +301,16 @@ function Detalhe({
 
   const sintomas = getTextoDoDia(dia, "r-ac-sintomas");
   const gratidao = getTextoDoDia(dia, "r-n-gratidao");
-  const idsRotina = blocos.flatMap((b) => b.itens.map((i) => i.id));
+  // Item que entrou na rotina depois desse dia não aparece como "não feito".
+  const idsRotina = idsRotinaDoDia(
+    blocosAtuais.flatMap((b) => b.itens.map((i) => i.id)),
+    data,
+  );
+  const doDia = new Set(idsRotina);
+  const blocos = blocosAtuais.map((b) => ({
+    ...b,
+    itens: b.itens.filter((i) => doDia.has(i.id)),
+  }));
   const rotinaFeitos = idsRotina.filter(
     (id) => dia.supplements[id] === true,
   ).length;

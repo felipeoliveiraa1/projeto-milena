@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import {
   Ban,
+  BatteryLow,
   CalendarDays,
   Check,
   CheckCircle2,
@@ -19,6 +20,8 @@ import {
   ListChecks,
   Repeat,
   ShieldAlert,
+  Siren,
+  SlidersHorizontal,
   Sparkles,
   Stethoscope,
   Timer,
@@ -26,10 +29,12 @@ import {
   Wrench,
 } from "lucide-react";
 import {
+  AJUSTE_DATA,
   DIASTASE,
   DIASTASE_CM,
   EQUIPAMENTOS,
   MUDANCAS_TREINO,
+  MUDANCAS_TREINO_1210,
   ORIENTACAO_DATA,
   PEDIDOS_MEDICO,
   PLANOS,
@@ -43,6 +48,7 @@ import {
   type Plano,
   type WorkoutDay,
 } from "@/data/workouts";
+import { AJUSTES_TREINO, ALARMES_URGENTES, CARD_ALARMES } from "@/data/alarmes";
 import { usePreferencias } from "@/lib/settings";
 import {
   Card,
@@ -244,6 +250,9 @@ export default function TreinoPage() {
 
   const ordered = naOrdem(plano.dias);
   const abaAtual = abaEscolhida ?? String(diaDaSemana(new Date(`${data}T00:00:00`)));
+  // A quarta forte só existe no completo: na adaptação, as frases do "Dia
+  // ruim" sobre ela falariam de um intervalado que não está no plano.
+  const temForte = plano.dias.some((d) => d.intensa);
 
   return (
     <div className="stagger space-y-5">
@@ -262,7 +271,23 @@ export default function TreinoPage() {
                 disso seriam os de fábrica. */}
             <strong>Quando treinar:</strong> academia dentro da janela alimentar
             {!carregando && ` (${prefs.janelaInicio}–${prefs.janelaFim})`}, depois
-            do café ou entre o almoço e o lanche. Em jejum, só caminhada leve.
+            do café da manhã ou entre o almoço e o lanche — de barriga cheia, espere
+            uma hora ou mais, porque com o Mounjaro a digestão é lenta. Em jejum, só
+            caminhada leve.
+          </span>
+        </p>
+        {/* Treino todo dia pede uma saída para o dia ruim — e para o dia
+            perdido, sem dobrar treino nem pôr perna pesada colada à quarta. */}
+        <p className="mt-2 flex items-start gap-2 rounded-xl2 bg-plum-soft px-3.5 py-3 text-xs leading-relaxed text-plum">
+          <BatteryLow className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span>
+            <strong>Dia ruim</strong> — dormiu muito mal, está com enjoo ou sem
+            conseguir comer: troque a academia do dia por caminhada leve de 20 a
+            30 minutos; conta como treino.
+            {temForte && " Se for quarta, pedal leve contínuo no lugar do intervalado."}{" "}
+            Doente (vômito, diarreia, febre): descanso. Perdeu um dia? Siga o
+            treino de hoje: não junte dois treinos no mesmo dia
+            {temForte ? " nem faça perna pesada na véspera da quarta." : "."}
           </span>
         </p>
       </header>
@@ -325,6 +350,8 @@ export default function TreinoPage() {
       <PedidosDoMedico plano={plano} />
 
       <CardDiastase />
+
+      <CardAlarmes />
 
       <Tabs value={abaAtual} onValueChange={setAbaEscolhida} className="w-full">
         <TabsList>
@@ -411,15 +438,50 @@ export default function TreinoPage() {
                     </div>
                   )}
 
+                  {/* Subir a carga muda com o plano: na adaptação, as
+                      repetições são fixas e a carga é leve, então quem manda é
+                      a folga; no completo, o número do card. Aliviar é igual
+                      nos dois. A carga é guardada pelo nome: trocar a barra
+                      pelo goblet sem anotar pareceria queda de força. */}
                   {workout.exercicios.some((e) => e.carga) && (
-                    <p className="flex items-start gap-2 px-1 text-xs leading-relaxed text-ink-soft">
+                    <div className="flex items-start gap-2 px-1 text-xs leading-relaxed text-ink-soft">
                       <Dumbbell className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand" />
-                      <span>
-                        Nos exercícios com peso, anote a carga do dia: é assim que
-                        você vê a força se manter, ou subir, enquanto o peso da
-                        balança desce.
-                      </span>
-                    </p>
+                      <div className="space-y-1.5">
+                        {plano.id === "completo" ? (
+                          <p>
+                            Nos exercícios com peso, anote a carga do dia. Fez
+                            todas as séries até o maior número do card — o 12, em
+                            “10–12” —, com 2 repetições sobrando e soltando o ar?
+                            Na próxima, suba o menor passo — 1 a 2 kg no halter,
+                            uma placa na estação, 2,5 kg na barra — e, se o card
+                            dá uma faixa, recomece pelo número menor. Trocou o
+                            exercício (goblet no lugar da barra)? Anote junto:
+                            “goblet 10 kg”. Nas 2 primeiras semanas do completo,
+                            2 séries nos exercícios com carga e goblet no lugar
+                            da barra.
+                          </p>
+                        ) : (
+                          <p>
+                            Nos exercícios com peso, anote a carga do dia.
+                            Terminou todas as séries conversando e com folga —
+                            umas 3 repetições sobrando? Na próxima, suba o menor
+                            passo: 1 a 2 kg no halter ou uma placa na estação.
+                            Começou a segurar o halter no agachamento no banco?
+                            Anote junto, por exemplo: “com halter, 4 kg”.
+                          </p>
+                        )}
+                        <p>
+                          Carga caindo no mesmo exercício duas vezes seguidas, ou
+                          cansaço que não passa: na semana seguinte, uma série a
+                          menos em tudo (no completo, a quarta forte fica no
+                          leve). Continuou cansada, ou vieram tontura, queda de
+                          cabelo ou o peso caindo rápido demais? Fale com o
+                          médico. Nenhuma série vai até não sair mais nenhuma
+                          repetição — e a musculação é o que mais protege o osso
+                          enquanto o peso cai.
+                        </p>
+                      </div>
+                    </div>
                   )}
 
                   {workout.exercicios.map((ex, i) => {
@@ -478,25 +540,19 @@ export default function TreinoPage() {
         })}
       </Tabs>
 
-      {/* O padding mora no summary, não no details: a área de toque é a
-          faixa inteira, não só a linha do texto. */}
-      <details className="group rounded-card border border-line bg-surface">
-        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2.5 p-5 text-sm font-bold text-ink">
-          <History className="h-4 w-4 shrink-0 text-plum" />
-          O que mudou no treino em {ORIENTACAO_DATA}
-          <ChevronDown className="ml-auto h-4 w-4 shrink-0 text-ink-muted transition group-open:rotate-180" />
-        </summary>
-        <ul className="space-y-3 px-5 pb-5">
-          {MUDANCAS_TREINO.map((m) => (
-            <li key={m.oQue} className="border-l-2 border-plum/30 pl-3">
-              <p className="text-sm font-bold text-ink">{m.oQue}</p>
-              <p className="mt-0.5 text-xs leading-relaxed text-ink-muted">
-                {m.porque}
-              </p>
-            </li>
-          ))}
-        </ul>
-      </details>
+      {/* Os ajustes de 12/10 primeiro; o que veio com a orientação do médico
+          em 29/09 fica logo abaixo, como histórico. */}
+      <Mudancas
+        icone={<History className="h-4 w-4 shrink-0 text-plum" />}
+        titulo={`O que mudou no treino em ${AJUSTE_DATA}`}
+        itens={MUDANCAS_TREINO_1210}
+      />
+
+      <Mudancas
+        icone={<Stethoscope className="h-4 w-4 shrink-0 text-plum" />}
+        titulo={`O que mudou em ${ORIENTACAO_DATA}, com o médico`}
+        itens={MUDANCAS_TREINO}
+      />
 
       <details className="group rounded-card border border-line bg-surface">
         <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2.5 p-5 text-sm font-bold text-ink">
@@ -1037,5 +1093,98 @@ function Regra({
         <p className="mt-0.5 text-xs leading-relaxed text-ink-muted">{texto}</p>
       </div>
     </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Quando parar e procurar ajuda                                              */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Os sinais para parar o treino, dentro do próprio treino — antes eles ficavam
+ * só na Rotina. Os textos moram em data/alarmes.ts, a mesma fonte das Regras de
+ * segurança, para nunca haver duas ordens diferentes para o mesmo sinal. Os
+ * urgentes vêm em destaque, do mais urgente para o menos; os ajustes, embaixo.
+ */
+function CardAlarmes() {
+  // Fechado, como os outros cards de consulta da tela: aberto, ele empurrava o
+  // treino do dia para longe no celular. O mais urgente fica no resumo, à vista.
+  return (
+    <details className="group rounded-card border border-danger/25 bg-surface">
+      <summary className="flex cursor-pointer list-none items-center gap-3 p-5">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-danger-soft text-danger">
+          <Siren className="h-5 w-5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-bold text-ink">{CARD_ALARMES.titulo}</span>
+          <span className="block text-xs leading-relaxed text-danger">
+            {CARD_ALARMES.resumo}
+          </span>
+        </span>
+        <ChevronDown className="h-4 w-4 shrink-0 text-ink-muted transition group-open:rotate-180" />
+      </summary>
+      <div className="space-y-2.5 px-5 pb-5">
+        <p className="text-xs leading-relaxed text-ink-muted">{CARD_ALARMES.descricao}</p>
+        <ol className="space-y-2">
+          {ALARMES_URGENTES.map((a) => (
+            <li
+              key={a}
+              className="flex items-start gap-2.5 rounded-xl2 bg-danger-soft p-3.5 text-xs leading-relaxed text-danger"
+            >
+              <Siren className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{a}</span>
+            </li>
+          ))}
+        </ol>
+        <div className="rounded-xl2 border border-line p-3.5">
+          <p className="flex items-center gap-2 text-sm font-bold text-ink">
+            <SlidersHorizontal className="h-4 w-4 shrink-0 text-danger" />
+            Ajuste o treino do dia
+          </p>
+          <ul className="mt-2 space-y-2">
+            {AJUSTES_TREINO.map((a) => (
+              <li key={a} className="text-xs leading-relaxed text-ink-muted">
+                {a}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </details>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* O que mudou                                                                */
+/* -------------------------------------------------------------------------- */
+
+/** Uma lista de "o que mudou", fechada até ela abrir. A key é o próprio texto. */
+function Mudancas({
+  icone,
+  titulo,
+  itens,
+}: {
+  icone: ReactNode;
+  titulo: string;
+  itens: { oQue: string; porque: string }[];
+}) {
+  return (
+    // O padding mora no summary, não no details: a área de toque é a faixa
+    // inteira, não só a linha do texto.
+    <details className="group rounded-card border border-line bg-surface">
+      <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2.5 p-5 text-sm font-bold text-ink">
+        {icone}
+        {titulo}
+        <ChevronDown className="ml-auto h-4 w-4 shrink-0 text-ink-muted transition group-open:rotate-180" />
+      </summary>
+      <ul className="space-y-3 px-5 pb-5">
+        {itens.map((m) => (
+          <li key={m.oQue} className="border-l-2 border-plum/30 pl-3">
+            <p className="text-sm font-bold text-ink">{m.oQue}</p>
+            <p className="mt-0.5 text-xs leading-relaxed text-ink-muted">{m.porque}</p>
+          </li>
+        ))}
+      </ul>
+    </details>
   );
 }
