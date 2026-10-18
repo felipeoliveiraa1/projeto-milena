@@ -7,9 +7,9 @@ export function MedicalDisclaimer() {
         <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-ink-muted" />
         <p>
           Plano de referência educacional, montado sobre o histórico fornecido (pós-parto, pressão alta
-          gestacional, diabetes gestacional controlada, gordura no fígado e diástase abdominal), o resumo
-          de alimentação para recomposição corporal e as orientações do médico para o treino. Sempre
-          revise mudanças com seu médico e nutricionista — ainda mais durante o uso do Mounjaro e na
+          gestacional, diabetes gestacional controlada, gordura no fígado e diástase abdominal), o plano
+          da nutricionista e as orientações do médico. Sempre revise mudanças com seu médico e
+          nutricionista — ainda mais durante o uso do Mounjaro e na
           preparação para a cirurgia plástica. Em caso de mal-estar, dor anormal ou pressão alterada,
           suspenda treino e jejum e procure orientação.
         </p>

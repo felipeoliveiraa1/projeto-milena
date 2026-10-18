@@ -295,12 +295,8 @@ export default function ProgressoPage() {
             aparelho e nas mesmas condições — o passo a passo está na aba Exame.
           </Marco>
           <Marco icone={<Dumbbell className="h-4 w-4" />}>
-            <strong className="text-ink">Força na musculação</strong>: compare as cargas que você
-            anota em cada exercício do{" "}
-            <Link href="/treino" className="font-semibold text-plum underline underline-offset-2">
-              treino
-            </Link>
-            . Carga igual ou subindo faz parte do sinal do plano — “{PLANO.objetivo}”
+            <strong className="text-ink">Força na musculação</strong>: carga igual ou subindo no
+            treino faz parte do sinal do plano — “{PLANO.objetivo}”
           </Marco>
           <Marco icone={<HeartPulse className="h-4 w-4" />}>
             <strong className="text-ink">Sintomas</strong> ficam no checklist diário, na{" "}

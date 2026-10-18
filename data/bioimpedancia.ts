@@ -48,8 +48,8 @@ export type Bioimpedancia = {
  * altura 1,61 m e IMC 33,0 — o IMC o app calcula (peso ÷ altura²) e dá o mesmo.
  *
  * Em quilos, que o laudo não traz: ≈ 40,5 kg de gordura, 45,0 de massa magra e
- * 19,8 de músculo esquelético. A proteína do plano (90–100 g por dia) dá cerca
- * de 2 g por kg dessa massa magra.
+ * 19,8 de músculo esquelético. A proteína do plano (1,6–1,9 g por kg do peso
+ * ideal, no plano da nutricionista) dá cerca de 2 g por kg dessa massa magra.
  */
 export const EXAME_BASE = {
   date: "2026-08-12",
@@ -479,7 +479,7 @@ export const METAS_PROXIMO_EXAME: MetaExame[] = [
     id: "sinal",
     titulo: PLANO.objetivo.replace(/\.$/, ""),
     porque:
-      "É o melhor sinal de recomposição, nas palavras do resumo da alimentação. O peso sai daqui e da balança; a cintura, da aba Medidas; e, para a força, compare as cargas que você anota em cada exercício do treino.",
+      "É o melhor sinal de recomposição, nas palavras do resumo da alimentação. O peso sai daqui e da balança; a cintura, da aba Medidas; e, para a força, compare as cargas do seu treino.",
     confere: () => null,
   },
 ];

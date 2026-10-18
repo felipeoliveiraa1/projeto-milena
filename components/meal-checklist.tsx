@@ -1,63 +1,58 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CalendarDays, ChevronDown, Moon, Timer, Utensils } from "lucide-react";
+import { ChevronDown, Moon, Timer, Utensils } from "lucide-react";
 import {
+  PLANO_ATUAL_DESDE,
   REFEICOES_META,
   REFEICOES_ORDEM,
-  cardapioDaData,
+  chaveOpcao,
+  lerOpcao,
+  proteinaDaRefeicao,
+  refeicaoDoPlano,
+  refeicoesDaData,
   type RefeicaoId,
-  type TipoItem,
+  type RefeicaoPlanoId,
 } from "@/data/meals";
 import { ORDEM_CONSUMO } from "@/data/alimentacao";
 import { Card, CardContent, CardHeader, CardTitle, Eyebrow } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
-import { getDay, toggleMeal } from "@/lib/storage";
+import { getDay, getTextoDoDia, setTextoDoDia, toggleMeal } from "@/lib/storage";
 import { duracaoJanela, formatarDuracao, horariosDaJanela, useJanela } from "@/lib/jejum";
-import { useIsClient } from "@/lib/now";
 import { useDia } from "@/components/day-context";
 import { cn } from "@/lib/utils";
 
-export const CORES_TIPO: Record<TipoItem, string> = {
-  proteina: "bg-clay-soft text-clay-deep",
-  carbo: "bg-gold-soft text-gold",
-  vegetal: "bg-brand-soft text-brand",
-  fruta: "bg-plum-soft text-plum",
-  bebida: "bg-line-soft text-ink-soft",
-  extra: "bg-bone-deep text-ink-soft",
-};
+/** A opção que ela comeu: 1, 2 ou nenhuma escolhida. */
+type Opcao = 1 | 2 | null;
 
-export const ROTULO_TIPO: Record<TipoItem, string> = {
-  proteina: "proteína",
-  carbo: "carbo",
-  vegetal: "vegetal",
-  fruta: "fruta",
-  bebida: "bebida",
-  extra: "extra",
+type Carga = {
+  data: string;
+  checks: Record<string, boolean>;
+  opcoes: Partial<Record<RefeicaoPlanoId, Opcao>>;
 };
 
 export function MealChecklist() {
-  const [carga, setCarga] = useState<{ data: string; checks: Record<string, boolean> } | null>(
-    null,
-  );
+  const [carga, setCarga] = useState<Carga | null>(null);
   const [open, setOpen] = useState<RefeicaoId | null>(null);
   const [naoSalvou, setNaoSalvou] = useState<{ data: string; id: RefeicaoId } | null>(null);
-  // O que o banco confirmou para cada refeição e o número do último toque nela
-  // (chave: dia + refeição). Se um toque não grava, a marca volta para o
-  // confirmado — só se ele foi o último toque, para não sobrar na tela um
-  // estado que nunca foi salvo.
+  // O que o banco confirmou para cada refeição (e para a opção escolhida) e o
+  // número do último toque nela (chave: dia + refeição). Se um toque não grava,
+  // a marca volta para o confirmado — só se ele foi o último toque, para não
+  // sobrar na tela um estado que nunca foi salvo.
   const confirmadas = useRef<Record<string, boolean>>({});
   const toques = useRef<Record<string, number>>({});
+  const opcoesConfirmadas = useRef<Record<string, Opcao>>({});
+  const toquesOpcao = useRef<Record<string, number>>({});
   const { data, ehHoje } = useDia();
   const { janela, status, carregando } = useJanela();
   // Até as preferências chegarem, a janela é a de fábrica: os horários guardam
   // o lugar, mas ficam escondidos — nada de 08:00 para quem abre às 09:00.
   const esperando = carregando && "invisible";
-  // O cardápio muda com o dia da semana, e a data que o servidor enxerga pode
-  // não ser a do celular (fuso). Por isso o conteúdo do dia só entra depois de
-  // montar — antes disso aparecem só os nomes das refeições, que são iguais.
-  const isClient = useIsClient();
+  // Do plano da nutricionista em diante, três refeições com duas opções cada.
+  // Os dias de antes mostram as quatro refeições que tinham, só para marcar.
+  const planoNovo = data >= PLANO_ATUAL_DESDE;
+  const ids = refeicoesDaData(data);
 
   useEffect(() => {
     // Resposta atrasada de outro dia (troca de dia, virada das 05:00) não vale.
@@ -65,7 +60,13 @@ export function MealChecklist() {
     getDay(data).then((d) => {
       if (!valendo) return;
       for (const [id, v] of Object.entries(d.meals)) confirmadas.current[`${data}:${id}`] = v;
-      setCarga({ data, checks: d.meals });
+      const opcoes: Carga["opcoes"] = {};
+      for (const id of REFEICOES_ORDEM) {
+        const opcao = lerOpcao(getTextoDoDia(d, chaveOpcao(id)));
+        opcoes[id] = opcao;
+        opcoesConfirmadas.current[`${data}:${id}`] = opcao;
+      }
+      setCarga({ data, checks: d.meals, opcoes });
     });
     return () => {
       valendo = false;
@@ -74,15 +75,21 @@ export function MealChecklist() {
 
   const hydrated = carga?.data === data;
   const checks = hydrated ? carga.checks : {};
+  const opcoes = hydrated ? carga.opcoes : {};
 
   function marcarLocal(id: RefeicaoId, valor: boolean) {
-    setCarga((c) => (c && c.data === data ? { data, checks: { ...c.checks, [id]: valor } } : c));
+    setCarga((c) => (c && c.data === data ? { ...c, checks: { ...c.checks, [id]: valor } } : c));
   }
 
-  async function handleToggle(id: RefeicaoId) {
+  function marcarOpcaoLocal(id: RefeicaoPlanoId, valor: Opcao) {
+    setCarga((c) => (c && c.data === data ? { ...c, opcoes: { ...c.opcoes, [id]: valor } } : c));
+  }
+
+  const limparAviso = (id: RefeicaoId) => setNaoSalvou((f) => (f?.id === id ? null : f));
+
+  /** Marca na hora e grava; se não gravar, volta ao confirmado. Diz se gravou. */
+  async function gravarRefeicao(id: RefeicaoId, alvo: boolean): Promise<boolean> {
     const chave = `${data}:${id}`;
-    // Grava o que ela quer ver, não "o contrário do banco".
-    const alvo = !checks[id];
     const toque = (toques.current[chave] ?? 0) + 1;
     toques.current[chave] = toque;
     marcarLocal(id, alvo);
@@ -90,22 +97,69 @@ export function MealChecklist() {
       const next = await toggleMeal(id, data, alvo);
       confirmadas.current[chave] = !!next.meals[id];
       if (toques.current[chave] === toque) marcarLocal(id, confirmadas.current[chave]);
-      setNaoSalvou((f) => (f?.id === id ? null : f));
+      return true;
     } catch (err) {
       console.error(err);
       if (toques.current[chave] === toque) marcarLocal(id, confirmadas.current[chave] ?? false);
-      setNaoSalvou({ data, id });
+      return false;
     }
   }
 
-  const cardapio = isClient ? cardapioDaData(data) : null;
+  async function handleToggle(id: RefeicaoId) {
+    // Grava o que ela quer ver, não "o contrário do banco".
+    const ok = await gravarRefeicao(id, !checks[id]);
+    if (ok) limparAviso(id);
+    else setNaoSalvou({ data, id });
+  }
+
+  /**
+   * Toque num botão de opção. Escolher uma opção é dizer que comeu: a refeição
+   * se marca junto, se ainda não estava. Tocar de novo na opção escolhida, com
+   * a refeição marcada, tira a escolha e deixa a refeição como está — ela
+   * comeu, só não quer dizer qual. Com a refeição desmarcada, o mesmo toque
+   * marca de novo com essa opção: o botão aceso sem a refeição marcada é a
+   * escolha que ficou de antes, e tocar nele é dizer "comi esta".
+   * A opção é um texto do dia (ver chaveOpcao em data/meals.ts), gravado como
+   * os textos da rotina.
+   */
+  async function escolherOpcao(id: RefeicaoPlanoId, numero: 1 | 2) {
+    const chave = `${data}:${id}`;
+    const alvo: Opcao = opcoes[id] === numero && checks[id] ? null : numero;
+    const toque = (toquesOpcao.current[chave] ?? 0) + 1;
+    toquesOpcao.current[chave] = toque;
+    marcarOpcaoLocal(id, alvo);
+
+    const marcando = alvo !== null && !checks[id] ? gravarRefeicao(id, true) : Promise.resolve(true);
+    const gravandoOpcao = (async () => {
+      try {
+        await setTextoDoDia(chaveOpcao(id), alvo === null ? "" : String(alvo), data);
+        opcoesConfirmadas.current[chave] = alvo;
+        if (toquesOpcao.current[chave] === toque) marcarOpcaoLocal(id, alvo);
+        return true;
+      } catch (err) {
+        console.error(err);
+        if (toquesOpcao.current[chave] === toque) {
+          marcarOpcaoLocal(id, opcoesConfirmadas.current[chave] ?? null);
+        }
+        return false;
+      }
+    })();
+
+    const [okRefeicao, okOpcao] = await Promise.all([marcando, gravandoOpcao]);
+    if (okRefeicao && okOpcao) limparAviso(id);
+    else setNaoSalvou({ data, id });
+  }
+
   const horarios = horariosDaJanela(janela);
   const { jejum } = duracaoJanela(janela);
-  const feitas = hydrated ? REFEICOES_ORDEM.filter((id) => checks[id]).length : 0;
-  const proteinaMarcada =
-    cardapio && hydrated
-      ? cardapio.refeicoes.filter((r) => checks[r.id]).reduce((s, r) => s + r.proteina, 0)
-      : 0;
+  const feitas = hydrated ? ids.filter((id) => checks[id] === true).length : 0;
+  // Refeição marcada sem opção conta a menor das duas (ver proteinaDaRefeicao).
+  const proteinaMarcada = hydrated
+    ? REFEICOES_ORDEM.filter((id) => checks[id] === true).reduce(
+        (s, id) => s + proteinaDaRefeicao(id, opcoes[id] ?? null),
+        0,
+      )
+    : 0;
 
   return (
     <Card>
@@ -113,7 +167,7 @@ export function MealChecklist() {
         <div className="flex items-start justify-between gap-3">
           <div>
             <Eyebrow className="text-clay">
-              Cardápio{cardapio ? ` · ${cardapio.nome}` : ""}
+              {planoNovo ? "Plano da nutricionista" : "Cardápio anterior"}
             </Eyebrow>
             <CardTitle className="mt-1.5">
               {ehHoje ? "Refeições de hoje" : "Refeições do dia"}
@@ -121,22 +175,19 @@ export function MealChecklist() {
           </div>
           <p className="font-display shrink-0 text-2xl leading-none text-ink tabular">
             {feitas}
-            <span className="text-ink-muted">/{REFEICOES_ORDEM.length}</span>
+            <span className="text-ink-muted">/{ids.length}</span>
           </p>
         </div>
         <p className="text-sm text-ink-muted">
-          {cardapio ? (
+          {planoNovo ? (
             <>
               Proteína marcada:{" "}
-              <strong className="text-ink-soft tabular">
-                {proteinaMarcada} de ~{cardapio.proteina} g
-              </strong>
-              {" · "}
-              {/* Inteiro na quebra de linha: nunca o "g" sozinho embaixo. */}
-              <span className="whitespace-nowrap">meta 90–100 g</span>
+              <strong className="text-ink-soft tabular">~{proteinaMarcada} g</strong>{" "}
+              {/* Inteiro na quebra de linha: nunca o "(estimativa)" partido. */}
+              <span className="whitespace-nowrap">(estimativa)</span>
             </>
           ) : (
-            " "
+            "Dia de antes do plano da nutricionista: quatro refeições, só para marcar."
           )}
         </p>
       </CardHeader>
@@ -194,13 +245,6 @@ export function MealChecklist() {
           </p>
         )}
 
-        {cardapio?.destaque && (
-          <p className="flex items-start gap-2 rounded-xl2 bg-plum-soft px-3.5 py-2.5 text-xs leading-relaxed text-plum">
-            <CalendarDays className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            {cardapio.destaque}
-          </p>
-        )}
-
         <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 rounded-xl2 bg-brand-soft/60 px-3.5 py-2.5 text-[0.6875rem] font-semibold text-brand">
           {ORDEM_CONSUMO.map((o, i) => (
             <span key={o.o} className="flex items-center gap-1.5">
@@ -210,19 +254,55 @@ export function MealChecklist() {
           ))}
         </div>
 
-        {REFEICOES_ORDEM.map((id) => {
-          const refeicao = cardapio?.refeicoes.find((r) => r.id === id);
-          const checked = hydrated && !!checks[id];
-          const isOpen = open === id && !!refeicao;
-          return (
-            <div
-              key={id}
-              className={cn(
-                "rounded-xl2 border transition",
-                checked ? "border-brand/20 bg-brand-soft/50" : "border-line bg-surface",
-              )}
+        {ids.map((id) => {
+          const checked = hydrated && checks[id] === true;
+          const erro =
+            naoSalvou?.data === data && naoSalvou.id === id ? (
+              <p role="alert" className="px-3.5 pb-3 text-xs font-semibold text-danger">
+                Não deu para salvar agora. Confira a internet e tente de novo.
+              </p>
+            ) : null;
+          const caixa = cn(
+            "rounded-xl2 border transition",
+            checked ? "border-brand/20 bg-brand-soft/50" : "border-line bg-surface",
+          );
+          const nome = (
+            <p
+              className={cn("font-semibold", checked ? "text-ink-muted line-through" : "text-ink")}
             >
-              <div className="flex items-center gap-3 p-3.5">
+              {REFEICOES_META[id].nome}
+            </p>
+          );
+
+          // Dia de antes do plano (ou o "jantar", que só existe nele): só a marca.
+          if (!planoNovo || id === "jantar") {
+            return (
+              <div key={id} className={caixa}>
+                <div className="flex items-center gap-3 p-3.5">
+                  <Checkbox
+                    checked={checked}
+                    onCheckedChange={() => handleToggle(id)}
+                    aria-label={REFEICOES_META[id].nome}
+                  />
+                  <div className="min-w-0">
+                    {nome}
+                    <p className={cn("text-xs text-ink-muted tabular", esperando)}>{horarios[id]}</p>
+                  </div>
+                </div>
+                {erro}
+              </div>
+            );
+          }
+
+          const refeicao = refeicaoDoPlano(id);
+          const escolhida = opcoes[id] ?? null;
+          const opcaoEscolhida = escolhida ? refeicao.opcoes[escolhida - 1] : null;
+          const isOpen = open === id;
+          // Aberta: a opção escolhida ou, sem escolha, as duas para comparar.
+          const visiveis = opcaoEscolhida ? [opcaoEscolhida] : refeicao.opcoes;
+          return (
+            <div key={id} className={caixa}>
+              <div className="flex items-center gap-3 px-3.5 pt-3.5 pb-2">
                 <Checkbox
                   checked={checked}
                   onCheckedChange={() => handleToggle(id)}
@@ -234,73 +314,74 @@ export function MealChecklist() {
                   aria-expanded={isOpen}
                 >
                   <div className="min-w-0">
-                    <p
-                      className={cn(
-                        "font-semibold",
-                        checked ? "text-ink-muted line-through" : "text-ink",
-                      )}
-                    >
-                      {REFEICOES_META[id].nome}
-                      {/* O selo mora junto do nome (inline-block, para o risco do
-                          feito não passar por cima): na coluna da direita ele
-                          espremia o resumo em 320 px. */}
-                      {refeicao && (
-                        <span
-                          className="ml-1.5 inline-block rounded-full bg-clay-soft px-2 py-0.5 align-middle text-[0.625rem] font-bold text-clay-deep tabular"
-                          title="Proteína estimada"
-                        >
-                          {refeicao.proteina} g
-                          <span className="sr-only"> de proteína</span>
-                        </span>
-                      )}
-                    </p>
-                    {/* Até três linhas: em 320 px, "Peixe assado, legumes cozidos e purê
-                        de mandioquinha" cabe inteiro. */}
-                    <p className="line-clamp-3 text-xs text-ink-muted">
-                      <span className={cn("tabular", esperando)}>
-                        {horarios[id]}
-                        {refeicao && " · "}
-                      </span>
-                      {refeicao?.resumo}
+                    {nome}
+                    <p className="line-clamp-2 text-xs text-ink-muted">
+                      <span className={cn("tabular", esperando)}>{horarios[id]}</span>
+                      {" · "}
+                      {opcaoEscolhida
+                        ? `${opcaoEscolhida.nome} · ~${opcaoEscolhida.proteina} g de proteína (estimativa)`
+                        : "escolha a opção 1 ou a 2"}
                     </p>
                   </div>
-                  <span className="flex shrink-0 items-center gap-2">
-                    <ChevronDown
-                      className={cn(
-                        "h-4 w-4 text-ink-muted transition",
-                        isOpen && "rotate-180",
-                      )}
-                    />
-                  </span>
+                  <ChevronDown
+                    className={cn("h-4 w-4 shrink-0 text-ink-muted transition", isOpen && "rotate-180")}
+                  />
                 </button>
               </div>
 
-              {naoSalvou?.data === data && naoSalvou.id === id && (
-                <p role="alert" className="px-3.5 pb-3 text-xs font-semibold text-danger">
-                  Não deu para salvar agora. Confira a internet e tente de novo.
-                </p>
-              )}
-
-              {isOpen && refeicao && (
-                <div className="animate-rise space-y-2 border-t border-line/70 px-4 py-3.5">
-                  {refeicao.itens.map((it) => (
-                    <div key={it.id} className="flex items-start gap-2">
-                      <span
-                        className={cn(
-                          "mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-[0.625rem] font-bold",
-                          CORES_TIPO[it.tipo],
-                        )}
-                      >
-                        {ROTULO_TIPO[it.tipo]}
-                      </span>
-                      <span className="flex-1 text-sm leading-relaxed text-ink-soft">
-                        {it.label}
-                      </span>
-                      {it.proteina > 0 && (
-                        <span className="shrink-0 pt-0.5 text-xs text-ink-muted tabular">
-                          {it.proteina} g
-                        </span>
+              {/* Alinhados com o nome: 14 px de respiro + 24 px do checkbox + 12 px. */}
+              <div className="flex flex-wrap gap-2 pr-3.5 pb-3.5 pl-12.5">
+                {refeicao.opcoes.map((o) => {
+                  const ativa = escolhida === o.numero;
+                  return (
+                    <button
+                      key={o.id}
+                      type="button"
+                      // Antes de o dia carregar não dá para saber se o toque
+                      // escolhe ou desfaz a escolha.
+                      disabled={!hydrated}
+                      onClick={() => escolherOpcao(id, o.numero)}
+                      aria-pressed={ativa}
+                      aria-label={`${REFEICOES_META[id].nome}: opção ${o.numero}, ${o.nome}`}
+                      className={cn(
+                        "rounded-full border px-3 py-1 text-xs font-semibold transition disabled:opacity-50",
+                        ativa
+                          ? "border-clay bg-clay text-bone"
+                          : "border-line bg-surface text-ink-soft hover:border-clay/40 hover:text-ink",
                       )}
+                    >
+                      Opção {o.numero}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {erro}
+
+              {isOpen && (
+                <div className="animate-rise space-y-3 border-t border-line/70 px-4 py-3.5">
+                  {visiveis.map((o) => (
+                    <div key={o.id} className="space-y-1.5">
+                      <p className="flex flex-wrap items-baseline justify-between gap-x-2 text-xs">
+                        <span className="font-bold text-ink">
+                          Opção {o.numero} · {o.nome}
+                        </span>
+                        <span className="text-ink-muted tabular">
+                          ~{o.proteina} g de proteína (estimativa)
+                        </span>
+                      </p>
+                      <ul className="space-y-1">
+                        {o.itens.map((it) => (
+                          <li
+                            key={it.texto}
+                            className="flex items-start gap-2 text-sm leading-relaxed text-ink-soft"
+                          >
+                            <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-clay" />
+                            {it.texto}
+                          </li>
+                        ))}
+                      </ul>
+                      {o.nota && <p className="text-xs leading-relaxed text-ink-muted">{o.nota}</p>}
                     </div>
                   ))}
                   {refeicao.nota && (

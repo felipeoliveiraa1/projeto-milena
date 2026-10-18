@@ -1,539 +1,353 @@
 /**
- * Cardápio da semana da recomposição corporal.
+ * Plano alimentar da nutricionista (18/10/2026).
  *
- * Sai do "Resumo da Alimentação – Recomposição Corporal" (29/09/2026): cada
- * dia tem as quatro refeições da estrutura do resumo, variando as opções que
- * ele mesmo lista. As regras (metas, jejum, sugestões e o que mudou em relação
- * ao Desinflama-se) moram em data/alimentacao.ts.
+ * São três refeições — café da manhã, almoço e lanche da tarde, que é a última
+ * do dia — e cada uma tem duas opções. Os textos dos itens são os da
+ * prescrição, palavra por palavra: não se reescreve dose de comida. As regras
+ * em volta (metas, jejum, o que evitar e o que mudou) moram em
+ * data/alimentacao.ts; a lista de compras (data/shopping.ts) e o preparo
+ * (data/prep.ts) saem daqui.
  *
- * O cardápio vai pelo dia da semana, não por um ciclo: a recomposição não tem
- * data para acabar, e a semana é o ritmo da compra e da aplicação de quinta.
- *
- * Os ids das refeições (cafe/almoco/lanche/jantar) são os mesmos de sempre —
- * o histórico de refeições marcadas depende deles. "jantar" é o id histórico
- * da quarta refeição, que agora fecha a janela antes do jejum.
- *
- * Os ids dos itens seguem "s{dia da semana}-{refeição}-{nome}" (s1 = segunda,
- * s0 = domingo). Eles ficam gravados na seleção da lista de compras, então não
- * mudam quando o texto muda — e o formato antigo "d1-…" não volta.
- *
- * Ajustes de 12/10, a pedido dela: o café (a bebida) saiu do café da manhã, a
- * chia ou linhaça entra uma vez por dia e o almoço tem folha verde-escura todo
- * dia. Os itens que mudaram guardam o id de antes, para a seleção da lista
- * continuar valendo; o porquê de cada mudança está em MUDANCAS.
+ * Até 17/10 o app seguia um cardápio de 7 dias com quatro refeições. Os ids das
+ * refeições continuam os de sempre — o histórico de refeições marcadas depende
+ * deles —, e "jantar" fica só para mostrar os dias antigos: era o id da quarta
+ * refeição, a que fechava a janela.
  */
-
-/**
- * "bebida" ficou sem item quando o café saiu (12/10), mas continua no tipo: as
- * cores e os rótulos da tela (components/meal-checklist.tsx) contam com ela.
- */
-export type TipoItem = "proteina" | "carbo" | "vegetal" | "fruta" | "bebida" | "extra";
-
-export type ItemRefeicao = {
-  id: string;
-  label: string;
-  /** ids do catálogo em data/shopping.ts */
-  ingredientes: string[];
-  tipo: TipoItem;
-  /**
-   * Proteína estimada do item, em gramas. Verdura, legume, fruta, a chia ou
-   * linhaça e os carboidratos do almoço entram como 0: têm tão pouca que não
-   * mudam a conta — e o resumo também não conta.
-   */
-  proteina: number;
-};
 
 export type RefeicaoId = "cafe" | "almoco" | "lanche" | "jantar";
 
-export const REFEICOES_ORDEM: RefeicaoId[] = ["cafe", "almoco", "lanche", "jantar"];
+/** As refeições do plano atual: "jantar" não entra mais. */
+export type RefeicaoPlanoId = Exclude<RefeicaoId, "jantar">;
 
 /**
- * Nome e horário de cada refeição na janela padrão (08:00–18:00). Na tela, o
- * horário vem de horariosDaJanela() (lib/jejum.ts), porque ela pode mudar a
- * janela em /ajustes.
+ * Dia em que o plano da nutricionista entrou. Daqui em diante o dia tem três
+ * refeições; antes, quatro — e os dias antigos continuam contando as quatro,
+ * para o histórico não mudar de nota.
  */
-export const REFEICOES_META: Record<RefeicaoId, { nome: string; hora: string }> = {
-  cafe: { nome: "Café da manhã", hora: "08:00" },
-  almoco: { nome: "Almoço", hora: "12:30" },
-  lanche: { nome: "Lanche da tarde", hora: "15:30" },
-  jantar: { nome: "Fecha a janela", hora: "17:30" },
+export const PLANO_ATUAL_DESDE = "2026-10-18";
+
+/** As refeições do plano atual, na ordem do dia. */
+export const REFEICOES_ORDEM: RefeicaoPlanoId[] = ["cafe", "almoco", "lanche"];
+
+/** As quatro refeições do cardápio de 29/09 a 17/10. */
+const REFEICOES_ANTES_DO_PLANO: RefeicaoId[] = ["cafe", "almoco", "lanche", "jantar"];
+
+/**
+ * Quais refeições valem numa data "AAAA-MM-DD". Comparar o texto basta: nesse
+ * formato, a ordem alfabética é a ordem do calendário. Sai uma cópia, para
+ * quem usa não mexer na lista de todo mundo.
+ */
+export function refeicoesDaData(data: string): RefeicaoId[] {
+  return data >= PLANO_ATUAL_DESDE ? [...REFEICOES_ORDEM] : [...REFEICOES_ANTES_DO_PLANO];
+}
+
+/**
+ * Nome de cada refeição. O horário não mora aqui: vem de horariosDaJanela()
+ * (lib/janela.ts), porque ela pode mudar a janela em /ajustes.
+ */
+export const REFEICOES_META: Record<RefeicaoId, { nome: string }> = {
+  cafe: { nome: "Café da manhã" },
+  almoco: { nome: "Almoço" },
+  // A última refeição do dia desde 18/10.
+  lanche: { nome: "Lanche da tarde" },
+  // Só nos dias antigos: a refeição que fechava a janela até 17/10.
+  jantar: { nome: "Fecha a janela" },
 };
 
-export type Refeicao = {
-  id: RefeicaoId;
+/* -------------------------------------------------------------------------- */
+/* Tipos do plano                                                             */
+/* -------------------------------------------------------------------------- */
+
+export type OpcaoId = "cafe-1" | "cafe-2" | "almoco-1" | "almoco-2" | "lanche-1" | "lanche-2";
+
+/**
+ * Ingrediente de um item, por porção, na unidade do catálogo de compras
+ * (data/shopping.ts): `un`, `g` ou `ml`. Quando a prescrição diz "X ou Y", vai
+ * para a compra o X, e a nota do item da lista lembra o Y.
+ */
+export type Ingrediente = { id: string; qtd: number };
+
+export type ItemPlano = {
+  /** Como está na prescrição — não reescrever. */
+  texto: string;
+  ingredientes: Ingrediente[];
+};
+
+export type OpcaoRefeicao = {
+  id: OpcaoId;
+  numero: 1 | 2;
+  /** Nome curto, para o botão e o título da opção. */
   nome: string;
-  /** Horário na janela padrão — ver REFEICOES_META. */
-  hora: string;
-  /** Uma linha para a refeição fechada na tela inicial. */
-  resumo: string;
-  itens: ItemRefeicao[];
-  /** Proteína estimada da refeição, em gramas: a soma dos itens. */
+  itens: ItemPlano[];
+  /**
+   * Proteína da opção, em gramas — estimativa do app a partir de tabelas de
+   * alimentos comuns, não um número da prescrição. Na tela sempre vem com
+   * "(estimativa)".
+   */
   proteina: number;
   nota?: string;
 };
 
-export type DiaCardapio = {
-  /** 0 = domingo … 6 = sábado, como em Date.getDay(). */
-  diaSemana: number;
+export type RefeicaoPlano = {
+  id: RefeicaoPlanoId;
   nome: string;
-  curto: string;
-  refeicoes: Refeicao[];
-  /** Proteína estimada do dia, em gramas. */
-  proteina: number;
-  /** Aviso do dia — aplicação do Mounjaro, vitamina D. */
-  destaque?: string;
-};
-
-const item = (
-  id: string,
-  label: string,
-  ingredientes: string[],
-  tipo: TipoItem,
-  proteina = 0,
-): ItemRefeicao => ({ id, label, ingredientes, tipo, proteina });
-
-function refeicao(
-  id: RefeicaoId,
-  resumo: string,
-  itens: ItemRefeicao[],
-  nota?: string,
-): Refeicao {
-  return {
-    id,
-    ...REFEICOES_META[id],
-    resumo,
-    itens,
-    proteina: itens.reduce((s, i) => s + i.proteina, 0),
-    ...(nota ? { nota } : {}),
-  };
-}
-
-/*
- * Como a proteína foi estimada, para a conta bater com o resumo:
- * ovo ~7 g · clara ~3,5 g · 50–60 g de queijo minas ~9 g · 50–60 g de ricota
- * ~6 g · pão sem miolo ~2 g · 120 g de frango ou patinho ~30 g · 120 g de
- * peixe ~28 g · 70 g de frango ~18 g · 150 g de ricota/cottage ~17 g ·
- * iogurte proteico 15 g (o resumo diz 15–17) · 40 g de whey 32 g.
- */
-
-/* -------------------------------------------------------------------------- */
-/* Café da manhã — quebra o jejum · 15–20 g                                   */
-/* -------------------------------------------------------------------------- */
-
-// O café (a bebida) saiu em 12/10, a pedido dela. Os ids s{d}-cafe-cafe podem
-// continuar na seleção salva da lista e não servem para outra comida: se
-// voltassem, a marcação antiga passaria a valer para o item novo.
-
-const CAFES = {
-  paoOvoQueijo: (d: number, nota?: string): Refeicao =>
-    refeicao(
-      "cafe",
-      "Pão sem miolo, ovo e queijo minas",
-      [
-        item(
-          `s${d}-cafe-pao-ovo-queijo`,
-          "Pão sem miolo + 1 ovo + 50–60 g de queijo minas",
-          ["ca-pao", "pr-ovos", "la-queijo-minas"],
-          "proteina",
-          18,
-        ),
-      ],
-      nota,
-    ),
-  paoOvoClaras: (d: number): Refeicao =>
-    refeicao("cafe", "Pão sem miolo, ovo e claras", [
-      item(
-        `s${d}-cafe-pao-ovo-claras`,
-        "Pão sem miolo + 1 ovo + 2 claras, mexidos juntos",
-        ["ca-pao", "pr-ovos"],
-        "proteina",
-        16,
-      ),
-      item(
-        `s${d}-cafe-creme-ricota`,
-        "Creme de ricota light no pão, se quiser — é sabor, não fonte principal de proteína",
-        ["la-creme-ricota"],
-        "extra",
-      ),
-    ]),
-  paoOvoRicota: (d: number, nota?: string): Refeicao =>
-    refeicao(
-      "cafe",
-      "Pão sem miolo, ovo e ricota",
-      [
-        item(
-          `s${d}-cafe-pao-ovo-ricota`,
-          "Pão sem miolo + 1 ovo + 50–60 g de ricota sólida, no lugar do queijo",
-          ["ca-pao", "pr-ovos", "la-ricota"],
-          "proteina",
-          15,
-        ),
-      ],
-      nota,
-    ),
+  nota?: string;
+  opcoes: [OpcaoRefeicao, OpcaoRefeicao];
 };
 
 /* -------------------------------------------------------------------------- */
-/* Almoço — salada/legumes → 120 g de carne → pouco carboidrato · 28–35 g     */
+/* O plano                                                                    */
 /* -------------------------------------------------------------------------- */
 
 /*
- * Folha verde-escura no almoço, todo dia (ajustes de 12/10): rúcula, couve,
- * agrião, espinafre ou brócolis, no lugar de parte da alface. Segunda e
- * domingo têm o brócolis, terça e sábado a rúcula (e a couve no sábado); a
- * quarta, a quinta e a sexta ganharam a delas na própria salada. Na quinta,
- * dia de tudo macio, ela vem refogada.
+ * Como as porções viraram ingredientes (para a lista de compras):
+ * - ovos: as claras contam como ovo inteiro, porque é assim que se compra;
+ * - faixa de peso (25–30 g, 200–250 g): vale o maior, para não faltar;
+ * - salada: "mix de folhas e legumes crus (200–250 g)" virou 100 g de folhas,
+ *   ½ tomate, ¼ de pepino e ¼ de cenoura (uns 240 g);
+ * - quinoa: os 60 g contam como o grão cru, que é como se compra;
+ * - "1 fio de azeite" conta 5 ml, e a colher de sopa, 10.
+ * A proteína é estimativa, de tabelas de alimentos comuns, arredondada: ovo
+ * ~6,5 g, clara ~3,5 g, 50 g de atum ou sardinha ~12 g, 50 g de queijo branco
+ * ~8 g, 30 g de whey isolado ~25 g, 150 g de frango grelhado ~45 g, 140 g de
+ * peixe ~28 g, 150 g de grão-de-bico cozido ~13 g, 60 g de quinoa crua ~8 g,
+ * 150 g de kefir ou iogurte natural ~5 g. Varia com a marca e o preparo.
  */
-const salada = (d: number, label: string, ingredientes: string[]) =>
-  item(`s${d}-almoco-salada`, label, ingredientes, "vegetal");
 
-const legumes = (d: number, label: string, ingredientes: string[]) =>
-  item(`s${d}-almoco-legumes`, label, ingredientes, "vegetal");
-
-const ALMOCOS = {
-  frangoArroz: (d: number): Refeicao =>
-    refeicao("almoco", "Frango grelhado, legumes e um pouco de arroz", [
-      salada(d, "Salada de alface, tomate e pepino, com limão e um fio de azeite", [
-        "fo-alface",
-        "le-tomate",
-        "le-pepino",
-        "fr-limao",
-        "go-azeite",
-      ]),
-      legumes(d, "Brócolis e cenoura no vapor", ["le-brocolis", "le-cenoura"]),
-      item(`s${d}-almoco-frango`, "120 g de frango grelhado", ["pr-frango-peito", "te-alho"], "proteina", 30),
-      item(`s${d}-almoco-arroz`, "Um pouco de arroz", ["ca-arroz"], "carbo"),
-    ]),
-  patinhoBatata: (d: number): Refeicao =>
-    refeicao("almoco", "Patinho acebolado, abobrinha e batata", [
-      salada(d, "Salada de rúcula e tomate", ["fo-rucula", "le-tomate", "go-azeite"]),
-      legumes(d, "Abobrinha refogada no alho", ["le-abobrinha", "te-alho", "go-azeite"]),
-      item(`s${d}-almoco-patinho`, "120 g de patinho em iscas, acebolado", ["pr-patinho", "te-cebola"], "proteina", 30),
-      item(`s${d}-almoco-batata`, "Batata cozida, no lugar do arroz", ["ca-batata"], "carbo"),
-    ]),
-  frangoMacarrao: (d: number): Refeicao =>
-    refeicao("almoco", "Frango ao molho, vagem e macarrão sem glúten", [
-      salada(d, "Salada de rúcula e alface com pepino e limão", [
-        "fo-rucula",
-        "fo-alface",
-        "le-pepino",
-        "fr-limao",
-        "go-azeite",
-      ]),
-      legumes(d, "Vagem no vapor", ["le-vagem"]),
-      item(
-        `s${d}-almoco-frango-molho`,
-        "120 g de frango em cubos ao molho de tomate caseiro",
-        ["pr-frango-peito", "le-tomate", "te-cebola", "te-alho"],
-        "proteina",
-        30,
-      ),
-      item(`s${d}-almoco-macarrao`, "Um pouco de macarrão integral sem glúten", ["ca-macarrao"], "carbo"),
-    ]),
-  peixeMandioquinha: (d: number): Refeicao =>
-    refeicao(
-      "almoco",
-      "Peixe assado, legumes cozidos e purê de mandioquinha",
-      [
-        salada(d, "Salada pequena de alface e tomate + espinafre refogado no alho", [
-          "fo-alface",
-          "le-tomate",
-          "fo-espinafre",
-          "te-alho",
-          "go-azeite",
-        ]),
-        legumes(d, "Cenoura e chuchu cozidos", ["le-cenoura", "le-chuchu"]),
-        item(`s${d}-almoco-peixe`, "120 g de peixe assado com limão", ["pr-peixe", "fr-limao"], "proteina", 28),
-        item(
-          `s${d}-almoco-mandioquinha`,
-          "Purê de mandioquinha com um fio de azeite, no lugar do arroz",
-          ["ca-mandioquinha", "go-azeite"],
-          "carbo",
-        ),
-      ],
-      "Tudo macio, para o dia de pouca fome. Na ordem de sempre: salada e legumes, depois o peixe e, por último, o purê — se o prato não descer inteiro, o que sobra é ele. Não gosta de mandioquinha? Troque por mandioca ou batata.",
-    ),
-  frangoDesfiadoArroz: (d: number): Refeicao =>
-    refeicao(
-      "almoco",
-      "Frango desfiado, abóbora e um pouco de arroz",
-      [
-        salada(d, "Salada de agrião, alface e tomate", [
-          "fo-agriao",
-          "fo-alface",
-          "le-tomate",
-          "go-azeite",
-        ]),
-        legumes(d, "Abóbora cozida", ["le-abobora-cabotia"]),
-        item(
-          `s${d}-almoco-frango-desfiado`,
-          "120 g de frango desfiado com cheiro-verde",
-          ["pr-frango-peito", "te-cebola", "te-alho", "te-cheiro-verde"],
-          "proteina",
-          30,
-        ),
-        item(`s${d}-almoco-arroz`, "Um pouco de arroz", ["ca-arroz"], "carbo"),
-      ],
-      "Desfiado desce mais fácil que em bife — bom para o dia seguinte à aplicação.",
-    ),
-  patinhoMandioca: (d: number): Refeicao =>
-    refeicao("almoco", "Patinho moído, couve e mandioca", [
-      salada(d, "Salada de rúcula, tomate e pepino", ["fo-rucula", "le-tomate", "le-pepino", "go-azeite"]),
-      legumes(d, "Couve refogada no alho", ["fo-couve", "te-alho", "go-azeite"]),
-      item(
-        `s${d}-almoco-patinho-moido`,
-        "120 g de patinho moído refogado com tomate",
-        ["pr-patinho", "te-cebola", "te-alho", "le-tomate"],
-        "proteina",
-        30,
-      ),
-      item(`s${d}-almoco-mandioca`, "Mandioca cozida, no lugar do arroz", ["ca-mandioca"], "carbo"),
-    ]),
-  peixeBatata: (d: number): Refeicao =>
-    refeicao("almoco", "Peixe assado, brócolis e batata", [
-      salada(d, "Salada de alface, tomate e cenoura ralada", [
-        "fo-alface",
-        "le-tomate",
-        "le-cenoura",
-        "go-azeite",
-      ]),
-      legumes(d, "Brócolis no vapor", ["le-brocolis"]),
-      item(
-        `s${d}-almoco-peixe`,
-        "120 g de peixe assado com ervas e limão",
-        ["pr-peixe", "te-cheiro-verde", "fr-limao"],
-        "proteina",
-        28,
-      ),
-      item(`s${d}-almoco-batata`, "Batata assada, no lugar do arroz", ["ca-batata", "go-azeite"], "carbo"),
-    ]),
-};
-
-/* -------------------------------------------------------------------------- */
-/* Lanche da tarde — whey + fruta · 32 g                                      */
-/* -------------------------------------------------------------------------- */
-
-/**
- * A fibra do dia (ajustes de 12/10): 1 colher de sopa de chia ou linhaça
- * triturada, uma vez por dia. Quando o iogurte fecha a janela, ela vai nele;
- * nos outros dias, batida com o whey — é o `comChia`. O id é o mesmo com e sem
- * a chia, para a seleção da lista continuar valendo. A chia conta 0 g.
- */
-const WHEY = (d: number, comChia: boolean) =>
-  comChia
-    ? item(
-        `s${d}-lanche-whey`,
-        "40 g de Whey Chef Zero + 1 colher de sopa de chia ou linhaça triturada, batidos",
-        ["la-whey", "go-chia"],
-        "proteina",
-        32,
-      )
-    : item(`s${d}-lanche-whey`, "40 g de Whey Chef Zero", ["la-whey"], "proteina", 32);
-
-const LANCHES = {
-  banana: (d: number, comChia: boolean, nota?: string): Refeicao =>
-    refeicao(
-      "lanche",
-      "Whey + banana",
-      [WHEY(d, comChia), item(`s${d}-lanche-banana`, "1 banana", ["fr-banana"], "fruta")],
-      nota,
-    ),
-  morango: (d: number, comChia: boolean): Refeicao =>
-    refeicao("lanche", "Whey + morangos", [
-      WHEY(d, comChia),
-      item(`s${d}-lanche-morango`, "Morangos, no lugar da banana", ["fr-morango"], "fruta"),
-    ]),
-  maca: (d: number, comChia: boolean): Refeicao =>
-    refeicao("lanche", "Whey + maçã pequena", [
-      WHEY(d, comChia),
-      item(`s${d}-lanche-maca`, "1 maçã pequena", ["fr-maca"], "fruta"),
-    ]),
-};
-
-/* -------------------------------------------------------------------------- */
-/* Fecha a janela — a "Noite" do resumo, antes do jejum · 15–20 g             */
-/* -------------------------------------------------------------------------- */
-
-const FECHAMENTOS = {
-  iogurte: (d: number): Refeicao =>
-    refeicao("jantar", "Iogurte proteico", [
-      item(
-        `s${d}-jantar-iogurte`,
-        "Iogurte proteico (15–17 g de proteína no pote)",
-        ["la-iogurte-proteico"],
-        "proteina",
-        15,
-      ),
-      item(
-        `s${d}-jantar-chia`,
-        "1 colher de sopa de chia ou linhaça triturada no iogurte",
-        ["go-chia"],
-        "extra",
-      ),
-    ]),
-  ovosQueijo: (d: number): Refeicao =>
-    refeicao(
-      "jantar",
-      "2 ovos cozidos e queijo minas",
-      [
-        item(`s${d}-jantar-ovos`, "2 ovos cozidos", ["pr-ovos"], "proteina", 14),
-        item(`s${d}-jantar-queijo`, "1 fatia de queijo minas", ["la-queijo-minas"], "proteina", 5),
-      ],
-      "Só os 2 ovos ficam um pouco abaixo de 15 g — a fatia de queijo completa.",
-    ),
-  frango: (d: number): Refeicao =>
-    refeicao(
-      "jantar",
-      "Frango desfiado",
-      [item(`s${d}-jantar-frango`, "70 g de frango desfiado", ["pr-frango-peito"], "proteina", 18)],
-      "Separe os 70 g quando preparar o frango da semana.",
-    ),
-  omelete: (d: number): Refeicao =>
-    refeicao("jantar", "Omelete pequena", [
-      item(
-        `s${d}-jantar-omelete`,
-        "Omelete pequena: 2 ovos + 1 clara, com cheiro-verde",
-        ["pr-ovos", "te-cheiro-verde"],
-        "proteina",
-        17,
-      ),
-    ]),
-  ricota: (d: number): Refeicao =>
-    refeicao(
-      "jantar",
-      "Ricota ou cottage",
-      [item(`s${d}-jantar-ricota`, "Ricota ou cottage — uns 150 g", ["la-ricota"], "proteina", 17)],
-      "Sobrou ricota do café da manhã de sexta? É ela.",
-    ),
-};
-
-/* -------------------------------------------------------------------------- */
-/* A semana                                                                   */
-/* -------------------------------------------------------------------------- */
-
-function dia(
-  diaSemana: number,
-  nome: string,
-  curto: string,
-  refeicoes: Refeicao[],
-  destaque?: string,
-): DiaCardapio {
-  return {
-    diaSemana,
-    nome,
-    curto,
-    refeicoes,
-    proteina: refeicoes.reduce((s, r) => s + r.proteina, 0),
-    ...(destaque ? { destaque } : {}),
-  };
-}
-
-/**
- * Na ordem em que aparece na tela: de segunda a domingo.
- *
- * Quinta é o dia da aplicação do Mounjaro e sexta vem logo depois — são os
- * dias em que a fome costuma cair mais. Por isso o almoço e o fechamento dos
- * dois vêm nas formas de proteína que descem mais fácil (peixe, desfiado,
- * iogurte, omelete). O café da manhã e o lanche de quinta seguem o resumo, com
- * o pão e a banana inteira: sem pão e com ½ banana de padrão, o dia ficava leve
- * demais. Para quando a fome não vier, a nota diz o que dá para tirar — nunca a
- * proteína.
- *
- * O `true` ou `false` do lanche diz se a chia vai batida com o whey: `false`
- * só nos dias em que o iogurte fecha a janela (segunda e quinta), porque aí
- * ela vai no iogurte. Trocou o fechamento de um dia? Troque o lanche junto —
- * a chia entra uma vez por dia, nem duas nem nenhuma.
- */
-export const CARDAPIO: DiaCardapio[] = [
-  dia(1, "Segunda", "Seg", [
-    CAFES.paoOvoQueijo(
-      1,
-      "Queijo: o minas do pote preto, o melhor dos avaliados no resumo para o dia a dia.",
-    ),
-    ALMOCOS.frangoArroz(1),
-    LANCHES.banana(1, false, "Pese o whey uma vez na balança para saber quantas medidas dão 40 g."),
-    FECHAMENTOS.iogurte(1),
-  ]),
-  dia(2, "Terça", "Ter", [
-    CAFES.paoOvoClaras(2),
-    ALMOCOS.patinhoBatata(2),
-    LANCHES.morango(2, true),
-    FECHAMENTOS.ovosQueijo(2),
-  ]),
-  dia(3, "Quarta", "Qua", [
-    CAFES.paoOvoQueijo(3),
-    ALMOCOS.frangoMacarrao(3),
-    LANCHES.banana(3, true),
-    FECHAMENTOS.frango(3),
-  ]),
-  dia(
-    4,
-    "Quinta",
-    "Qui",
-    [
-      CAFES.paoOvoQueijo(
-        4,
-        "Sem fome? Tire o pão — o ovo e o queijo são a proteína, e mexidos juntos descem fácil.",
-      ),
-      ALMOCOS.peixeMandioquinha(4),
-      // Na quinta a chia vai no iogurte, não no whey: daí o "do iogurte".
-      LANCHES.banana(4, false, "Muito cheia? Tire a chia do iogurte e diminua a fruta — o whey fica."),
-      FECHAMENTOS.iogurte(4),
+export const PLANO_ALIMENTAR: RefeicaoPlano[] = [
+  {
+    id: "cafe",
+    nome: REFEICOES_META.cafe.nome,
+    opcoes: [
+      {
+        id: "cafe-1",
+        numero: 1,
+        nome: "Omelete com proteína",
+        proteina: 40,
+        itens: [
+          {
+            texto: "Omelete: 2 ovos inteiros + 2 claras (total ~160 g preparado)",
+            ingredientes: [{ id: "pr-ovos", qtd: 4 }],
+          },
+          {
+            texto: "50 g de sardinha ou atum ou 80 g de peito de frango desfiado",
+            ingredientes: [{ id: "pr-sardinha-atum", qtd: 50 }],
+          },
+          {
+            texto: "1 colher de sopa de azeite de oliva (10 g)",
+            ingredientes: [{ id: "go-azeite", qtd: 10 }],
+          },
+          {
+            texto: "1 porção de queijo branco sem lactose 50 g",
+            ingredientes: [{ id: "la-queijo-branco", qtd: 50 }],
+          },
+          {
+            texto: "Chá verde sem açúcar",
+            ingredientes: [{ id: "be-chas", qtd: 1 }],
+          },
+        ],
+      },
+      {
+        id: "cafe-2",
+        numero: 2,
+        nome: "Shake com fruta",
+        proteina: 30,
+        itens: [
+          {
+            texto:
+              "Shake (pré/pós-treino opcional): 30 g de whey protein isolado sem lactose + 200 ml de bebida vegetal sem açúcar",
+            ingredientes: [
+              { id: "la-whey-isolado", qtd: 30 },
+              { id: "la-bebida-vegetal", qtd: 200 },
+            ],
+          },
+          {
+            texto: "1 colher de sopa de linhaça moída (10 g)",
+            ingredientes: [{ id: "se-linhaca", qtd: 10 }],
+          },
+          {
+            texto: "10 g de pasta de amendoim natural (sem açúcar)",
+            ingredientes: [{ id: "se-pasta-amendoim", qtd: 10 }],
+          },
+          {
+            texto: "1 maçã pequena (80–100 g)",
+            ingredientes: [{ id: "fr-maca", qtd: 1 }],
+          },
+        ],
+      },
     ],
-    "Dia da aplicação do Mounjaro. A fome costuma cair: coma devagar e pare na saciedade. Se algo tiver que sobrar, que seja o pão ou a fruta — não a proteína.",
-  ),
-  dia(
-    5,
-    "Sexta",
-    "Sex",
-    [
-      CAFES.paoOvoRicota(5),
-      ALMOCOS.frangoDesfiadoArroz(5),
-      LANCHES.morango(5, true),
-      FECHAMENTOS.omelete(5),
+  },
+  {
+    id: "almoco",
+    nome: REFEICOES_META.almoco.nome,
+    opcoes: [
+      {
+        id: "almoco-1",
+        numero: 1,
+        nome: "Frango com salada",
+        proteina: 50,
+        itens: [
+          {
+            texto: "Peito de frango grelhado 150 g",
+            ingredientes: [{ id: "pr-frango-peito", qtd: 150 }],
+          },
+          {
+            texto:
+              "Mix de folhas e legumes crus (200–250 g) — alface, tomate, pepino, cenoura ralada",
+            ingredientes: [
+              { id: "fo-alface", qtd: 100 },
+              { id: "le-tomate", qtd: 0.5 },
+              { id: "le-pepino", qtd: 0.25 },
+              { id: "le-cenoura", qtd: 0.25 },
+            ],
+          },
+          {
+            texto:
+              "Quinoa cozida 60 g (peso cozido ≈ 120 g) OU 100 g de batata-doce assada (se preferir mais carboidrato)",
+            ingredientes: [{ id: "ca-quinoa", qtd: 60 }],
+          },
+          {
+            texto: "Molho: 1 colher de sopa de azeite de oliva + limão",
+            ingredientes: [
+              { id: "go-azeite", qtd: 10 },
+              { id: "fr-limao", qtd: 0.5 },
+            ],
+          },
+          {
+            texto: "1 porção de legumes cozidos 100 g",
+            ingredientes: [{ id: "le-cozidos", qtd: 100 }],
+          },
+        ],
+      },
+      {
+        id: "almoco-2",
+        numero: 2,
+        nome: "Peixe com grão-de-bico",
+        proteina: 40,
+        itens: [
+          {
+            texto: "Peixe grelhado ou assado 140 g",
+            ingredientes: [{ id: "pr-peixe", qtd: 140 }],
+          },
+          {
+            texto: "Salada de folhas (200 g) com 1 colher de sopa de azeite",
+            ingredientes: [
+              { id: "fo-alface", qtd: 200 },
+              { id: "go-azeite", qtd: 10 },
+            ],
+          },
+          {
+            texto:
+              "150 g de grão-de-bico cozido (opção moderada de carboidrato) OU 60 g de arroz integral",
+            ingredientes: [{ id: "ca-grao-de-bico", qtd: 150 }],
+          },
+          {
+            texto: "1 colher de sopa de sementes (linhaça) 10 g",
+            ingredientes: [{ id: "se-linhaca", qtd: 10 }],
+          },
+        ],
+      },
     ],
-    // Sexta é o dia de pouca fome em que a chia vai no whey: a mesma regra da
-    // nota de quinta — o que sai primeiro é a chia, nunca o whey.
-    "Dia seguinte à aplicação: a fome ainda costuma estar baixa. Coma devagar e pare na saciedade. Muito cheia? Tire a chia e diminua a fruta — o whey fica.",
-  ),
-  dia(6, "Sábado", "Sáb", [
-    CAFES.paoOvoClaras(6),
-    ALMOCOS.patinhoMandioca(6),
-    LANCHES.maca(6, true),
-    FECHAMENTOS.ricota(6),
-  ]),
-  dia(
-    0,
-    "Domingo",
-    "Dom",
-    [
-      CAFES.paoOvoQueijo(0),
-      ALMOCOS.peixeBatata(0),
-      LANCHES.banana(0, true),
-      FECHAMENTOS.frango(0),
+  },
+  {
+    id: "lanche",
+    nome: REFEICOES_META.lanche.nome,
+    nota: "Última refeição do dia, até as 17h–18h.",
+    opcoes: [
+      {
+        id: "lanche-1",
+        numero: 1,
+        nome: "Whey com ovos",
+        proteina: 36,
+        itens: [
+          {
+            texto:
+              "Whey protein isolado sem lactose 25–30 g, shake em água (logo após o treino, se houver)",
+            ingredientes: [{ id: "la-whey-isolado", qtd: 30 }],
+          },
+          {
+            texto: "5 amêndoas ou 5 castanhas-do-pará",
+            ingredientes: [{ id: "se-castanhas", qtd: 5 }],
+          },
+          {
+            texto: "2 ovos mexidos ou cozidos + 1 fio de azeite",
+            ingredientes: [
+              { id: "pr-ovos", qtd: 2 },
+              { id: "go-azeite", qtd: 5 },
+            ],
+          },
+        ],
+      },
+      {
+        id: "lanche-2",
+        numero: 2,
+        nome: "Kefir com frutas vermelhas",
+        proteina: 23,
+        itens: [
+          {
+            texto: "Iogurte tipo kefir ou iogurte natural sem lactose 150 g",
+            ingredientes: [{ id: "la-kefir-iogurte", qtd: 150 }],
+          },
+          {
+            texto:
+              "30 g de frutas vermelhas (morangos, mirtilo ou uvas roxas) e 1 colher de sopa de chia (10 g)",
+            ingredientes: [
+              { id: "fr-vermelhas", qtd: 30 },
+              { id: "se-chia", qtd: 10 },
+            ],
+          },
+          {
+            texto: "1 omelete com 2 ovos inteiros + 1 clara + 1 fio de azeite",
+            ingredientes: [
+              { id: "pr-ovos", qtd: 3 },
+              { id: "go-azeite", qtd: 5 },
+            ],
+          },
+        ],
+      },
     ],
-    "Domingo é dia da vitamina D3: ela vai logo depois do café da manhã, como está na sua lista de remédios.",
-  ),
+  },
 ];
 
-/** Cardápio de um dia da semana (0 = domingo). Aceita qualquer inteiro: volta ao intervalo 0–6. */
-export function cardapioDoDia(diaSemana: number): DiaCardapio {
-  const d = Number.isFinite(diaSemana) ? ((Math.trunc(diaSemana) % 7) + 7) % 7 : 1;
-  return CARDAPIO.find((c) => c.diaSemana === d) ?? CARDAPIO[0];
+/** As observações que vieram com o plano, como a nutricionista escreveu. */
+export const OBSERVACOES_NUTRI: string[] = [
+  "Plano com leve déficit calórico (cerca de 10–12% abaixo da manutenção) para perder peso e recompor o corpo, com proteína alta (cerca de 1,6 a 1,9 g por kg do peso ideal) para preservar a massa magra.",
+  "Prioridade para as fibras (psyllium), o ômega-3 e o treino de força — eles cuidam das gorduras e do açúcar do sangue.",
+  "Pode acrescentar até 1 litro por dia, no máximo, de chá verde, gengibre, canela, hibisco, cavalinha ou dente-de-leão.",
+];
+
+/* -------------------------------------------------------------------------- */
+/* A opção escolhida no dia                                                   */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * A opção que ela comeu fica gravada como texto do dia (setTextoDoDia em
+ * lib/storage.ts), com este id: "opcao-cafe", "opcao-almoco", "opcao-lanche".
+ * Texto, e não um campo novo, para não precisar mexer no banco.
+ */
+export function chaveOpcao(id: RefeicaoPlanoId): string {
+  return `opcao-${id}`;
 }
 
-/** Cardápio de uma data "AAAA-MM-DD", pelo dia da semana dela. */
-export function cardapioDaData(iso: string): DiaCardapio {
-  // Com o horário junto, o JS lê a data no fuso do aparelho — sem ele, lê em
-  // UTC e o dia da semana pode voltar um.
-  const data = new Date(`${iso}T00:00:00`);
-  return cardapioDoDia(Number.isNaN(data.getTime()) ? 1 : data.getDay());
+/** Lê o que está gravado: "1" ou "2" valem; qualquer outra coisa é "sem opção". */
+export function lerOpcao(valor: string | undefined): 1 | 2 | null {
+  return valor === "1" ? 1 : valor === "2" ? 2 : null;
 }
 
-export const TOTAL_ITENS_CARDAPIO = CARDAPIO.reduce(
-  (s, d) => s + d.refeicoes.reduce((t, r) => t + r.itens.length, 0),
-  0,
-);
+export function refeicaoDoPlano(id: RefeicaoPlanoId): RefeicaoPlano {
+  // O plano tem as três refeições: o find nunca volta vazio.
+  return PLANO_ALIMENTAR.find((r) => r.id === id)!;
+}
+
+/**
+ * Proteína de uma refeição marcada. Sem opção escolhida, conta a menor das
+ * duas: melhor a estimativa ficar curta do que prometer o que não entrou.
+ */
+export function proteinaDaRefeicao(id: RefeicaoPlanoId, opcao: 1 | 2 | null): number {
+  const { opcoes } = refeicaoDoPlano(id);
+  if (opcao) return opcoes[opcao - 1].proteina;
+  return Math.min(opcoes[0].proteina, opcoes[1].proteina);
+}
 
 /* -------------------------------------------------------------------------- */
 /* Orientações do médico que seguem valendo                                   */
@@ -546,17 +360,18 @@ export const ORIENTACOES_MEDICO = {
     "Disciplina em 90% das situações — 100% poucos alcançam. É estilo de vida, não dieta passageira.",
     "Priorizar alimentos in natura: folhas verdes, legumes, frutas, peixe e frango.",
     "Compra na feira ou sacolão em vez de supermercado e delivery.",
-    "Salada como entrada em todas as refeições principais — bate com a ordem do resumo.",
+    "Salada como entrada em todas as refeições principais — bate com a ordem do prato.",
     "Diminuir a quantidade de carboidrato, e quase nunca à noite — com o jejum, à noite não entra comida.",
     "Pouca comida no prato.",
     "Cortar o açúcar refinado.",
     "Atividade física: chegar a 5–6 h por semana.",
     "Por menor que seja a perda, ela melhora saúde e autoestima.",
   ],
-  /** Onde ele e o plano novo não dizem a mesma coisa — e o que vale. */
+  /** Onde ele e o plano atual não dizem a mesma coisa — e o que vale. */
   emConflito: [
-    "Ele sugeria um lanchinho a cada 2–3 h se batesse fome. Dentro da janela, cabe — de preferência com proteína, como o iogurte proteico. Depois que a janela fecha, é jejum.",
-    "Ele falava em começar com 3 h de atividade física por semana. Desde 12/10, a seu pedido, o treino é todo dia: umas 4 h por semana já na adaptação, quase metade caminhando, e umas 5 h no completo. Vale mostrar este plano a ele na próxima consulta.",
-    "Ele pedia para cortar também a farinha de trigo, e o resumo põe pão sem miolo no café da manhã. Sem o miolo sobra pouco pão, e ele vem com ovo e queijo. Se quiser seguir o Dr. Henry à risca, a omelete com queijo (sem pão) é uma das opções do próprio resumo.",
+    // O mesmo que MUDANCAS → lanchinho (data/alimentacao.ts): o plano de 18/10
+    // tem as quantidades contadas, e lanche a mais passa pela nutricionista.
+    "Ele sugeria um lanchinho a cada 2–3 h se batesse fome. O plano da nutricionista tem três refeições, com as quantidades contadas: se a fome apertar entre elas, pergunte a ela o que pode entrar. Depois que a janela fecha, é jejum.",
+    "Ele falava em começar com 3 h de atividade física por semana e chegar a 5–6 h. O volume do treino agora fica com você e com quem acompanha o seu treino — vale mostrar a ele na próxima consulta.",
   ],
 };

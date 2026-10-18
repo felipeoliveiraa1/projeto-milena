@@ -12,6 +12,7 @@ import {
   ehSemanal,
   suplementosDoDia,
   suplementosDoPeriodo,
+  type Supplement,
 } from "@/data/supplements";
 import {
   getDayComErro,
@@ -23,6 +24,8 @@ import {
   type DayCheck,
 } from "@/lib/storage";
 import { usePeriodoAgora } from "@/lib/protocol";
+import { horarioDoSuplemento, suplementoEmPausa } from "@/lib/lembretes";
+import { usePreferencias } from "@/lib/settings";
 import { idsRotinaDoDia, useRotina } from "@/lib/routine";
 import { useDia } from "@/components/day-context";
 import { diaDaSemana } from "@/lib/date";
@@ -66,6 +69,9 @@ export function RoutineNow() {
   const periodo = usePeriodoAgora() ?? "manha";
   const { blocos } = useRotina();
   const { data, ehHoje } = useDia();
+  // Os horários e as pausas saem das preferências (horários dela, janela e
+  // data da cirurgia).
+  const { prefs, carregando: carregandoPrefs } = usePreferencias();
   // O último valor que o banco confirmou para cada item e o número do último
   // toque nele (chave: dia + item). Se um toque não grava, a marca volta para o
   // confirmado — e só se ele foi o último: dois toques sem internet não deixam
@@ -157,13 +163,23 @@ export function RoutineNow() {
   const { texto, Icone } = ehHoje ? TITULO[periodo] : { texto: "Rotina do dia", Icone: Sun };
 
   // Hoje: os remédios do período e os semanais do dia que ainda estavam
-  // pendentes. Dia que já passou: tudo o que era daquele dia.
+  // pendentes. Dia que já passou: tudo o que era daquele dia. Em pausa antes
+  // da cirurgia não aparece — nem para marcar —, e a lista segue a ordem das
+  // horas. Enquanto as preferências carregam, ainda não se sabe a data da
+  // cirurgia: o que pode estar em pausa fica de fora até elas chegarem, para
+  // não ser marcado à toa.
   const diaSemana = diaDaSemana(new Date(`${data}T00:00:00`));
-  const remedios = ehHoje
-    ? suplementosDoPeriodo(periodo, diaSemana).filter(
-        (s) => !ehSemanal(s) || (atual?.semanaisPendentes.includes(s.id) ?? false),
-      )
-    : suplementosDoDia(diaSemana);
+  const hora = (s: Supplement) => horarioDoSuplemento(s, prefs) ?? "99:99";
+  const remedios = (
+    ehHoje
+      ? suplementosDoPeriodo(periodo, diaSemana).filter(
+          (s) => !ehSemanal(s) || (atual?.semanaisPendentes.includes(s.id) ?? false),
+        )
+      : suplementosDoDia(diaSemana)
+  )
+    .filter((s) => !(carregandoPrefs && s.pausaAntesDaCirurgiaDias))
+    .filter((s) => !suplementoEmPausa(s, prefs, data))
+    .sort((a, b) => hora(a).localeCompare(hora(b)));
   const remediosFeitos = dia ? remedios.filter((s) => dia.supplements[s.id] === true).length : 0;
 
   if (itens.length === 0 && remedios.length === 0) return null;
@@ -235,6 +251,11 @@ export function RoutineNow() {
             </div>
             {remedios.map((s) => {
               const marcado = !!dia && dia.supplements[s.id] === true;
+              // Enquanto as preferências carregam, a hora seria a de fábrica.
+              const horaDoItem = carregandoPrefs ? null : horarioDoSuplemento(s, prefs);
+              // Com linha de lembrete própria, a hora é a do aviso, não a de
+              // tomar — o mesmo selo de /rotina.
+              const selo = horaDoItem && s.lembrete ? `Lembrete às ${horaDoItem}` : horaDoItem;
               return (
                 <Fragment key={s.id}>
                   <CheckRow
@@ -243,6 +264,11 @@ export function RoutineNow() {
                     label={`Marcar ${s.nome}`}
                   >
                     <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                      {selo && (
+                        <span className="rounded-full bg-clay-soft px-1.5 py-0.5 text-[0.625rem] font-bold text-clay tabular">
+                          {selo}
+                        </span>
+                      )}
                       <span
                         className={cn(
                           "text-sm font-medium",

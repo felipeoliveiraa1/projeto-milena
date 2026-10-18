@@ -46,6 +46,10 @@ conversa_completa_desinflama_se.md
 # capturas do Playwright usadas em teste visual (mostram dados dela)
 /.playwright-mcp/
 
+# SQL com segredo de verdade (o CRON_SECRET no Vault) — só para colar no
+# SQL Editor do Supabase, nunca no repositório público
+supabase/*.local.sql
+
 # vercel
 .vercel
 

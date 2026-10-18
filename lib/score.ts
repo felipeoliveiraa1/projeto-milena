@@ -1,4 +1,5 @@
 import type { DayCheck } from "./storage";
+import { PLANO_ATUAL_DESDE, refeicoesDaData } from "@/data/meals";
 
 /**
  * Como o "plano do dia" é calculado. Fica isolado aqui porque a tela inicial e
@@ -7,7 +8,10 @@ import type { DayCheck } from "./storage";
  */
 export const PESOS = { refeicoes: 0.3, agua: 0.15, treino: 0.2, rotina: 0.35 };
 
-export const TOTAL_REFEICOES = 4;
+/** Quantas refeições o dia tem: 3 desde o plano da nutricionista (18/10), 4 antes. */
+export function totalRefeicoes(data: string): number {
+  return refeicoesDaData(data).length;
+}
 
 export type ResumoDoDia = {
   pct: number;
@@ -20,9 +24,20 @@ export type ResumoDoDia = {
   temRegistro: boolean;
 };
 
+/**
+ * Refeições feitas no dia. Do plano da nutricionista em diante, contam só as
+ * três do plano. Antes, a conta é a de sempre — todas as marcadas —, para o
+ * histórico não mudar de nota nem de número: nos primeiros cardápios havia
+ * refeições com outros ids, e elas contavam.
+ */
+function refeicoesFeitas(dia: DayCheck, data: string): number {
+  if (data < PLANO_ATUAL_DESDE) return Object.values(dia.meals).filter(Boolean).length;
+  return refeicoesDaData(data).filter((id) => dia.meals[id] === true).length;
+}
+
 export function resumoDoDia(
   dia: DayCheck | undefined,
-  opcoes: { metaAgua: number; idsRotina: string[] },
+  opcoes: { metaAgua: number; idsRotina: string[]; data: string },
 ): ResumoDoDia {
   const vazio: ResumoDoDia = {
     pct: 0,
@@ -35,10 +50,11 @@ export function resumoDoDia(
   };
   if (!dia) return vazio;
 
-  const refeicoes = Object.values(dia.meals).filter(Boolean).length;
+  const refeicoes = refeicoesFeitas(dia, opcoes.data);
+  const total = totalRefeicoes(opcoes.data);
   const rotina = opcoes.idsRotina.filter((id) => dia.supplements[id] === true).length;
   const pontos =
-    PESOS.refeicoes * Math.min(refeicoes / TOTAL_REFEICOES, 1) +
+    PESOS.refeicoes * Math.min(refeicoes / total, 1) +
     PESOS.agua * Math.min(dia.water / Math.max(1, opcoes.metaAgua), 1) +
     PESOS.treino * (dia.workout ? 1 : 0) +
     PESOS.rotina * (opcoes.idsRotina.length > 0 ? Math.min(rotina / opcoes.idsRotina.length, 1) : 0);

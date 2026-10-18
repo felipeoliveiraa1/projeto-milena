@@ -1,18 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import {
+  CalendarDays,
   Check,
   Copy,
   Eraser,
   Flame,
   MessageCircle,
+  Minus,
+  Plus,
   Refrigerator,
   Scale,
   Share2,
   Snowflake,
-  Utensils,
 } from "lucide-react";
 import {
   Card,
@@ -26,11 +27,16 @@ import { CheckRow } from "@/components/check-row";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { CARDAPIO } from "@/data/meals";
-import { CATALOGO, ESSENCIAIS, SHOPPING_LIST } from "@/data/shopping";
+import { REFEICOES_META, REFEICOES_ORDEM, refeicaoDoPlano, type RefeicaoPlanoId } from "@/data/meals";
+import {
+  CHAVE_DIAS_LISTA,
+  DIAS_PADRAO,
+  listaDaSemana,
+  normalizaDias,
+  type DiasDaOpcao1,
+} from "@/data/shopping";
 import { ESTRATEGIA, PREPARO } from "@/data/prep";
 import {
-  clearSelectedComponents,
   clearShoppingChecked,
   getShoppingState,
   toggleShoppingItem,
@@ -46,10 +52,87 @@ const COR_PREPARO = {
   hora: "text-clay",
 };
 
+/* -------------------------------------------------------------------------- */
+/* Divisão da semana, guardada no aparelho                                    */
+/* -------------------------------------------------------------------------- */
+
+// Quantos dias de cada opção é escolha de compra, não registro do dia: fica no
+// aparelho (localStorage), como a data de início em lib/protocol.ts. A leitura
+// é por useSyncExternalStore: no servidor (e no primeiro render) vale a divisão
+// padrão, e o valor do aparelho entra logo depois, sem setState em efeito.
+// Se o navegador não deixar gravar (aba anônima, sem espaço), a escolha vale
+// até fechar a página — o valor fica na memória.
+let diasNaMemoria: string | null = null;
+const ouvintesDias = new Set<() => void>();
+
+function lerDiasCru(): string | null {
+  if (diasNaMemoria !== null) return diasNaMemoria;
+  try {
+    return window.localStorage.getItem(CHAVE_DIAS_LISTA);
+  } catch {
+    return null;
+  }
+}
+
+function assinarDias(callback: () => void): () => void {
+  // Outra aba mudou a divisão: vale o que ela gravou, não a cópia da memória.
+  const deOutraAba = (e: StorageEvent) => {
+    if (e.key !== CHAVE_DIAS_LISTA) return;
+    diasNaMemoria = null;
+    callback();
+  };
+  ouvintesDias.add(callback);
+  window.addEventListener("storage", deOutraAba);
+  return () => {
+    ouvintesDias.delete(callback);
+    window.removeEventListener("storage", deOutraAba);
+  };
+}
+
+function gravarDias(dias: DiasDaOpcao1): void {
+  const cru = JSON.stringify(dias);
+  diasNaMemoria = cru;
+  try {
+    window.localStorage.setItem(CHAVE_DIAS_LISTA, cru);
+  } catch {
+    // sem localStorage — segue com a memória
+  }
+  ouvintesDias.forEach((l) => l());
+}
+
+function useDiasDaLista(): DiasDaOpcao1 {
+  const cru = useSyncExternalStore(assinarDias, lerDiasCru, () => null);
+  return useMemo(() => {
+    if (!cru) return DIAS_PADRAO;
+    try {
+      return normalizaDias(JSON.parse(cru));
+    } catch {
+      return DIAS_PADRAO;
+    }
+  }, [cru]);
+}
+
+const diasTexto = (n: number) => `${n} ${n === 1 ? "dia" : "dias"}`;
+
+/** A divisão numa linha, para o cabeçalho da mensagem do WhatsApp. */
+function resumoDaDivisao(dias: DiasDaOpcao1): string {
+  const valores = REFEICOES_ORDEM.map((id) => dias[id]);
+  if (valores.every((n) => n === valores[0])) {
+    return `opção 1 em ${diasTexto(valores[0])}, opção 2 em ${diasTexto(7 - valores[0])}`;
+  }
+  const curto: Record<RefeicaoPlanoId, string> = { cafe: "café", almoco: "almoço", lanche: "lanche" };
+  return `opção 1 — ${REFEICOES_ORDEM.map((id) => `${curto[id]} ${diasTexto(dias[id])}`).join(", ")}`;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Página                                                                     */
+/* -------------------------------------------------------------------------- */
+
 export default function ListaPage() {
   const [state, setState] = useState<ShoppingState>({ items: {}, selectedComponents: {} });
   const [hydrated, setHydrated] = useState(false);
   const [copied, setCopied] = useState(false);
+  const dias = useDiasDaLista();
 
   useEffect(() => {
     getShoppingState().then((s) => {
@@ -58,51 +141,12 @@ export default function ListaPage() {
     });
   }, []);
 
-  /** Quais dias da semana entraram na lista, na ordem do cardápio (segunda a domingo). */
-  const dias = useMemo(
-    () =>
-      CARDAPIO.filter((d) =>
-        d.refeicoes.some((r) => r.itens.some((i) => state.selectedComponents[i.id])),
-      ).map((d) => d.nome),
-    [state.selectedComponents],
-  );
-  const diasTexto = dias.length === CARDAPIO.length ? "a semana toda" : dias.join(", ");
-
-  /** Ingredientes únicos dos itens marcados + os essenciais de despensa. */
-  const grouped = useMemo(() => {
-    const ids = new Set<string>();
-    let temSelecao = false;
-    for (const dia of CARDAPIO) {
-      for (const refeicao of dia.refeicoes) {
-        for (const it of refeicao.itens) {
-          if (state.selectedComponents[it.id]) {
-            temSelecao = true;
-            it.ingredientes.forEach((i) => ids.add(i));
-          }
-        }
-      }
-    }
-    if (temSelecao) ESSENCIAIS.forEach((i) => ids.add(i));
-
-    const byCategory = new Map<string, NonNullable<ReturnType<typeof CATALOGO.get>>[]>();
-    for (const id of ids) {
-      const item = CATALOGO.get(id);
-      if (!item) continue;
-      if (!byCategory.has(item.categoriaId)) byCategory.set(item.categoriaId, []);
-      byCategory.get(item.categoriaId)!.push(item);
-    }
-    const ordem = SHOPPING_LIST.map((c) => c.id);
-    return Array.from(byCategory.entries())
-      .map(([catId, itens]) => ({
-        categoria: SHOPPING_LIST.find((c) => c.id === catId)!,
-        itens: itens.sort((a, b) => a.nome.localeCompare(b.nome)),
-      }))
-      .sort((a, b) => ordem.indexOf(a.categoria.id) - ordem.indexOf(b.categoria.id));
-  }, [state.selectedComponents]);
+  /** A compra da semana: o que a divisão escolhida usa + os essenciais de despensa. */
+  const grouped = useMemo(() => listaDaSemana(dias), [dias]);
 
   const totalIngredientes = grouped.reduce((s, g) => s + g.itens.length, 0);
   const comprados = grouped.reduce(
-    (s, g) => s + g.itens.filter((i) => state.items[i.id]).length,
+    (s, g) => s + g.itens.filter((l) => state.items[l.item.id]).length,
     0,
   );
   const pct = totalIngredientes > 0 ? Math.round((comprados / totalIngredientes) * 100) : 0;
@@ -112,18 +156,22 @@ export default function ListaPage() {
     setState(await toggleShoppingItem(id));
   }
 
+  function mudarDias(id: RefeicaoPlanoId, n: number) {
+    gravarDias({ ...dias, [id]: Math.max(0, Math.min(7, n)) });
+  }
+
   function buildShareText(): string {
     const lines: string[] = ["🛒 *Lista de compras da semana*"];
-    // Quem for ao mercado sabe para quais dias é a compra.
-    if (dias.length > 0) lines.push(`_Cardápio: ${diasTexto}_`);
+    // Quem for ao mercado sabe de que divisão é a compra.
+    lines.push(`_Plano da nutricionista · ${resumoDaDivisao(dias)}_`);
     lines.push("");
     let total = 0;
     for (const g of grouped) {
-      const itens = g.itens.filter((i) => !state.items[i.id]);
+      const itens = g.itens.filter((l) => !state.items[l.item.id]);
       if (itens.length === 0) continue;
       lines.push(`${g.categoria.icone} *${g.categoria.nome}*`);
-      for (const it of itens) {
-        lines.push(`• ${it.nome} — ${it.quantidade}`);
+      for (const l of itens) {
+        lines.push(`• ${l.item.nome} — ${l.quantidade}`);
         total++;
       }
       lines.push("");
@@ -163,8 +211,9 @@ export default function ListaPage() {
         <Eyebrow className="text-brand">Mercado e cozinha</Eyebrow>
         <h2 className="font-display mt-2 text-4xl leading-none text-ink">Lista e preparo</h2>
         <p className="mt-3 text-sm leading-relaxed text-ink-muted">
-          A lista sai do que você marcou na dieta. O preparo diz o que congelar, o que só
-          refrigerar e o que fazer na hora.
+          A lista sai do plano da nutricionista: escolha em quantos dias da semana vai comer a
+          opção 1 de cada refeição, e as quantidades se ajustam. O preparo diz o que congelar, o
+          que só refrigerar e o que fazer na hora.
         </p>
       </header>
 
@@ -180,24 +229,74 @@ export default function ListaPage() {
 
         {/* ---------------------------------------------------------------- */}
         <TabsContent value="compras" className="space-y-5">
+          <Card>
+            <CardHeader>
+              <Eyebrow className="flex items-center gap-1.5 text-clay">
+                <CalendarDays className="h-3 w-3" /> A semana
+              </Eyebrow>
+              <CardTitle className="mt-1.5">Dias de cada opção</CardTitle>
+              <CardDescription>
+                Os dias que não são da opção 1 ficam com a opção 2. Fica guardado neste aparelho.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {REFEICOES_ORDEM.map((id) => {
+                const n = dias[id];
+                const [o1, o2] = refeicaoDoPlano(id).opcoes;
+                const nome = REFEICOES_META[id].nome;
+                return (
+                  <div
+                    key={id}
+                    className="flex items-center justify-between gap-3 rounded-xl2 border border-line bg-bone/50 p-3.5"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-ink">{nome}</p>
+                      {/* Anunciado a cada toque no − e no +: o número sozinho não diz nada. */}
+                      <p className="text-xs text-ink-muted tabular" aria-live="polite">
+                        <span className="whitespace-nowrap">Opção 1: {diasTexto(n)}</span>
+                        {" · "}
+                        <span className="whitespace-nowrap">Opção 2: {diasTexto(7 - n)}</span>
+                      </p>
+                      <p className="mt-0.5 truncate text-[0.6875rem] text-ink-muted">
+                        {o1.nome} · {o2.nome}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        className="h-9 w-9"
+                        disabled={n <= 0}
+                        onClick={() => mudarDias(id, n - 1)}
+                        aria-label={`${nome}: um dia a menos da opção 1`}
+                      >
+                        <Minus className="h-4 w-4" />
+                      </Button>
+                      <span
+                        className="w-5 text-center text-sm font-bold text-ink tabular"
+                        aria-hidden
+                      >
+                        {n}
+                      </span>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        className="h-9 w-9"
+                        disabled={n >= 7}
+                        onClick={() => mudarDias(id, n + 1)}
+                        aria-label={`${nome}: um dia a mais da opção 1`}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+
           {!hydrated ? (
             <p className="text-sm text-ink-muted">Carregando...</p>
-          ) : totalIngredientes === 0 ? (
-            <Card>
-              <CardContent className="space-y-4 p-8 text-center">
-                <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-bone-deep text-ink-muted">
-                  <Utensils className="h-6 w-6" />
-                </span>
-                <p className="font-display text-2xl text-ink">Lista vazia</p>
-                <p className="text-sm leading-relaxed text-ink-muted">
-                  Escolha os dias no cardápio da aba Dieta — o botão “Marcar a semana toda” faz
-                  tudo de uma vez — e os ingredientes aparecem aqui, com as quantidades.
-                </p>
-                <Button asChild>
-                  <Link href="/dieta">Escolher os dias</Link>
-                </Button>
-              </CardContent>
-            </Card>
           ) : (
             <>
               <Card>
@@ -228,11 +327,6 @@ export default function ListaPage() {
                     </div>
                   </div>
                   <Progress value={pct} />
-                  {dias.length > 0 && (
-                    <p className="text-xs leading-relaxed text-ink-muted">
-                      Dias no carrinho: <strong className="text-ink">{diasTexto}</strong>
-                    </p>
-                  )}
                   <div className="flex flex-wrap gap-2 border-t border-line pt-4">
                     <Button
                       onClick={() =>
@@ -258,23 +352,12 @@ export default function ListaPage() {
                         </>
                       )}
                     </Button>
-                    <Button
-                      variant="ghost"
-                      className="text-ink-muted"
-                      onClick={async () => {
-                        if (!confirm("Limpar tudo? Desmarca os dias escolhidos e os comprados."))
-                          return;
-                        setState(await clearSelectedComponents());
-                      }}
-                    >
-                      Limpar tudo
-                    </Button>
                   </div>
                 </CardContent>
               </Card>
 
               {grouped.map(({ categoria, itens }) => {
-                const feitos = itens.filter((i) => state.items[i.id]).length;
+                const feitos = itens.filter((l) => state.items[l.item.id]).length;
                 const completa = feitos === itens.length;
                 return (
                   <Card key={categoria.id} className={cn(completa && "opacity-60")}>
@@ -291,7 +374,7 @@ export default function ListaPage() {
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-2">
-                      {itens.map((item) => {
+                      {itens.map(({ item, quantidade }) => {
                         const checked = !!state.items[item.id];
                         return (
                           <CheckRow
@@ -308,7 +391,7 @@ export default function ListaPage() {
                             >
                               {item.nome}
                             </p>
-                            <p className="text-xs text-ink-muted">{item.quantidade}</p>
+                            <p className="text-xs text-ink-muted tabular">{quantidade}</p>
                             {item.nota && (
                               <p className="mt-1.5 rounded-lg bg-gold-soft px-2.5 py-1.5 text-[0.6875rem] leading-relaxed text-gold">
                                 {item.nota}
@@ -329,39 +412,35 @@ export default function ListaPage() {
               <Eyebrow className="text-ink-soft">Na hora de comprar</Eyebrow>
               <ul className="space-y-1.5 text-xs leading-relaxed text-ink-soft">
                 <li>
-                  Queijo: o <strong>minas do pote preto</strong> — foi o melhor dos avaliados no
-                  resumo.
+                  Queijo <strong>branco sem lactose</strong>: compare proteína, gordura saturada e
+                  sódio na tabela.
                 </li>
                 <li>
-                  O creme de ricota light é sabor: pode ir, mas{" "}
-                  <strong>não é fonte principal de proteína</strong>.
+                  Whey: <strong>isolado e sem lactose</strong>, 25–30 g por dose. Olhe quanto ainda
+                  tem no pote antes de comprar outro.
                 </li>
                 <li>
-                  Whey: o <strong>Chef Zero</strong>, 40 g por dia — 280 g na semana.
-                </li>
-                <li>Iogurte proteico: confira os 15–17 g de proteína no rótulo do pote.</li>
-                {/* Ajustes de 12/10: fibra e folha escura todo dia, e cores no prato. */}
-                <li>
-                  Chia ou linhaça: a linhaça vai <strong>triturada</strong> — compre assim ou
-                  bata em casa; inteira, ela passa direto. Guarde na geladeira, em pote fechado.
+                  Bebida vegetal: <strong>sem açúcar</strong> escrito na embalagem.
                 </li>
                 <li>
-                  Folhas escuras — rúcula, agrião, espinafre, couve: folha firme e verde viva, sem
-                  partes amarelas ou murchas. Agrião e rúcula duram pouco: o agrião, compre perto de
-                  sexta; a rúcula do sábado, no meio da semana.
+                  Kefir ou iogurte natural <strong>sem lactose</strong>: sem açúcar na lista de
+                  ingredientes.
                 </li>
                 <li>
-                  Frutas com vitamina C: o <strong>morango</strong> já está na lista; kiwi, laranja e
-                  acerola, se você gostar.
+                  Linhaça: compre <strong>moída</strong> — inteira, ela passa direto. Depois de
+                  aberta, na geladeira, em pote fechado.
                 </li>
-                <li>Pão francês comum serve: o miolo sai em casa.</li>
-                <li>Carne magra: patinho. Para o moído, peça para moer na hora, sem a capa de gordura.</li>
                 <li>
-                  Macarrão <strong>integral e sem glúten</strong>, como o resumo pede.
+                  Pasta de amendoim: <strong>só amendoim</strong> na lista de ingredientes.
+                </li>
+                <li>Amêndoas ou castanhas-do-pará: 5 por lanche — um pacote dura bastante.</li>
+                <li>
+                  Folhas: firmes e de verde vivo, sem partes amarelas ou murchas. Duram poucos dias:
+                  compre metade agora e metade no meio da semana.
                 </li>
                 <li>Feira e sacolão antes do supermercado, como o Dr. Henry pede.</li>
                 {/* Fica fora da lista da semana de propósito: não é comida do
-                    cardápio, é o socorro do card do jejum (tremor, suor frio). */}
+                    plano, é o socorro do card do jejum (tremor, suor frio). */}
                 <li>
                   Para o socorro do jejum, tenha em casa{" "}
                   <strong>sachês de açúcar ou uma caixinha de suco comum</strong> — não é

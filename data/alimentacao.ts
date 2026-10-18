@@ -1,38 +1,15 @@
 /**
- * Alimentação da recomposição corporal — as regras da comida.
+ * Alimentação da recomposição corporal — as regras em volta da comida.
  *
- * Fonte: o "Resumo da Alimentação – Recomposição Corporal" que a Milena mandou
- * em 29/09/2026, e o pedido que veio junto: à noite a medicação tira a fome,
- * então entra um jejum — e, se precisar ajustar algo na alimentação, sugerir.
+ * Desde 18/10/2026 a comida do dia é o plano da nutricionista (data/meals.ts):
+ * três refeições, duas opções em cada. Aqui ficam as metas, o jejum noturno,
+ * as sugestões do app para o dia a dia com o Mounjaro, o que evitar e o que
+ * mudou — cada mudança com o antes, o agora e o porquê.
  *
- * O que é do resumo está aqui como ele escreveu. Onde o app vai além (o jejum
- * e as sugestões de ajuste), está escrito o porquê. O cardápio da semana
- * (data/meals.ts), a lista de compras (data/shopping.ts) e o preparo
- * (data/prep.ts) derivam daqui.
- *
- * Em 12/10 vieram os ajustes que ela pediu: o café (a bebida) saiu, a fibra e
- * a folha verde-escura passaram a ser de todo dia e o prato ganhou cores. Cada
- * um está em MUDANCAS, com o antes, o agora e o porquê.
+ * Do jejum, ela pediu em 29/09: à noite a medicação tira a fome, então a noite
+ * vira jejum. Onde o app vai além do plano (o jejum e as sugestões), está
+ * escrito o porquê. Quantidade e troca de alimento são com a nutricionista.
  */
-
-import type { RefeicaoId } from "./meals";
-
-/** A primeira linha do resumo. */
-export const FOCO =
-  "Reduzir a gordura corporal, preservar e ganhar massa magra e manter boa tolerância ao Mounjaro.";
-
-/* -------------------------------------------------------------------------- */
-/* Bioimpedância — só o que a conta da comida usa                             */
-/* -------------------------------------------------------------------------- */
-
-// O exame completo aparece na tela de progresso. Aqui entram só os números que
-// sustentam a meta de proteína e o "não precisa contar caloria".
-const BIOIMPEDANCIA = { pesoKg: 85.5, gorduraPct: 47.4 };
-
-/** Tudo que não é gordura: 85,5 kg × 52,6% ≈ 45 kg. */
-export const MASSA_MAGRA_KG = Math.round(
-  BIOIMPEDANCIA.pesoKg * (1 - BIOIMPEDANCIA.gorduraPct / 100),
-);
 
 /* -------------------------------------------------------------------------- */
 /* Metas do dia                                                               */
@@ -49,14 +26,17 @@ export const METAS: Meta[] = [
   {
     id: "proteina",
     titulo: "Proteína",
-    valor: "90–100 g por dia",
-    detalhe: "Somando as quatro refeições. É o que protege o músculo enquanto a gordura vai embora.",
+    valor: "Proteína alta: cerca de 1,6 a 1,9 g por kg do peso ideal",
+    detalhe:
+      "A meta da nutricionista, para preservar a massa magra enquanto o peso cai. As opções do plano já vêm montadas para isso.",
   },
   {
     id: "agua",
     titulo: "Água",
-    valor: "200 ml por hora",
-    detalhe: "Conforme orientação médica: um copo a cada hora acordada — no jejum também.",
+    // Os horários são os padrão: a tela troca pelos que ela pôs em /ajustes.
+    valor: "300 ml por vez, das 9h às 21h",
+    // A tela completa com a meta do app e os lembretes.
+    detalhe: "A meta do dia dividida em copos de 300 ml.",
   },
   {
     id: "ordem",
@@ -66,7 +46,7 @@ export const METAS: Meta[] = [
   },
 ];
 
-/** A ordem do prato, nas palavras do resumo: salada/legumes → proteína → carboidrato. */
+/** A ordem do prato: salada/legumes → proteína → carboidrato. */
 export const ORDEM_CONSUMO = [
   {
     passo: 1,
@@ -81,7 +61,8 @@ export const ORDEM_CONSUMO = [
   {
     passo: 3,
     o: "Carboidrato",
-    porque: "Por último e pouco. Se a fome acabar antes, é ele que sobra no prato.",
+    porque:
+      "Por último, na medida do plano — a quinoa, a batata-doce ou o grão-de-bico. Se a fome acabar antes, é ele que sobra no prato.",
   },
 ];
 
@@ -90,49 +71,50 @@ export const ORDEM_CONSUMO = [
 /* -------------------------------------------------------------------------- */
 
 /**
- * O resumo não fala em jejum — é o pedido dela: à noite não dá para comer.
- * Os horários de verdade vêm da janela configurada (lib/jejum.ts); os textos
- * daqui não citam hora para continuarem certos se ela mudar a janela.
+ * O jejum é o pedido dela: à noite não dá para comer. Os horários de verdade
+ * vêm da janela configurada (lib/jejum.ts); os textos daqui não citam a hora
+ * da janela para continuarem certos se ela mudar.
  */
 export const JEJUM = {
   resumo:
     "A comida do dia cabe numa janela. Depois da última refeição, é jejum até o café da manhã.",
   porQue:
-    "À noite a medicação tira a fome, e o jantar completo causa desconforto. Em vez de forçar, a noite vira jejum — e a proteína do dia inteiro cabe dentro da janela.",
+    "À noite a medicação tira a fome, e o jantar completo causa desconforto. Em vez de forçar, a noite vira jejum: a última refeição é o lanche da tarde, e a proteína do dia inteiro cabe dentro da janela.",
   /** Vale para qualquer janela: no card, só o título muda quando o jejum não é de 14 h. */
   porQueNaoEncurtar:
-    "Com o Mounjaro a fome já é pouca. Numa janela mais curta, fica difícil fazer caber os 90–100 g de proteína — e aí sai músculo junto com a gordura.",
+    "Com o Mounjaro a fome já é pouca. Numa janela mais curta, fica difícil fazer caber as três refeições e a proteína do plano — e aí sai músculo junto com a gordura.",
   metabolismo:
     "Com honestidade: jejum não acelera o metabolismo. O que ele faz é dar tempo para o corpo usar gordura como combustível durante a noite. Quem mantém o metabolismo alto enquanto o peso cai é o músculo — musculação e proteína.",
   pode: [
-    { item: "Água", detalhe: "No mesmo ritmo de 200 ml por hora, até dormir." },
+    // Os copos e os lembretes vêm de /ajustes: o texto não crava horário nem
+    // tamanho de copo, que ela pode mudar lá.
+    { item: "Água", detalhe: "Liberada. Os copos do dia seguem os horários que estão em Ajustes." },
     {
-      // O café saiu do plano em 12/10, a pedido dela — e, com ele, a cafeína.
-      item: "Chá sem cafeína, sem açúcar",
-      // Hortelã piora o refluxo, e azia é efeito comum do Mounjaro.
+      item: "Chá, sem açúcar",
       detalhe:
-        "Camomila, cidreira ou erva-doce. Chá verde, preto, branco e mate têm cafeína — ficam de fora. Hortelã, só se não tiver azia.",
+        "Os chás da nutricionista, sem açúcar: chá verde, gengibre, canela, hibisco, cavalinha ou dente-de-leão — até 1 litro por dia somando todos. O verde tem cafeína: à noite, prefira os outros.",
     },
     {
-      item: "Os comprimidos da noite",
+      // Os de antes do café também caem no jejum, não só os da noite: sem
+      // eles aqui, o texto ao pé da letra mandaria esperar o café para tomar.
+      item: "Remédios e suplementos do jejum",
       detalhe:
-        "No horário de sempre: a B12 derrete embaixo da língua e o colágeno vai com água. Mudar o horário de qualquer um, só com o médico.",
+        "Nos horários da Farmácia: de manhã, o probiótico e o mio-inositol antes do café (e a creatina, nos dias sem treino); à noite, a B12 derrete embaixo da língua e o colágeno e o magnésio vão com água. Mudar o horário de qualquer um, só com quem receitou.",
     },
   ],
   /**
    * Quando o jejum faz mal. Tremor e suor frio podem ser açúcar baixo, e a
    * regra é açúcar rápido e sozinho (ADA e SBD): proteína, gordura e fibra
    * atrasam a subida — e o Mounjaro já deixa o estômago mais lento. É o mesmo
-   * socorro de SEGURANCA (data/protocol.ts) e do card de segurança do treino
-   * (AJUSTES_TREINO, em data/alarmes.ts), em passo a passo: mudou um, mude os
-   * outros.
+   * socorro de SEGURANCA (data/protocol.ts), em passo a passo: mudou um, mude
+   * o outro.
    */
   socorro: {
     quando: "Tremor, suor frio, fraqueza ou tontura podem ser açúcar baixo:",
     passos: [
       "15 g de açúcar rápido e sozinho: 1 colher de sopa de açúcar (uns 3 sachês) num pouco de água, ou 150 ml de suco ou refrigerante comum — zero não serve. Fruta inteira é lenta.",
       "Espere 15 minutos. Não passou? Repita uma vez.",
-      "Passou? Aí sim um lanche com proteína — o iogurte proteico ou um ovo.",
+      "Passou? Aí sim um lanche com proteína — um ovo ou o kefir/iogurte natural.",
     ],
     atendimento:
       "Não melhorou: procure atendimento. Confusão ou desmaio: ligue 192 (SAMU). E, em qualquer caso, avise o médico.",
@@ -141,117 +123,16 @@ export const JEJUM = {
       "Só tontura, sem tremor nem suor: sente ou deite e beba água. Não passou? Siga os passos acima.",
       "Dor de cabeça forte e diferente da de costume: meça a pressão, se tiver aparelho, e procure atendimento no mesmo dia. Fortíssima e de repente: 192 (SAMU).",
     ],
-    // Fica à mão, não na compra da semana: é socorro, não comida do cardápio.
+    // Fica à mão, não na compra da semana: é socorro, não comida do plano.
     aMao: "Deixe à mão sachês de açúcar ou uma caixinha de suco comum. É o socorro — não é para o dia a dia.",
   },
-  // O mesmo "quando treinar" da tela de treino (app/treino/page.tsx), lá com os
-  // horários da janela no meio: mudou um, mude o outro.
+  // Sem a hora da janela no texto: o card do jejum mostra a janela logo acima.
   treino:
-    "Academia dentro da janela: depois do café da manhã ou entre o almoço e o lanche — de barriga cheia, espere uma hora ou mais, porque com o Mounjaro a digestão é lenta. Em jejum, só caminhada leve.",
+    "Treino com carga: dentro da janela, depois do café da manhã ou entre o almoço e o lanche — de barriga cheia, espere uma hora ou mais, porque com o Mounjaro a digestão é lenta. Em jejum, só caminhada leve.",
 };
 
 /* -------------------------------------------------------------------------- */
-/* Estrutura base do dia — a tabela do resumo                                 */
-/* -------------------------------------------------------------------------- */
-
-export type LinhaEstrutura = {
-  id: RefeicaoId;
-  nome: string;
-  /** O papel da refeição na janela. */
-  papel?: string;
-  /** Como o resumo chama a refeição, quando o app mudou o nome. */
-  noResumo?: string;
-  base: string;
-  trocas: string[];
-  /** Proteína aproximada, como na tabela. */
-  proteina: string;
-  nota?: string;
-};
-
-/**
- * A tabela do resumo, linha por linha. São duas trocas: a "Noite" virou "Fecha
- * a janela" e veio para antes do jejum, com a mesma lista; e o café (a bebida)
- * saiu do café da manhã em 12/10, a pedido dela — a nota da linha avisa.
- */
-export const ESTRUTURA_DIA: LinhaEstrutura[] = [
-  {
-    id: "cafe",
-    nome: "Café da manhã",
-    papel: "Quebra o jejum",
-    base: "Pão sem miolo + 1 ovo + 50–60 g de queijo branco/minas",
-    trocas: [
-      "1 ovo + 2 claras",
-      "Ricota sólida",
-      "Omelete pequena",
-      "Queijo minas com mais proteína e menos gordura saturada",
-    ],
-    proteina: "15–20 g",
-    nota: "Entre os queijos avaliados, o minas do pote preto foi o melhor para o dia a dia: equilíbrio entre proteína, calorias, gordura saturada e sódio. O creme de ricota light pode entrar pelo sabor, mas não deve ser contado como fonte principal de proteína. No resumo, o café da manhã vinha com uma xícara de café; a bebida saiu em 12/10.",
-  },
-  {
-    id: "almoco",
-    nome: "Almoço",
-    base: "120 g de frango/carne + salada/legumes + pouco arroz",
-    trocas: [
-      "Arroz por batata, mandioquinha, mandioca ou macarrão integral sem glúten",
-      "Variar frango, patinho e peixe",
-      "Ovos, de vez em quando",
-    ],
-    proteina: "28–35 g",
-    // No resumo, "proteína" aqui é o peso da carne. O app escreve o alimento,
-    // para os 120 g não se confundirem com os 28–35 g de proteína do selo.
-    nota: "Na ordem: salada/legumes → 120 g de frango, carne ou peixe → um pouco de arroz ou outro carboidrato.",
-  },
-  {
-    id: "lanche",
-    nome: "Lanche da tarde",
-    base: "40 g de Whey Chef Zero + banana",
-    trocas: ["½ banana se estiver muito cheia", "Morango", "Maçã pequena"],
-    proteina: "32 g",
-    nota: "A porção de 40 g do whey dá 32 g de proteína — um terço do dia num copo.",
-  },
-  {
-    id: "jantar",
-    nome: "Fecha a janela",
-    papel: "Antes do jejum",
-    noResumo: "Noite",
-    base: "Algo pequeno e proteico — o jantar completo causa desconforto",
-    trocas: [
-      "Iogurte proteico (15–17 g)",
-      "2 ovos",
-      "70–100 g de frango desfiado",
-      "Ricota ou cottage",
-      "Omelete pequena",
-    ],
-    proteina: "15–20 g",
-    nota: "No resumo esta é a refeição da noite. Com o jejum, ela vem meia hora antes de a janela fechar — e continua pequena. Sem ela, a proteína do dia cai para uns 80 g.",
-  },
-];
-
-/* -------------------------------------------------------------------------- */
-/* Exemplo de total de proteína — do resumo                                   */
-/* -------------------------------------------------------------------------- */
-
-export type ParteProteina = {
-  id: RefeicaoId;
-  /** Rótulo curto, para caber embaixo da barra. */
-  rotulo: string;
-  nome: string;
-  /** Como o resumo escreve. */
-  texto: string;
-  min: number;
-  max: number;
-};
-
-export const EXEMPLO_PROTEINA: ParteProteina[] = [
-  { id: "cafe", rotulo: "Café", nome: "Café da manhã", texto: "~18 g", min: 18, max: 18 },
-  { id: "almoco", rotulo: "Almoço", nome: "Almoço", texto: "~30 g", min: 30, max: 30 },
-  { id: "lanche", rotulo: "Whey", nome: "Lanche (whey)", texto: "32 g", min: 32, max: 32 },
-  { id: "jantar", rotulo: "Fecha", nome: "Fecha a janela", texto: "~15–17 g", min: 15, max: 17 },
-];
-
-/* -------------------------------------------------------------------------- */
-/* Sugestões de ajuste                                                        */
+/* Sugestões do app                                                           */
 /* -------------------------------------------------------------------------- */
 
 export type Sugestao = {
@@ -259,149 +140,33 @@ export type Sugestao = {
   titulo: string;
   texto: string;
   porque: string;
-  /** "resumo" quando a sugestão já estava lá; "app" quando é ajuste para o caso dela. */
-  origem: "resumo" | "app";
 };
 
 /**
- * Ela pediu: "caso seja necessário ajustar algo na alimentação, por favor
- * sugerir". Cada sugestão traz o porquê em uma linha, e nenhuma mexe em
- * remédio — isso é só com o médico.
+ * O que o app sugere para o dia a dia com o Mounjaro. Nenhuma muda o plano —
+ * quantidade e troca de alimento são com a nutricionista — e nenhuma mexe em
+ * remédio. As de antes que eram do cardápio de 7 dias (whey, chia, folha
+ * escura, cores, quinta e sexta, queijo, a conta da proteína) saíram com ele.
  */
 export const SUGESTOES: Sugestao[] = [
   {
-    id: "fecha-janela",
-    titulo: "A “Noite” vira “Fecha a janela”",
-    texto: "A mesma lista do resumo — iogurte proteico, 2 ovos, frango desfiado, ricota/cottage ou omelete pequena —, meia hora antes de a janela fechar.",
-    porque: "Sem ela, a proteína do dia cai para uns 80 g, abaixo da meta.",
-    origem: "app",
-  },
-  {
-    id: "cheia",
-    titulo: "O lanche segura até a noite?",
-    texto: "Se na hora de fechar você costuma estar cheia, pule o fechamento e leve a proteína dele para mais cedo: 2 claras a mais no café da manhã e 150 g de frango, carne ou peixe no almoço, em vez de 120 g.",
-    porque: "As 2 claras e os 30 g a mais de frango, carne ou peixe devolvem uns 15 g de proteína — e a meta de 90–100 g é o que protege o músculo.",
-    origem: "app",
-  },
-  {
-    id: "whey",
-    titulo: "Whey não se pula",
-    texto: "Nem nos dias sem fome. Muito cheia? Tire a chia e diminua a fruta — o whey fica.",
-    porque: "É o jeito mais fácil de bater proteína com o estômago pequeno: 32 g num copo.",
-    origem: "app",
-  },
-  {
     id: "devagar",
-    titulo: "Devagar e porções menores",
-    texto: "Coma devagar e pare no primeiro sinal de saciedade. Se sobrar comida no prato, que seja o carboidrato.",
-    porque: "O Mounjaro esvazia o estômago mais devagar — comer demais dá enjoo.",
-    origem: "app",
+    titulo: "Devagar, e pare na saciedade",
+    texto: "Coma devagar e pare no primeiro sinal de saciedade.",
+    porque: "O Mounjaro esvazia o estômago mais devagar — comer além da conta dá enjoo.",
+  },
+  {
+    id: "porcao",
+    titulo: "A porção não desceu inteira?",
+    texto:
+      "Comece pela salada e pela proteína e deixe o carboidrato por último: se algo tiver que sobrar, que seja ele. Se acontecer quase todo dia, conte à nutricionista — quem ajusta a porção é ela.",
+    porque: "Com a fome curta, a proteína é a parte que protege o músculo.",
   },
   {
     id: "fritura",
     titulo: "Nada de fritura nem gordura pesada",
-    texto: "Grelhado, assado, cozido ou refogado com pouco óleo.",
+    texto: "Grelhado, assado, cozido ou refogado com pouco óleo — o azeite do plano já vem medido.",
     porque: "Fritura e gordura pesada pioram o enjoo e o refluxo no Mounjaro.",
-    origem: "app",
-  },
-  {
-    id: "fibra",
-    titulo: "Fibra e água todo dia",
-    // Ajustes de 12/10: a chia deixou de ser opcional. Seca, ela incha quando
-    // encontra água e pode entalar — por isso vai sempre molhada. E fibra sem
-    // água prende o intestino em vez de soltar.
-    texto: "Todo dia, 1 colher de sopa de chia ou linhaça triturada: no iogurte quando ele fecha a janela, batida com o whey nos outros dias. Na primeira semana, meia colher. Sempre misturada em algo úmido, nunca seca — no iogurte, misture e espere uns minutos — e com água ao longo do dia.",
-    porque: "Ajuda o intestino, o açúcar e as gorduras do sangue. Intestino preso há 3 dias ou mais, ou barriga estufada: tire a chia até normalizar e reforce a água. Dor forte na barriga ou vômito que não para: procure atendimento — é um dos alertas do Mounjaro.",
-    origem: "app",
-  },
-  {
-    id: "folha-escura",
-    titulo: "Folha verde-escura todo dia",
-    texto: "No almoço, todo dia, uma folha escura — rúcula, couve, agrião, espinafre ou brócolis — no lugar de parte da alface.",
-    porque: "Mais fibra e mais variedade no prato. Muita gente acha a folha escura amarga: refogue no alho e no azeite, ponha limão ou misture com alface e tomate.",
-    origem: "app",
-  },
-  {
-    id: "cores",
-    titulo: "Cores no prato",
-    texto: "Varie as cores dos legumes e das frutas. O morango, que já está no plano, é ótima fonte de vitamina C; kiwi, laranja e acerola entram se você gostar. Sem suplemento novo.",
-    porque: "Cada cor traz vitaminas diferentes: variar é o jeito mais simples de não faltar nada — pela comida, sem cápsula.",
-    origem: "app",
-  },
-  {
-    id: "quinta-sexta",
-    titulo: "Quinta e sexta: comida que desce fácil",
-    texto: "No dia da aplicação e no seguinte, a fome costuma cair mais. O cardápio desses dois dias traz a proteína em formas macias — peixe, frango desfiado, iogurte proteico, omelete. Sem fome? Tire o pão do café da manhã ou diminua a fruta do lanche; a proteína fica.",
-    porque: "Comida macia desce melhor quando o estômago esvazia devagar. Se algo tiver que sobrar, que seja o pão ou a fruta — nunca a proteína.",
-    origem: "app",
-  },
-  {
-    id: "queijo",
-    titulo: "Queijo minas do pote preto como padrão",
-    texto: "O creme de ricota light pode entrar pelo sabor, mas não deve ser contado como fonte principal de proteína.",
-    porque: "Entre os queijos avaliados, foi o melhor equilíbrio entre proteína, calorias, gordura saturada e sódio.",
-    origem: "resumo",
-  },
-  {
-    id: "conta-proteina",
-    titulo: "A conta da proteína fecha",
-    texto: `Pela bioimpedância de 12/08, sua massa magra é de uns ${MASSA_MAGRA_KG} kg (85,5 kg com 47,4% de gordura). Os 90–100 g do resumo dão cerca de 2 g por quilo dela.`,
-    porque: "A meta não é chute: bate com o seu corpo.",
-    origem: "app",
-  },
-  {
-    id: "caloria",
-    titulo: "Sem contar caloria",
-    texto: "Seu metabolismo em repouso é de umas 1.550 kcal por dia, pela mesma bioimpedância. Com o Mounjaro, o risco é comer pouco demais — não demais.",
-    // A proteína protege parte do músculo, mas não garante energia nem
-    // vitaminas. A bula lista desnutrição, queda de cabelo e tontura: são
-    // esses os sinais que ela precisa saber levar adiante.
-    porque: "A proteína ajuda a proteger o músculo, mas não garante que você comeu o suficiente. Tontura ao levantar, fraqueza, queda de cabelo ou o peso caindo rápido demais semana após semana: leve à nutricionista ou ao médico.",
-    origem: "app",
-  },
-];
-
-/* -------------------------------------------------------------------------- */
-/* O que entra e o que não entra                                              */
-/* -------------------------------------------------------------------------- */
-
-export const PREFERENCIAS: { titulo: string; sim: string[]; nao: string[] }[] = [
-  {
-    titulo: "Proteínas",
-    sim: [
-      "Frango",
-      "Patinho e carne magra",
-      "Peixe",
-      "Ovos e claras",
-      "Queijo minas/branco",
-      "Ricota",
-      "Cottage",
-      "Iogurte proteico",
-      "Whey Chef Zero",
-    ],
-    nao: ["Frutos do mar", "Fígado", "Sardinha"],
-  },
-  {
-    titulo: "Carboidratos",
-    sim: [
-      "Pão sem miolo",
-      "Arroz",
-      "Batata",
-      "Mandioca",
-      "Mandioquinha",
-      "Macarrão integral sem glúten",
-    ],
-    nao: [],
-  },
-  {
-    titulo: "Frutas",
-    sim: ["Banana", "Morango", "Maçã pequena"],
-    nao: ["Abacate"],
-  },
-  {
-    titulo: "Leguminosas",
-    sim: [],
-    nao: ["Feijão", "Lentilha", "Ervilha"],
   },
 ];
 
@@ -420,102 +185,123 @@ export const EVITAR = [
   },
   {
     item: "Comer depois que a janela fecha",
-    // Os comprimidos da noite (B12 e colágeno) entram no jejum: sem essa
-    // ressalva, o texto ao pé da letra manda pular o que o médico passou.
-    detalhe: "Da última refeição até o café da manhã, só água e chá sem cafeína, sem açúcar — e os comprimidos da noite, no horário de sempre. Passou mal? Aí o jejum se quebra: o passo a passo está no card do jejum.",
+    // Os remédios e suplementos da noite e os de antes do café entram no jejum:
+    // sem essa ressalva, o texto ao pé da letra manda pular o que foi receitado.
+    detalhe: "Da última refeição até o café da manhã, só água e chá sem açúcar — à noite, os sem cafeína — e os remédios e suplementos nos horários da Farmácia (os da noite e os de antes do café). Passou mal? Aí o jejum se quebra: o passo a passo está no card do jejum.",
   },
   {
     item: "Açúcar e doces",
-    detalhe: "O Dr. Henry já pedia para cortar, e com o histórico de diabetes gestacional e a gordura no fígado segue valendo. O doce do dia é a fruta do lanche.",
+    detalhe: "O Dr. Henry já pedia para cortar, e com o histórico de diabetes gestacional e a gordura no fígado segue valendo. O doce do dia é a fruta do plano.",
   },
   {
     item: "Álcool",
     detalhe: "Quem paga a conta é o fígado, que já tem gordura.",
   },
   {
-    // Ajustes de 12/10, a pedido dela. A dor de cabeça forte e diferente da de
-    // costume fica fora da conta do café de propósito: com histórico de pressão
-    // alta, ela pede o aparelho de pressão e atendimento no mesmo dia, como no
-    // socorro do jejum; a fortíssima de repente é 192, como em data/alarmes.ts.
-    item: "Café e outras fontes de cafeína",
-    detalhe: "Saíram do plano em 12/10: cafeína atrapalha o sono e aumenta a ansiedade. Também têm cafeína: chá verde, preto, branco e mate (chimarrão e tereré), refrigerante de cola, energético, guaraná em pó e alguns remédios para dor de cabeça (está na bula). Tomava muito café? Tire aos poucos, ao longo de uma semana: dor de cabeça leve e cansaço nos primeiros dias são comuns e passam sozinhos. Dor de cabeça forte e diferente da de costume — ainda mais com visão embaralhada — não é do café: meça a pressão, se tiver aparelho, e procure atendimento no mesmo dia; fortíssima e de repente, 192 (SAMU). A que passa de uma semana também não é: fale com o médico. Remédio ou fórmula com cafeína: conte ao médico que o café saiu — sem mudar nada por conta própria.",
+    // Saiu em 12/10, a pedido dela. A dor de cabeça forte e diferente da de
+    // costume fica fora da conta do café de propósito: ela pede o aparelho de
+    // pressão e atendimento no mesmo dia, como no socorro do jejum; a
+    // fortíssima de repente é 192, como em data/alarmes.ts. O chá verde voltou
+    // em 18/10, liberado pela nutricionista.
+    item: "Café (a bebida)",
+    detalhe: "Saiu do plano em 12/10, a pedido seu. Tomava muito café? Tire aos poucos, ao longo de uma semana: dor de cabeça leve e cansaço nos primeiros dias são comuns e passam sozinhos. Dor de cabeça forte e diferente da de costume — ainda mais com visão embaralhada — não é do café: meça a pressão, se tiver aparelho, e procure atendimento no mesmo dia; fortíssima e de repente, 192 (SAMU). O chá verde a nutricionista liberou, dentro do limite de 1 litro de chás por dia. Remédio ou fórmula com cafeína: conte ao médico que o café saiu — sem mudar nada por conta própria.",
   },
   {
-    item: "Pré-treino, termogênico e chá para emagrecer",
-    detalhe: "Pré-treino e termogênico costumam ter muita cafeína e outros estimulantes; chá seca-barriga costuma ser diurético ou laxante. Com histórico de pressão alta e o Mounjaro, podem subir a pressão, disparar o coração e desidratar. Nenhum entra sem o médico.",
+    item: "Pré-treino, termogênico e chás prontos “para emagrecer”",
+    detalhe: "Pré-treino e termogênico costumam ter muita cafeína e outros estimulantes; chá pronto “seca-barriga” costuma ser diurético ou laxante. Com histórico de pressão alta e o Mounjaro, podem subir a pressão, disparar o coração e desidratar. Os chás da lista da nutricionista estão liberados, até 1 litro por dia; misturas prontas e cápsulas, não — nada disso entra sem o médico e a nutricionista.",
   },
 ];
 
 export const CRITERIOS_ROTULO = [
-  "Queijo: compare proteína, gordura saturada e sódio na tabela — o minas do pote preto foi o melhor dos avaliados.",
-  "Iogurte proteico: 15–17 g de proteína por pote, que é o que o resumo conta, e sem açúcar adicionado.",
-  "“Light” e “creme” não querem dizer proteína: o creme de ricota light entra pelo sabor, não como fonte principal de proteína.",
-  "Macarrão: integral e sem glúten, como o resumo pede.",
+  "Queijo branco sem lactose: compare proteína, gordura saturada e sódio na tabela.",
+  "Iogurte natural sem lactose ou kefir: sem açúcar na lista de ingredientes.",
+  "Whey: isolado e sem lactose, como está no plano.",
+  "Bebida vegetal e pasta de amendoim: sem açúcar — na pasta, só amendoim na lista de ingredientes.",
   "Lista de ingredientes curta: quanto menos coisa escrita, melhor.",
 ];
 
 /* -------------------------------------------------------------------------- */
-/* O que mudou em relação ao Desinflama-se                                    */
+/* O que mudou                                                                */
 /* -------------------------------------------------------------------------- */
 
 export type Mudanca = {
   id: string;
   tema: string;
   /**
-   * "seguranca" aparece em vermelho. "ajuste" é o que mudou em 12/10, a pedido
-   * dela, e vem no topo da lista.
+   * "seguranca" aparece em vermelho. "plano" é o plano da nutricionista
+   * (18/10) e vem no topo; "ajuste" é o que ela pediu em 12/10; "resumo" é o
+   * que veio com o resumo de alimentação de 29/09 e segue valendo.
    */
-  tipo: "seguranca" | "plano" | "preferencia" | "medico" | "ajuste";
+  tipo: "plano" | "ajuste" | "seguranca" | "resumo" | "medico";
   antes: string;
   agora: string;
   porque: string;
 };
 
 /**
- * Até setembro o app seguia o Desinflama-se; em 29/09 veio o plano novo e, em
- * 12/10, os ajustes que ela pediu. Nada foi trocado em silêncio: cada mudança
- * está aqui com o antes, o agora e o porquê — e aparece na tela /dieta, com os
- * ajustes de 12/10 primeiro. O id é a key na tela: não pode repetir.
+ * Até setembro o app seguia o Desinflama-se; em 29/09 veio o resumo de
+ * alimentação, em 12/10 os ajustes que ela pediu e em 18/10 o plano da
+ * nutricionista. Nada foi trocado em silêncio: cada mudança que segue valendo
+ * está aqui com o antes, o agora e o porquê — e aparece na tela /dieta, a mais
+ * nova primeiro. As que o plano de 18/10 desfez (chia todo dia, folha escura,
+ * cores, o whey de antes, o pão, o cardápio da semana) saíram da lista. O id é
+ * a key na tela: não pode repetir.
  */
 export const MUDANCAS: Mudanca[] = [
+  {
+    id: "plano-nutricionista",
+    tema: "Cardápio de 7 dias → plano da nutricionista com 3 refeições e 2 opções em cada",
+    tipo: "plano",
+    antes: "Um cardápio para cada dia da semana, com quatro refeições.",
+    agora:
+      "Café da manhã, almoço e lanche da tarde, cada um com a opção 1 e a opção 2. Na tela inicial você marca qual comeu; a lista de compras sai da divisão de dias que você escolher.",
+    porque: "É o plano que a nutricionista prescreveu em 18/10.",
+  },
+  {
+    id: "fecha-janela-saiu",
+    tema: "Fecha a janela: saiu — a última refeição é o lanche da tarde",
+    tipo: "plano",
+    antes: "Uma quarta refeição, pequena, meia hora antes de a janela fechar.",
+    agora: "O lanche da tarde é a última refeição do dia, até as 17h–18h. Depois, jejum.",
+    porque:
+      "É assim no plano da nutricionista. Os dias até 17/10 continuam com as quatro refeições no histórico.",
+  },
+  {
+    id: "cha-verde",
+    tema: "Chá verde liberado pela nutricionista, até 1 litro de chás por dia",
+    tipo: "plano",
+    antes: "Desde 12/10, só chá sem cafeína: o verde tinha saído junto com o café.",
+    agora:
+      "Chá verde, gengibre, canela, hibisco, cavalinha ou dente-de-leão, sem açúcar — até 1 litro por dia somando todos.",
+    porque: "Está nas observações da nutricionista. O verde tem cafeína: à noite, prefira os outros.",
+  },
+  {
+    id: "agua-copos",
+    tema: "Água: copos de 300 ml das 9h às 21h, com lembrete",
+    tipo: "plano",
+    antes: "200 ml por hora, um copo a cada hora acordada.",
+    agora:
+      "A meta do dia dividida em copos de 300 ml, das 9h às 21h — os lembretes no celular avisam a hora de cada um.",
+    porque: "Pedido seu, em 18/10. Os horários e o tamanho do copo mudam em Ajustes.",
+  },
+  {
+    id: "sem-lactose",
+    tema: "Laticínios: versões sem lactose e bebida vegetal",
+    tipo: "plano",
+    antes: "Queijo minas, ricota, cottage, iogurte proteico e um whey comum.",
+    agora:
+      "Queijo branco sem lactose, kefir ou iogurte natural sem lactose, whey protein isolado sem lactose e bebida vegetal sem açúcar.",
+    porque: "São os itens do plano da nutricionista.",
+  },
   {
     id: "cafe-fora",
     tema: "O café sai",
     tipo: "ajuste",
     antes: "Uma xícara de café no café da manhã, e café liberado também no jejum.",
     agora:
-      "Sem café. No jejum, só água e chá sem cafeína, sem açúcar — camomila, cidreira ou erva-doce.",
+      "Sem café (a bebida). Os chás da nutricionista, sem açúcar, ficam no lugar — o verde inclusive, desde 18/10.",
     porque:
-      "Pedido seu. Cafeína atrapalha o sono e aumenta a ansiedade — e ela também está no chá verde, preto, branco e mate, no refrigerante de cola e no energético. Tomava muito? Tire aos poucos, ao longo de uma semana.",
-  },
-  {
-    id: "fibra-todo-dia",
-    tema: "Fibra todo dia",
-    tipo: "ajuste",
-    antes: "1 colher de chia no iogurte, se quisesse, só na segunda e na quinta.",
-    agora:
-      "1 colher de sopa de chia ou linhaça triturada todo dia: no iogurte quando ele fecha a janela, batida com o whey nos outros dias.",
-    porque:
-      "Ajuda o intestino, o açúcar e as gorduras do sangue. Sempre misturada em algo úmido e com água ao longo do dia; na primeira semana, meia colher.",
-  },
-  {
-    id: "folha-escura",
-    tema: "Folha verde-escura no almoço, todo dia",
-    tipo: "ajuste",
-    antes: "Quarta, quinta e sexta só tinham alface na salada.",
-    agora:
-      "Rúcula na quarta, espinafre refogado na quinta e agrião na sexta. Os outros dias já tinham brócolis, rúcula ou couve.",
-    porque:
-      "Mais fibra e mais variedade no prato. Muita gente acha a folha escura amarga: refogue no alho e no azeite, ponha limão ou misture com alface e tomate.",
-  },
-  {
-    id: "cores",
-    tema: "Cores no prato",
-    tipo: "ajuste",
-    antes: "Frutas e legumes variavam sem uma regra.",
-    agora:
-      "Variar as cores dos legumes e das frutas. O morango já é ótima fonte de vitamina C; kiwi, laranja e acerola entram se você gostar.",
-    porque: "Cada cor traz vitaminas diferentes — pela comida, sem suplemento novo.",
+      "Pedido seu, em 12/10. Cafeína atrapalha o sono e aumenta a ansiedade: por isso o chá verde, que também tem, fica para o dia. Tomava muito café? Tire aos poucos, ao longo de uma semana.",
   },
   {
     id: "remedios",
@@ -524,110 +310,28 @@ export const MUDANCAS: Mudanca[] = [
     antes:
       "A apostila do Desinflama-se chegava a sugerir suspender remédio conforme a pressão ou a glicemia — o app já seguia o trecho seguro.",
     agora:
-      "Mounjaro, testosterona, fórmula e vitaminas: dose, dia e horário são do médico. O jejum e o cardápio se encaixam neles, nunca o contrário.",
+      "Remédios do médico e o protocolo da nutricionista: dose, dia e horário são de quem receitou. O jejum e o plano alimentar se encaixam neles, nunca o contrário.",
     porque:
-      "Com Mounjaro e histórico de pressão alta e diabetes gestacional, mexer por conta própria é arriscado. Nenhum remédio é ajustado sem o médico.",
-  },
-  {
-    id: "laticinios",
-    tema: "Leite e derivados voltam",
-    tipo: "plano",
-    antes: "Fora nos 15 dias: nada de queijo, iogurte, requeijão ou coalhada.",
-    agora: "Queijo minas, ricota, cottage e iogurte proteico entram todos os dias.",
-    porque:
-      "São proteínas que cabem em pouca comida — e com o Mounjaro o estômago é pequeno. O resumo conta com elas para chegar a 90–100 g.",
-  },
-  {
-    id: "whey",
-    tema: "Whey volta",
-    tipo: "plano",
-    antes: "Suspenso por ser derivado do leite; a proteína do pós-treino vinha de ovo ou frango.",
-    agora: "40 g de Whey Chef Zero no lanche da tarde, todo dia: 32 g de proteína.",
-    porque: "É um terço da proteína do dia num copo, sem precisar de fome.",
-  },
-  {
-    id: "pao",
-    tema: "Pão sem miolo entra",
-    tipo: "plano",
-    antes: "Sem glúten: no lugar do pão, tapioca, crepioca, cuscuz e pãozinho de aveia.",
-    agora: "Pão sem miolo no café da manhã, com ovo e queijo.",
-    porque: "Sem o miolo sobra pouco pão: ele vira apoio, e a proteína é o centro do café da manhã.",
-  },
-  {
-    id: "gluten-adocante",
-    tema: "Glúten e adoçante deixam de ser proibidos",
-    tipo: "plano",
-    antes: "Proibidos nos 15 dias, junto com o açúcar.",
-    agora:
-      "O pão sem miolo tem glúten, e o whey é “zero” — sem açúcar, e produto zero costuma levar adoçante. O macarrão segue integral e sem glúten, como o resumo pede.",
-    porque:
-      "O Desinflama-se era um ciclo curto de restrição; a recomposição é para durar, e o resumo usa os dois. O açúcar continua fora.",
-  },
-  {
-    id: "patinho",
-    tema: "Patinho volta",
-    tipo: "preferencia",
-    antes: "Tinha saído: você fechou as proteínas em frango, peixe, ovos e tofu.",
-    agora: "Patinho e carne magra no almoço, alternando com frango e peixe.",
-    porque: "Estão no resumo e variam o prato sem perder proteína.",
-  },
-  {
-    id: "mandioquinha",
-    tema: "Mandioquinha volta",
-    tipo: "preferencia",
-    antes:
-      "Tinha saído por não estar na sua lista de carboidratos — e mandioquinha não é a mesma coisa que mandioca.",
-    agora: "É uma das trocas do arroz no resumo e aparece no almoço de quinta.",
-    porque:
-      "Se não gostar, é só trocar por mandioca ou batata — fazem o mesmo papel no prato.",
+      "Com Mounjaro e histórico de pressão alta e diabetes gestacional, mexer por conta própria é arriscado. Nenhum remédio é ajustado sem quem receitou.",
   },
   {
     id: "jantar",
     tema: "O jantar vira jejum",
-    tipo: "plano",
+    tipo: "resumo",
     antes: "Jantar mais leve por volta das 19:30: sopa, omelete, peixe com legumes.",
     agora:
-      "A última refeição é pequena e proteica e fecha a janela, meia hora antes do jejum. Depois, só água e chá sem cafeína, sem açúcar — e os comprimidos da noite, no horário de sempre.",
-    porque:
-      "A medicação tira a fome à noite, e o jantar completo causa desconforto. No resumo essa refeição se chama Noite — o app só antecipou.",
-  },
-  {
-    id: "semana",
-    tema: "O cardápio de 15 dias vira semanal",
-    tipo: "plano",
-    antes: "15 dias numerados, que recomeçavam no dia 16.",
-    agora: "7 dias, de segunda a domingo, com as quatro refeições do resumo.",
-    porque:
-      "A recomposição não tem data para acabar. A semana é o ritmo da compra, da aplicação de quinta e do treino.",
-  },
-  {
-    id: "saiu",
-    tema: "O que saiu do cardápio",
-    tipo: "plano",
-    antes:
-      "Tofu, tapioca, crepioca, cuscuz, quinoa, batata-doce, grão-de-bico, patê de atum/frango e leite de amêndoas.",
-    agora:
-      "O cardápio usa o que está no resumo, mais os ajustes de 12/10 do começo da lista. A chia, sugestão do app para o intestino, era opcional no iogurte; em 12/10 deixou de ser e passou a entrar todo dia.",
-    porque:
-      "Eram as trocas para 15 dias sem leite e sem glúten. Não viraram proibidos — só deixaram de ser necessários.",
+      "À noite, jejum. Desde 18/10 a última refeição é o lanche da tarde; depois, só água e os chás da nutricionista, sem açúcar — e os remédios e suplementos nos horários da Farmácia.",
+    porque: "A medicação tira a fome à noite, e o jantar completo causa desconforto.",
   },
   {
     id: "ordem",
     tema: "Ordem do prato",
-    tipo: "plano",
+    tipo: "resumo",
     antes: "Folhas → legumes → proteína → carboidrato, com metade do prato de vegetais.",
     agora:
-      "Verduras e legumes + proteína primeiro; carboidrato depois. E a proteína tem medida: 120 g de frango, carne ou peixe no almoço.",
+      "Verduras e legumes + proteína primeiro; carboidrato depois. A proteína tem medida: 150 g de frango ou 140 g de peixe no almoço, como está no plano.",
     porque:
       "O começo é o mesmo. A diferença é que a proteína não pode ficar para trás: com a fome curta, é ela que precisa entrar.",
-  },
-  {
-    id: "agua",
-    tema: "Água",
-    tipo: "plano",
-    antes: "3,4 L por dia.",
-    agora: "200 ml por hora, conforme orientação médica — uns 3,2 L em 16 horas acordada.",
-    porque: "É a orientação médica que está no resumo. Um copo por hora vale também durante o jejum, até dormir.",
   },
   {
     id: "lanchinho",
@@ -636,17 +340,8 @@ export const MUDANCAS: Mudanca[] = [
     antes:
       "Ele sugeria um lanchinho a cada 2–3 h se batesse fome; no Desinflama-se valia o contrário: não beliscar.",
     agora:
-      "Dentro da janela, cabe — de preferência com proteína, como o iogurte proteico. Fora dela, é jejum.",
-    porque: "A janela tem espaço para comer de tempos em tempos; a noite fica para o jejum.",
-  },
-  {
-    id: "farinha",
-    tema: "Farinha de trigo × pão sem miolo",
-    tipo: "medico",
-    antes: "O Dr. Henry pedia para cortar as duas farinhas brancas: açúcar refinado e farinha de trigo.",
-    agora: "O resumo põe pão sem miolo no café da manhã. O açúcar refinado continua fora.",
-    porque:
-      "Sem o miolo sobra pouco pão, e ele vem com ovo e queijo. Se quiser seguir o Dr. Henry à risca, a omelete com queijo (sem pão) é uma das opções do próprio resumo.",
+      "O plano da nutricionista tem três refeições. Fome forte entre elas? Pergunte a ela o que pode entrar. Fora da janela, é jejum.",
+    porque: "As quantidades do plano já contam com o déficit leve: lanche a mais é com a nutricionista.",
   },
 ];
 
@@ -656,9 +351,9 @@ export const MUDANCAS: Mudanca[] = [
 
 /**
  * O sinal de que está funcionando fica em PLANO.objetivo (data/protocol.ts).
- * Aqui, onde o app guarda cada parte dele: o peso na balança, a cintura na aba
- * Medidas do progresso e a força na carga que ela anota em cada exercício do
- * treino. O link leva direto para o lugar do registro.
+ * Aqui, onde o app guarda cada parte dele: o peso na balança e a cintura na
+ * aba Medidas do progresso. A força não tem registro próprio desde que a aba
+ * Treino saiu (18/10): o link vai para o progresso, onde está o marco dela.
  */
 export const ACOMPANHAMENTO = {
   frase: "O objetivo não é apenas baixar o peso.",
@@ -676,12 +371,8 @@ export const ACOMPANHAMENTO = {
       rotulo: "Força",
       direcao: "igual ou subindo",
       // Curto: a célula tem um terço da largura, e em 320 px já quebra em duas linhas.
-      onde: "Cargas do treino",
-      href: "/treino",
+      onde: "Peso e medidas",
+      href: "/progresso",
     },
   ],
 } as const;
-
-/** A observação que fecha o resumo. */
-export const OBSERVACAO_RESUMO =
-  "Este resumo organiza as orientações discutidas e não substitui o acompanhamento do médico e/ou nutricionista, especialmente durante o uso de Mounjaro e na preparação para a cirurgia plástica.";

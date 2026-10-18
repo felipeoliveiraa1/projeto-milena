@@ -52,6 +52,11 @@ const FABRICA_ANTERIOR: Record<string, VersaoAntiga[]> = {
       detalhe:
         "Depois da última refeição, só água, chá ou café sem açúcar até o café da manhã — os remédios da noite seguem a lista.",
     },
+    // De 13/10 a 17/10, antes de a nutricionista liberar o chá verde.
+    {
+      detalhe:
+        "Depois da última refeição, só água e chá sem cafeína, sem açúcar, até o café da manhã — os remédios da noite seguem a lista.",
+    },
   ],
   // "Desafio" era o nome do Desinflama-se; os motivos continuam.
   "r-m-motivos": [{ texto: "Reler os motivos do desafio" }],
@@ -90,6 +95,28 @@ function atualizarItem(item: RotinaItem): RotinaItem {
     }
     return trocado;
   }, item);
+}
+
+/**
+ * A nota que um bloco de fábrica já teve. A rotina salva guarda uma cópia da
+ * nota de cada bloco; sem isto, quem já tinha salvado a rotina continuaria
+ * lendo que o treino fica na aba Treino, que saiu em 18/10.
+ *
+ * Como nos itens: só troca a nota que ainda está igual a uma antiga de
+ * fábrica, e troca pela de hoje. Nota escrita por ela, ou já apagada, fica
+ * como está.
+ */
+const NOTA_ANTERIOR: Record<string, string[]> = {
+  // Até 18/10, quando ainda havia a aba Treino.
+  movimento: ["O treino do dia fica na aba Treino — este bloco é o extra."],
+};
+
+const NOTA_ATUAL = new Map(ROTINA_PADRAO.map((b) => [b.id, b.nota]));
+
+function atualizarNota(bloco: RotinaBloco): RotinaBloco {
+  if (!Object.hasOwn(NOTA_ANTERIOR, bloco.id) || typeof bloco.nota !== "string") return bloco;
+  if (!NOTA_ANTERIOR[bloco.id].includes(bloco.nota)) return bloco;
+  return { ...bloco, nota: NOTA_ATUAL.get(bloco.id) };
 }
 
 /**
@@ -147,10 +174,10 @@ function oferecer(blocos: RotinaBloco[], novo: ItemNovo): RotinaBloco[] {
  * novo sobre o próprio resultado, não muda mais nada.
  */
 export function migrarRotina(rotina: RotinaBloco[]): RotinaBloco[] {
-  const atualizada = rotina.map((bloco) => ({
-    ...bloco,
-    itens: bloco.itens.map((item) => atualizarItem(item)),
-  }));
+  const atualizada = rotina.map((original) => {
+    const bloco = atualizarNota(original);
+    return { ...bloco, itens: bloco.itens.map((item) => atualizarItem(item)) };
+  });
   return ITENS_NOVOS.reduce(oferecer, atualizada);
 }
 
@@ -161,10 +188,13 @@ export function migrarRotina(rotina: RotinaBloco[]): RotinaBloco[] {
 /**
  * Dia (AAAA-MM-DD) em que cada item chegou à rotina de fábrica, para os que
  * vieram depois do começo da jornada. Item novo entra aqui e em ITENS_NOVOS.
+ *
+ * Vale o dia em que o item chegou ao app, não o da versão: os ajustes de 12/10
+ * foram ao ar em 13/10, e o 12/10 não pode contar itens que ela ainda não via.
  */
 export const ROTINA_DESDE: Record<string, string> = {
-  "r-n-telas": "2026-10-12",
-  "r-mov-pos-almoco": "2026-10-12",
+  "r-n-telas": "2026-10-13",
+  "r-mov-pos-almoco": "2026-10-13",
 };
 
 /**

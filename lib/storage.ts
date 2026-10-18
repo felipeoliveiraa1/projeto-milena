@@ -2,6 +2,7 @@
 
 import { getSupabase, type DailyCheckRow, type WeightRow } from "./supabase";
 import { hojeKey, todayKey } from "./date";
+import { PLANO_ATUAL_DESDE } from "@/data/meals";
 
 export type DayCheck = {
   meals: Record<string, boolean>;
@@ -19,6 +20,7 @@ export type DayCheck = {
    * precisar de migração de schema.
    */
   supplements: Record<string, boolean | string>;
+  /** Exercícios marcados na antiga aba Treino (até 18/10). Fica para o histórico. */
   exercises: Record<string, boolean>;
 };
 
@@ -212,13 +214,36 @@ export async function toggleSupplement(
   });
 }
 
-/** Item da rotina. Mesma coluna dos suplementos — ver DayCheck. */
+/**
+ * O item da rotina que vale como o treino do dia ("Fazer a atividade física do
+ * dia", bloco Movimento). Desde 18/10 não há mais aba Treino: o treino é este
+ * check, e marcá-lo grava também `workout`, que é o que a nota do dia conta.
+ */
+export const ID_TREINO_DO_DIA = "r-mov-atividade";
+
+/**
+ * Item da rotina. Mesma coluna dos suplementos — ver DayCheck.
+ *
+ * O item do treino grava as duas marcas na mesma linha, numa gravação só:
+ * gravadas em separado, uma falha no meio deixaria o check e a nota do dia
+ * dizendo coisas diferentes.
+ */
 export async function toggleRotina(
   itemId: string,
   date: string = hojeKey(),
   valor?: boolean,
 ): Promise<DayCheck> {
-  return toggleSupplement(itemId, date, valor);
+  if (itemId !== ID_TREINO_DO_DIA) return toggleSupplement(itemId, date, valor);
+  return naFila(date, async () => {
+    const current = await lerDiaParaGravar(date);
+    const alvo = valor ?? !current.supplements[itemId];
+    const supplements = { ...current.supplements, [itemId]: alvo };
+    // Antes de 18/10 este item era a atividade "extra" do dia, e o treino era
+    // marcado na antiga aba Treino: desmarcar o item num dia desses não pode
+    // apagar um treino feito. Daí em diante, o item é o treino.
+    const workout = date < PLANO_ATUAL_DESDE ? alvo || current.workout : alvo;
+    return upsertDay(date, { supplements, workout }, current);
+  });
 }
 
 /** Define a água do dia em mililitros (usado para zerar). */
@@ -278,6 +303,11 @@ export function getTextoDoDia(dia: DayCheck, id: string): string {
   return typeof valor === "string" ? valor : "";
 }
 
+/**
+ * Só as telas antigas de treino (a aba Treino e o card da tela inicial, que
+ * saíram em 18/10) usavam isto. O treino do dia agora é gravado por
+ * toggleRotina, no item ID_TREINO_DO_DIA.
+ */
 export async function toggleWorkout(
   date: string = hojeKey(),
   valor?: boolean,
@@ -285,21 +315,6 @@ export async function toggleWorkout(
   return naFila(date, async () => {
     const current = await lerDiaParaGravar(date);
     return upsertDay(date, { workout: valor ?? !current.workout }, current);
-  });
-}
-
-export async function toggleExercise(
-  exerciseId: string,
-  date: string = hojeKey(),
-  valor?: boolean,
-): Promise<DayCheck> {
-  return naFila(date, async () => {
-    const current = await lerDiaParaGravar(date);
-    const exercises = {
-      ...current.exercises,
-      [exerciseId]: valor ?? !current.exercises[exerciseId],
-    };
-    return upsertDay(date, { exercises }, current);
   });
 }
 

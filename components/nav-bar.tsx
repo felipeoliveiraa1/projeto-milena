@@ -2,13 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Apple, Dumbbell, Home, LineChart, ListChecks, ShoppingBasket } from "lucide-react";
+import { Apple, Home, LineChart, ListChecks, ShoppingBasket } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ITEMS = [
   { href: "/", label: "Hoje", icon: Home },
   { href: "/dieta", label: "Dieta", icon: Apple },
-  { href: "/treino", label: "Treino", icon: Dumbbell },
   { href: "/rotina", label: "Rotina", icon: ListChecks },
   { href: "/lista", label: "Lista", icon: ShoppingBasket },
   { href: "/progresso", label: "Peso", icon: LineChart },

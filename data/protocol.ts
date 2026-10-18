@@ -11,9 +11,13 @@
  * força, treino todo dia, o café fora do plano e as telas longe da cama antes
  * de dormir — e, junto, uma volta curta depois do almoço.
  *
- * Este arquivo guarda o que é do plano como um todo e a rotina de fábrica. As
- * regras de comida moram em data/alimentacao.ts, o treino em data/workouts.ts,
- * os remédios em data/supplements.ts e os sinais de parar o treino e procurar
+ * Em 18/10/2026 os planos de treino saíram do app, a pedido dela: o treino do
+ * dia é o item "Fazer a atividade física do dia" da rotina (bloco Movimento),
+ * e marcá-lo conta como o treino na nota do dia (lib/storage.ts).
+ *
+ * Este arquivo guarda o que é do plano como um todo, a rotina de fábrica e as
+ * regras de segurança. As regras de comida moram em data/alimentacao.ts, os
+ * remédios em data/supplements.ts e os sinais de parar o treino e procurar
  * ajuda em data/alarmes.ts.
  */
 
@@ -90,7 +94,9 @@ export type RotinaBloco = {
  * Item novo de fábrica entra em três lugares: aqui, com id novo e o id também
  * no `recebidos` do bloco; em ITENS_NOVOS (lib/routine.ts), para chegar uma vez
  * só a quem já salvou a rotina; e em ROTINA_DESDE, para os dias de antes não
- * perderem pontos por um item que ainda não existia.
+ * perderem pontos por um item que ainda não existia. Texto de item ou nota de
+ * bloco que muda deixa a versão antiga em FABRICA_ANTERIOR ou NOTA_ANTERIOR
+ * (lib/routine.ts), para chegar também à rotina salva.
  */
 export const ROTINA_PADRAO: RotinaBloco[] = [
   {
@@ -127,13 +133,15 @@ export const ROTINA_PADRAO: RotinaBloco[] = [
     id: "movimento",
     titulo: "Movimento",
     periodo: "dia",
-    nota: "O treino do dia fica na aba Treino — este bloco é o extra.",
+    nota: "Marcar a atividade física do dia já conta como o treino do dia.",
     recebidos: ["r-mov-pos-almoco"],
     itens: [
+      // Desde 18/10 é o treino do dia: marcar este item grava também o treino
+      // na nota do dia (ID_TREINO_DO_DIA, em lib/storage.ts). O id não muda.
       { id: "r-mov-atividade", texto: "Fazer a atividade física do dia" },
       {
-        // Ajustes de 12/10. É movimento leve do dia, não sessão: fica fora da
-        // conta de minutos do treino.
+        // Ajustes de 12/10. É movimento leve do dia, não sessão: não conta como
+        // o treino do dia.
         id: "r-mov-pos-almoco",
         texto: "Caminhar 10 a 15 minutos depois do almoço",
         detalhe:
@@ -186,7 +194,7 @@ export const ROTINA_PADRAO: RotinaBloco[] = [
         id: "r-n-refeicao",
         texto: "Fechar a janela no horário",
         detalhe:
-          "Depois da última refeição, só água e chá sem cafeína, sem açúcar, até o café da manhã — os remédios da noite seguem a lista.",
+          "Depois da última refeição, só água e os chás da nutricionista, sem açúcar — à noite, os sem cafeína —, até o café da manhã. Os remédios da noite e os de antes do café seguem os horários da Farmácia.",
       },
       { id: "r-n-skincare", texto: "Skincare da noite" },
       {
@@ -221,23 +229,24 @@ export const ROTINA_PADRAO: RotinaBloco[] = [
  * iguais quebram a lista.
  */
 export const SEGURANCA = [
-  "Nenhum remédio é suspenso, trocado de dia ou ajustado sem o médico que receitou — Mounjaro, testosterona e fórmula inclusive.",
+  "Nenhum remédio é suspenso, trocado de dia ou ajustado sem quem receitou (o médico ou a nutricionista) — Mounjaro, testosterona e fórmula inclusive.",
   // Tremor e suor frio são sinais de açúcar baixo, e a regra é açúcar rápido e
   // sozinho (ADA e SBD): proteína e fibra atrasam a subida — e o Mounjaro já
   // deixa o estômago mais lento. Confusão ou desmaio é 192: quem está assim
   // não consegue procurar atendimento sozinha. Espelho do socorro do jejum
-  // (JEJUM.socorro, em data/alimentacao.ts) e do card do treino (AJUSTES_TREINO,
-  // em data/alarmes.ts): mudou um, mude os outros.
+  // (JEJUM.socorro, em data/alimentacao.ts): mudou um, mude o outro.
   "Jejum não é para passar mal. Tremor, suor frio, fraqueza ou tontura podem ser açúcar baixo: 15 g de açúcar rápido e sozinho — 1 colher de sopa de açúcar na água ou 150 ml de suco ou refrigerante comum —, espere 15 minutos e, se não passar, repita uma vez. Passou: um lanche com proteína. Não passou: atendimento. Confusão ou desmaio: 192 (SAMU). E avise o médico.",
   "Mounjaro: dor forte na barriga que não passa (às vezes indo para as costas), vômito que não para ou sinais de desidratação — procure atendimento.",
   "Testosterona na pele: lave as mãos depois de passar e deixe o local coberto pela roupa. O bebê não pode encostar na pele onde foi aplicada.",
-  // Quando parar o treino e procurar ajuda: o texto mora em data/alarmes.ts, e
-  // o card do Treino mostra os mesmos, com as mesmas palavras. Em 12/10 saiu
-  // daqui a regra antiga de dor no peito ("procure atendimento"), para o mesmo
-  // sinal ter uma ordem só: 192.
+  // Quando parar o treino e procurar ajuda: o texto mora em data/alarmes.ts.
+  // Em 12/10 saiu daqui a regra antiga de dor no peito ("procure atendimento"),
+  // para o mesmo sinal ter uma ordem só: 192.
   ...ALARMES_URGENTES,
-  // Espelho de DIASTASE.fisio (data/workouts.ts).
+  // Assoalho pélvico, articulações e diástase. Até 18/10 a aba Treino também
+  // mostrava estes avisos; com ela fora, eles moram só aqui.
   "Treino: escape de urina, sensação de peso ou de 'bola' na vagina, dor, ou a barriga formando um 'morrinho' no meio — pare, ajuste ou troque o exercício e fale com a fisioterapeuta pélvica.",
+  "Dor ou pontada no joelho, no quadril ou na lombar durante o exercício — diferente do cansaço do músculo: diminua a carga ou a amplitude, ou troque o exercício. Inchou, travou, está mancando ou a dor desce para a perna, com formigamento ou fraqueza: médico.",
+  "Com diástase, no treino: solte o ar no esforço e fuja de abdominal tradicional, prancha completa e saltos. Se a barriga formar um 'morrinho' no meio, o exercício está pesado demais para agora — a fisioterapeuta pélvica orienta o resto.",
   // Ajustes de 12/10. É o que toda consulta antes de anestesia pergunta; com
   // tudo na mão antes de marcar, o cirurgião e o anestesista planejam o
   // preparo, e o médico que receitou decide sobre cada remédio a tempo.

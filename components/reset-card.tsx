@@ -46,7 +46,7 @@ const PARTES = [
   {
     chave: "compras" as const,
     titulo: "Lista de compras",
-    detalhe: "Os dias escolhidos na dieta e os itens já comprados.",
+    detalhe: "Os itens já marcados como comprados.",
   },
 ];
 
@@ -99,8 +99,8 @@ export function ResetCard() {
         </CardTitle>
         <CardDescription>
           Apaga o que você escolher e reinicia a contagem da jornada. As suas
-          configurações — metas, janela do jejum, fase do treino e a rotina que
-          você montou — continuam como estão.
+          configurações — metas, horários, janela do jejum, lembretes, contagem
+          regressiva e a rotina que você montou — continuam como estão.
         </CardDescription>
       </CardHeader>
 

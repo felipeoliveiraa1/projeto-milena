@@ -6,6 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle, Eyebrow } from "@/components/
 import { Button } from "@/components/ui/button";
 import { getDayComErro, setWater, somarAgua } from "@/lib/storage";
 import { usePreferencias } from "@/lib/settings";
+import { coposCobertos, planoDeAgua } from "@/lib/lembretes";
+import { paraMinutos } from "@/lib/janela";
+import { HORA_VIRADA_DO_DIA } from "@/lib/date";
+import { useAgoraVivo } from "@/lib/now";
 import { useDia } from "@/components/day-context";
 import { cn } from "@/lib/utils";
 
@@ -25,8 +29,9 @@ export function WaterTracker() {
   // certo ou não —, a tela mostra o que o banco tem.
   const confirmado = useRef<Record<string, number>>({});
   const toques = useRef<Record<string, number>>({});
-  const { prefs } = usePreferencias();
-  const { data } = useDia();
+  const { prefs, carregando } = usePreferencias();
+  const { data, ehHoje } = useDia();
+  const agora = useAgoraVivo();
 
   useEffect(() => {
     // Resposta atrasada de outro dia (troca de dia, virada das 05:00) não vale.
@@ -94,14 +99,29 @@ export function WaterTracker() {
   }
 
   const meta = prefs.aguaMetaMl;
-  // A menor porção dá o tamanho da "casinha": com a meta de 3,2 L e o copo de
-  // 200 ml, são 16 — um copo por hora acordada, como o médico pediu.
+  // O "−" tira a menor porção dos botões.
   const unidade = Math.min(...prefs.aguaPorcoes);
   const pct = Math.min(100, Math.round((ml / meta) * 100));
-  const unidades = Math.max(1, Math.min(16, Math.round(meta / unidade)));
-  // Cada casinha vale meta ÷ casinhas: a barra enche junto com o %, mesmo
-  // quando a meta não é múltiplo exato do copo.
-  const cheias = Math.min(unidades, Math.floor((ml / meta) * unidades));
+  // Uma casinha por copo do plano (meta dividida em copos, o último com o que
+  // sobra — ver planoDeAgua). Uma casinha enche quando o total chega ao
+  // esperado depois daquele copo. Mais de 16 copos não cabem: aí cada
+  // casinha vale meta ÷ 16.
+  const plano = planoDeAgua(prefs);
+  const cobertos = coposCobertos(prefs, ml);
+  const unidades = Math.max(1, Math.min(16, plano.copos));
+  const cheias =
+    plano.copos <= 16 ? cobertos : Math.min(unidades, Math.floor((ml / meta) * unidades));
+
+  // Próximo copo: o primeiro horário que ainda não está coberto e não passou.
+  // Depois da meia-noite (o dia do app só vira às 05:00) já passou de todos.
+  const agoraMin = agora
+    ? (agora.getHours() < HORA_VIRADA_DO_DIA ? agora.getHours() + 24 : agora.getHours()) * 60 +
+      agora.getMinutes()
+    : null;
+  const proximo =
+    agoraMin === null
+      ? null
+      : (plano.horarios.slice(cobertos).find((h) => paraMinutos(h) >= agoraMin) ?? null);
   // Passou de 8, vira duas fileiras — senão as casinhas ficam finas demais no celular.
   const colunas = unidades > 8 ? Math.ceil(unidades / 2) : unidades;
   const bateuMeta = ml >= meta;
@@ -113,6 +133,29 @@ export function WaterTracker() {
           <div>
             <Eyebrow className="text-brand-mid">Hidratação</Eyebrow>
             <CardTitle className="mt-1.5">Água do dia</CardTitle>
+            {/* Só com as preferências carregadas: antes, o plano seria o de fábrica. */}
+            {!carregando && (
+              <>
+                <p className="mt-1 text-xs text-ink-muted tabular">
+                  {plano.copos === 1
+                    ? `1 copo de ${plano.ultimoMl} ml, às ${prefs.aguaInicio}`
+                    : `${plano.copos} copos de ${plano.copoMl} ml, das ${prefs.aguaInicio} às ${prefs.aguaFim}${
+                        // O último copo leva só o que falta para a meta.
+                        plano.ultimoMl !== plano.copoMl ? ` (o último, ${plano.ultimoMl} ml)` : ""
+                      }`}
+                </p>
+                {hydrated &&
+                  (cobertos >= plano.copos ? (
+                    <p className="mt-0.5 text-xs font-semibold text-brand tabular">
+                      {ehHoje ? "Todos os copos de hoje ✓" : "Todos os copos do dia ✓"}
+                    </p>
+                  ) : ehHoje && agoraMin !== null ? (
+                    <p className="mt-0.5 text-xs font-semibold text-brand-mid tabular">
+                      {proximo ? `Próximo copo: ${proximo}` : "Os horários de hoje já passaram."}
+                    </p>
+                  ) : null)}
+              </>
+            )}
           </div>
           <div className="text-right">
             <p className="font-display text-3xl leading-none text-ink tabular">

@@ -11,6 +11,7 @@ import { HeaderStatus } from "@/components/header-status";
 import { Splash } from "@/components/splash";
 import { DiaProvider } from "@/components/day-context";
 import { AuthGate } from "@/components/auth-gate";
+import { SwRegister } from "@/components/sw-register";
 
 const display = Instrument_Serif({
   variable: "--font-instrument-serif",
@@ -55,6 +56,7 @@ export default function RootLayout({
     >
       <body className="min-h-full" suppressHydrationWarning>
         <Splash />
+        <SwRegister />
 
         <DiaProvider>
           <AuthGate>

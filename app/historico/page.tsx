@@ -17,11 +17,11 @@ import {
 import { Card, CardContent, CardHeader, Eyebrow } from "@/components/ui/card";
 import { Ring } from "@/components/ui/ring";
 import { Button } from "@/components/ui/button";
-import { REFEICOES_META, REFEICOES_ORDEM } from "@/data/meals";
+import { REFEICOES_META, refeicoesDaData } from "@/data/meals";
 import type { RotinaBloco } from "@/data/protocol";
 import { suplementosTomados } from "@/data/supplements";
 import { getPeriodo, getTextoDoDia, type DayCheck } from "@/lib/storage";
-import { formatarAgua, resumoDoDia } from "@/lib/score";
+import { formatarAgua, resumoDoDia, totalRefeicoes } from "@/lib/score";
 import { useInicio, usePlano } from "@/lib/protocol";
 import { usePreferencias } from "@/lib/settings";
 import { idsRotinaDoDia, useRotina } from "@/lib/routine";
@@ -85,9 +85,12 @@ export default function HistoricoPage() {
     () =>
       linha.map((item) => ({
         ...item,
+        // As refeições também são as do dia: 3 desde o plano da nutricionista
+        // (18/10), 4 antes — e os dias antigos ficam com a nota de sempre.
         resumo: resumoDoDia(dias[item.data], {
           metaAgua: prefs.aguaMetaMl,
           idsRotina: idsRotinaDoDia(idsRotina, item.data),
+          data: item.data,
         }),
       })),
     [linha, dias, prefs.aguaMetaMl, idsRotina],
@@ -233,7 +236,7 @@ export default function HistoricoPage() {
                     <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[0.6875rem] text-ink-muted tabular">
                       <span className="flex items-center gap-1">
                         <Utensils className="h-3 w-3" /> {resumo.refeicoes}/
-                        {REFEICOES_ORDEM.length}
+                        {totalRefeicoes(data)}
                       </span>
                       <span className="flex items-center gap-1">
                         <Droplet className="h-3 w-3" />{" "}
@@ -322,8 +325,10 @@ function Detalhe({
     <div className="space-y-3">
       <div>
         <Eyebrow className="mb-1.5 text-ink-muted">Refeições</Eyebrow>
+        {/* As refeições que o dia tinha: nos dias até 17/10, a quarta é a
+            "Fecha a janela" (o id "jantar"). */}
         <div className="flex flex-wrap gap-1.5">
-          {REFEICOES_ORDEM.map((id) => {
+          {refeicoesDaData(data).map((id) => {
             const feita = dia.meals[id] === true;
             return (
               <span

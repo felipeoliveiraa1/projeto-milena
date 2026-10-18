@@ -10,6 +10,7 @@ import {
   ListChecks,
   Moon,
   NotebookPen,
+  PauseCircle,
   Pencil,
   Pill,
   Plus,
@@ -18,6 +19,7 @@ import {
   Smartphone,
   Sun,
   Sunrise,
+  Sunset,
   Trash2,
   TriangleAlert,
   Utensils,
@@ -61,6 +63,14 @@ import {
   type DayCheck,
 } from "@/lib/storage";
 import { setInicio, statusPlano, useInicio } from "@/lib/protocol";
+import {
+  dataCurtaDe,
+  descreverHorario,
+  horarioDoSuplemento,
+  inicioDaPausa,
+  suplementoEmPausa,
+} from "@/lib/lembretes";
+import { usePreferencias } from "@/lib/settings";
 import { idsRotinaDoDia, novoId, useRotina } from "@/lib/routine";
 import { useDia } from "@/components/day-context";
 import { DaySwitch } from "@/components/day-switch";
@@ -84,6 +94,7 @@ const PERIODOS = [
 const ICONE_BLOCO_REMEDIO: Record<BlocoSuplemento, { Icone: typeof Sunrise; cor: string }> = {
   manha: { Icone: Sunrise, cor: "text-clay" },
   almoco: { Icone: Utensils, cor: "text-clay" },
+  tarde: { Icone: Sunset, cor: "text-clay" },
   noite: { Icone: Moon, cor: "text-plum" },
   semanal: { Icone: CalendarDays, cor: "text-gold" },
 };
@@ -92,10 +103,11 @@ const ICONE_BLOCO_REMEDIO: Record<BlocoSuplemento, { Icone: typeof Sunrise; cor:
 const CLASSE_STATUS: Record<StatusSuplemento, string> = {
   medicamento: "bg-plum text-bone",
   prescricao: "bg-plum-soft text-plum",
+  nutricionista: "bg-clay-soft text-clay-deep",
   suplemento: "bg-brand-soft text-brand",
 };
 
-// Os quatro que saíram têm o mesmo motivo: agrupa para não repetir a frase.
+// Os que saíram pelo mesmo motivo ficam juntos, para não repetir a frase.
 const FORA_POR_MOTIVO = Object.entries(
   FORA_DA_LISTA.reduce<Record<string, string[]>>((acc, f) => {
     (acc[f.porque] ??= []).push(f.nome);
@@ -117,6 +129,8 @@ export default function RotinaPage() {
   const novaData = rascunhoData ?? inicio;
   const { blocos, origem, carregando, salvar, restaurar } = useRotina();
   const { data, ehHoje } = useDia();
+  // Horários dos remédios e pausa antes da cirurgia saem das preferências.
+  const { prefs, carregando: carregandoPrefs } = usePreferencias();
   // O último valor que o banco confirmou para cada item e o número do último
   // toque nele (chave: dia + item). Se um toque não grava, a marca volta para o
   // confirmado — e só se ele foi o último: dois toques sem internet não deixam
@@ -232,6 +246,34 @@ export default function RotinaPage() {
     const nome = NOMES_DIAS[quando.getDay()];
     return faltam === 1 ? `amanhã, ${nome}` : `${nome}, ${dataCurta(quando)}`;
   }
+
+  /** "07:40 · 20 min antes do café". Enquanto as preferências carregam, nada. */
+  function horarioDe(s: Supplement): string | undefined {
+    if (carregandoPrefs) return undefined;
+    const hora = horarioDoSuplemento(s, prefs);
+    if (!hora) return undefined;
+    // Item com linha de lembrete própria (Mounjaro, testosterona, fórmula): a
+    // hora é a do aviso no celular, e a de tomar é a da receita — a de costume,
+    // no caso do Mounjaro e da testosterona.
+    if (s.lembrete) return `Lembrete às ${hora}`;
+    const como = descreverHorario(s);
+    return como ? `${hora} · ${como}` : hora;
+  }
+
+  /** Pausa antes da cirurgia, no dia na tela: a que já vale e a que vem aí. */
+  function pausaDe(s: Supplement): { ativa: string } | { aviso: string } | undefined {
+    const inicio = inicioDaPausa(prefs, s);
+    if (!inicio || !s.pausaAntesDaCirurgiaDias) return undefined;
+    const quando = `${s.pausaAntesDaCirurgiaDias} dias antes da cirurgia`;
+    return suplementoEmPausa(s, prefs, data)
+      ? {
+          ativa: `Em pausa desde ${dataCurtaDe(inicio)} — ${quando}. Volta só quando o médico liberar.`,
+        }
+      : { aviso: `Pausa a partir de ${dataCurtaDe(inicio)} — ${quando}.` };
+  }
+
+  const ordemDaHora = (a: Supplement, b: Supplement) =>
+    (horarioDoSuplemento(a, prefs) ?? "99:99").localeCompare(horarioDoSuplemento(b, prefs) ?? "99:99");
 
   return (
     <div className="stagger space-y-5">
@@ -423,8 +465,8 @@ export default function RotinaPage() {
           Remédios e suplementos
         </h3>
         <p className="mt-2 text-sm leading-relaxed text-ink-muted">
-          A lista que você mandou em 29/09, com a dose do jeito que está nela. Nada aqui muda sem o
-          médico — nem dose, nem dia.
+          Remédios do médico e o protocolo da nutricionista (18/10). Nada aqui muda sem quem
+          receitou — nem dose, nem horário.
         </p>
       </header>
 
@@ -434,7 +476,13 @@ export default function RotinaPage() {
         // O semanal só se marca no dia dele. Nos outros dias ele continua
         // aqui, com a data da próxima vez — as orientações do Mounjaro (e o
         // que fazer se esqueceu) valem a semana inteira.
-        const deHoje = doBloco.filter((s) => entraNoDia(s, diaDaSemanaAtual));
+        // Em pausa antes da cirurgia: aparece, com o aviso, mas não se marca
+        // nem conta. O que já foi marcado antes continua no histórico.
+        const doDia = doBloco
+          .filter((s) => entraNoDia(s, diaDaSemanaAtual))
+          .sort(ordemDaHora);
+        const deHoje = doDia.filter((s) => !suplementoEmPausa(s, prefs, data));
+        const emPausa = doDia.filter((s) => suplementoEmPausa(s, prefs, data));
         const outroDia = doBloco.filter((s) => !entraNoDia(s, diaDaSemanaAtual));
         const feitos = dia ? deHoje.filter((s) => dia.supplements[s.id] === true).length : 0;
         const { Icone, cor } = ICONE_BLOCO_REMEDIO[bloco.id];
@@ -458,16 +506,35 @@ export default function RotinaPage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-2.5">
-              {deHoje.map((s) => (
-                <Fragment key={s.id}>
+              {deHoje.map((s) => {
+                const pausa = pausaDe(s);
+                return (
+                  <Fragment key={s.id}>
+                    <RemedioCard
+                      s={s}
+                      checked={!!dia && dia.supplements[s.id] === true}
+                      onToggle={() => alternar(s.id, toggleSupplement)}
+                      horario={horarioDe(s)}
+                      avisoPausa={pausa && "aviso" in pausa ? pausa.aviso : undefined}
+                      // Sem as preferências ainda não se sabe se a data da
+                      // cirurgia já pausou este item: até carregar, sem checkbox.
+                      aguardando={carregandoPrefs && !!s.pausaAntesDaCirurgiaDias}
+                    />
+                    {falhou(s.id) && <NaoSalvou />}
+                  </Fragment>
+                );
+              })}
+              {emPausa.map((s) => {
+                const pausa = pausaDe(s);
+                return (
+                  // Sem a hora: em pausa, não há horário para tomar.
                   <RemedioCard
+                    key={s.id}
                     s={s}
-                    checked={!!dia && dia.supplements[s.id] === true}
-                    onToggle={() => alternar(s.id, toggleSupplement)}
+                    emPausa={pausa && "ativa" in pausa ? pausa.ativa : "Em pausa."}
                   />
-                  {falhou(s.id) && <NaoSalvou />}
-                </Fragment>
-              ))}
+                );
+              })}
               {outroDia.map((s) => (
                 <Fragment key={s.id}>
                   <RemedioCard
@@ -475,6 +542,7 @@ export default function RotinaPage() {
                     checked={!!dia && dia.supplements[s.id] === true}
                     onToggle={() => alternar(s.id, toggleSupplement)}
                     outroDia={ehHoje ? `Próxima: ${proximaVez(s)}` : "Não entrava nesse dia."}
+                    horario={horarioDe(s)}
                   />
                   {falhou(s.id) && <NaoSalvou />}
                 </Fragment>
@@ -486,7 +554,7 @@ export default function RotinaPage() {
 
       <Card className="border-dashed bg-bone-deep/40">
         <CardContent className="space-y-3 p-5">
-          <p className="text-sm font-bold text-ink-soft">Fora da lista nova</p>
+          <p className="text-sm font-bold text-ink-soft">Fora da lista atual</p>
           {FORA_POR_MOTIVO.map(([porque, nomes]) => (
             <div key={porque} className="space-y-1.5">
               <div className="flex flex-wrap gap-1.5">
@@ -503,7 +571,6 @@ export default function RotinaPage() {
             </div>
           ))}
           <p className="border-t border-line/70 pt-3 text-xs leading-relaxed text-ink-muted">
-            <strong className="text-ink-soft">{VOLTOU_NA_DIETA.nome}:</strong>{" "}
             {VOLTOU_NA_DIETA.texto}
           </p>
         </CardContent>
@@ -540,21 +607,37 @@ export default function RotinaPage() {
  * tela — mas a um toque, porque elas valem a semana toda. E dá para marcar
  * fora do dia: a bula do Mounjaro permite aplicar a dose esquecida em até 4
  * dias, e o registro precisa cair no dia em que ela aplicou de verdade.
+ *
+ * Em pausa antes da cirurgia, o cartão fica fechado, sem checkbox e sem hora:
+ * o item só volta quando o médico liberar.
  */
 function RemedioCard({
   s,
   checked = false,
   onToggle,
   outroDia,
+  horario,
+  emPausa,
+  avisoPausa,
+  aguardando = false,
 }: {
   s: Supplement;
   checked?: boolean;
   onToggle?: () => void;
   /** Quando o item não é do dia na tela: a linha que diz quando ele volta. */
   outroDia?: string;
+  /** "07:40 · 20 min antes do café". */
+  horario?: string;
+  /** Em pausa nesse dia: o aviso que fica no lugar do checkbox. */
+  emPausa?: string;
+  /** A pausa ainda vai começar: a data em que ela começa. */
+  avisoPausa?: string;
+  /** Ainda não dá para saber se está em pausa: mostra tudo, mas sem checkbox. */
+  aguardando?: boolean;
 }) {
   const [aberto, setAberto] = useState(false);
-  const ehDoDia = outroDia === undefined;
+  const pausado = emPausa !== undefined;
+  const ehDoDia = outroDia === undefined && !pausado;
   const mostrarTudo = ehDoDia || aberto;
   const selo = frequencia(s);
 
@@ -562,7 +645,7 @@ function RemedioCard({
     <div
       className={cn(
         "rounded-xl2 border p-4 transition",
-        checked
+        checked && !pausado
           ? "border-brand/20 bg-brand-soft/40"
           : ehDoDia
             ? "border-line bg-surface"
@@ -570,22 +653,39 @@ function RemedioCard({
       )}
     >
       <div className="flex items-start gap-3">
-        {ehDoDia ? (
+        {ehDoDia && aguardando ? (
+          <span
+            className="mt-0.5 h-6 w-6 shrink-0 rounded-lg border-2 border-dashed border-line"
+            aria-hidden
+          />
+        ) : ehDoDia ? (
           <Checkbox
             checked={checked}
             onCheckedChange={() => onToggle?.()}
             aria-label={`Marcar ${s.nome}`}
             className="mt-0.5"
           />
+        ) : pausado ? (
+          <PauseCircle className="mt-0.5 h-5 w-5 shrink-0 text-gold" aria-hidden />
         ) : (
           <CalendarClock className="mt-0.5 h-5 w-5 shrink-0 text-ink-muted" aria-hidden />
         )}
         <div className="min-w-0 flex-1">
-          <p className={cn("font-bold", checked ? "text-ink-muted line-through" : "text-ink")}>
+          <p
+            className={cn(
+              "font-bold",
+              checked && !pausado ? "text-ink-muted line-through" : pausado ? "text-ink-soft" : "text-ink",
+            )}
+          >
             <Pill className="mr-1.5 inline h-3.5 w-3.5 text-clay" />
             {s.nome}
           </p>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {horario && !pausado && (
+              <span className="rounded-full bg-clay-soft px-2 py-0.5 text-[0.625rem] font-bold text-clay-deep tabular">
+                {horario}
+              </span>
+            )}
             {selo && (
               <span className="rounded-full bg-gold-soft px-2 py-0.5 text-[0.625rem] font-bold text-gold">
                 {selo}
@@ -601,7 +701,19 @@ function RemedioCard({
             </span>
           </div>
           <p className="mt-1.5 text-xs font-semibold text-ink-soft">{s.dose}</p>
-          {!ehDoDia && <p className="mt-1 text-xs text-ink-muted">{outroDia}</p>}
+          {outroDia !== undefined && !pausado && (
+            <p className="mt-1 text-xs text-ink-muted">{outroDia}</p>
+          )}
+          {pausado && (
+            <p className="mt-2 rounded-xl bg-gold-soft p-3 text-xs leading-relaxed font-semibold text-gold">
+              {emPausa}
+            </p>
+          )}
+          {avisoPausa && !pausado && (
+            <p className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-gold">
+              <PauseCircle className="h-3.5 w-3.5 shrink-0" /> {avisoPausa}
+            </p>
+          )}
 
           {mostrarTudo && (
             <div className="space-y-2">
@@ -648,7 +760,7 @@ function RemedioCard({
 
               {s.antes && (
                 <p className="text-[0.6875rem] leading-relaxed text-ink-muted">
-                  <strong className="text-ink-soft">Mudou em 29/09:</strong> {s.antes}
+                  <strong className="text-ink-soft">O que mudou:</strong> {s.antes}
                 </p>
               )}
             </div>
@@ -668,23 +780,25 @@ function RemedioCard({
                 {aberto ? "Fechar" : "Como usar e cuidados"}
                 <ChevronDown className={cn("h-3.5 w-3.5 transition", aberto && "rotate-180")} />
               </button>
-              <button
-                type="button"
-                onClick={() => onToggle?.()}
-                aria-pressed={checked}
-                className={cn(
-                  "inline-flex min-h-11 items-center gap-1 text-xs font-semibold transition hover:text-ink",
-                  checked ? "text-brand" : "text-ink-muted",
-                )}
-              >
-                {checked ? (
-                  <>
-                    <CheckCircle2 className="h-3.5 w-3.5" /> Feito fora do dia · desfazer
-                  </>
-                ) : (
-                  "Marcar como feito fora do dia"
-                )}
-              </button>
+              {!pausado && (
+                <button
+                  type="button"
+                  onClick={() => onToggle?.()}
+                  aria-pressed={checked}
+                  className={cn(
+                    "inline-flex min-h-11 items-center gap-1 text-xs font-semibold transition hover:text-ink",
+                    checked ? "text-brand" : "text-ink-muted",
+                  )}
+                >
+                  {checked ? (
+                    <>
+                      <CheckCircle2 className="h-3.5 w-3.5" /> Feito fora do dia · desfazer
+                    </>
+                  ) : (
+                    "Marcar como feito fora do dia"
+                  )}
+                </button>
+              )}
             </div>
           )}
         </div>

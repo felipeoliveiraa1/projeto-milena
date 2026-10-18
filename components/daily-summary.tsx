@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Ring } from "@/components/ui/ring";
 import { PLANO } from "@/data/protocol";
 import { EVENTO_DIA_GRAVADO, getDay, getStreak } from "@/lib/storage";
-import { formatarAgua, resumoDoDia } from "@/lib/score";
+import { formatarAgua, resumoDoDia, totalRefeicoes } from "@/lib/score";
 import { dataExtenso } from "@/lib/date";
 import { statusPlano, useInicio, usePlano } from "@/lib/protocol";
 import { idsRotinaDoDia, useRotina } from "@/lib/routine";
@@ -67,7 +67,7 @@ export function DailySummary() {
     Promise.all([getDay(data), getStreak()])
       .then(([day, streakValue]) => {
         if (!valendo) return;
-        const resumo = resumoDoDia(day, { metaAgua, idsRotina: ids });
+        const resumo = resumoDoDia(day, { metaAgua, idsRotina: ids, data });
         setPct(resumo.pct);
         setParciais({
           refeicoes: resumo.refeicoes,
@@ -135,9 +135,10 @@ export function DailySummary() {
 
         {/* Abaixo de 360 px, 2 × 2: em 4 colunas os rótulos vazavam da caixinha. */}
         <div className="grid grid-cols-2 gap-2 min-[360px]:grid-cols-4">
+          {/* 3 refeições desde o plano da nutricionista (18/10); 4 nos dias de antes. */}
           <Mini
             icone={<Utensils className="h-3.5 w-3.5" />}
-            valor={`${parciais.refeicoes}/4`}
+            valor={`${parciais.refeicoes}/${totalRefeicoes(data)}`}
             rotulo="refeições"
           />
           <Mini

@@ -1,19 +1,37 @@
 /**
- * Remédios e suplementos — a lista que a Milena mandou em 29/09/2026.
+ * Remédios e suplementos — a lista do médico que a Milena mandou em
+ * 29/09/2026 e o protocolo da nutricionista de 18/10/2026.
  *
- * A dose de cada item está escrita do jeito que veio na lista. O app não
+ * A dose de cada item está escrita do jeito que veio na receita. O app não
  * inventa quantidade, não escolhe horário que não foi dado e não promete
- * efeito do que não conhece: o que vai na fórmula, por exemplo, está na
- * receita, não aqui.
+ * efeito do que não conhece. Mudar dose, horário ou tirar um item é sempre
+ * com quem receitou.
  *
- * O que mudou em relação à lista antiga (a do Desinflama-se):
+ * O protocolo de 18/10 (status "nutricionista"):
+ * - entraram probiótico, mio-inositol (manhã e tarde), psyllium (almoço e
+ *   tarde), curcumina e magnésio glicinato; o ômega-3 voltou, com a dose
+ *   nova e o mesmo id de antes, para o histórico continuar junto;
+ * - a creatina ganhou dose (5 g) e horário (depois do treino; sem treino, ao
+ *   acordar), e a fórmula continua a mesma, agora com a composição escrita;
+ * - a receita põe o mio-inositol e o psyllium da tarde "antes do jantar".
+ *   Como a última refeição do plano é o lanche da tarde, eles ficaram antes
+ *   dele — com o aviso para confirmar com a nutricionista;
+ * - ômega-3 e curcumina param 30 dias antes da cirurgia
+ *   (pausaAntesDaCirurgiaDias) e só voltam com a liberação do médico.
+ *
+ * Cada item tem um horário relativo (acordar, café, almoço, lanche, deitar):
+ * os lembretes do celular e as telas calculam a hora a partir dos horários
+ * dela e da janela de comer — ver lib/lembretes.ts.
+ *
+ * A lista de 29/09, em relação à antiga (a do Desinflama-se):
  * - entraram testosterona, fórmula e Mounjaro;
  * - a B12 passou da manhã para a noite, a vitamina D da segunda para o
  *   domingo, e o colágeno virou comprimido;
- * - NAC, glutamina, ômega 3 e Pró Magnésio não estão na lista nova. Ficam em
- *   FORA_DA_LISTA, visíveis na tela, para nada sumir sem explicação;
- * - o whey, suspenso no protocolo antigo por ser derivado do leite, voltou no
- *   lanche da tarde e mora na aba Dieta.
+ * - NAC, glutamina, ômega 3 e Pró Magnésio não vieram nela e foram para
+ *   FORA_DA_LISTA, visíveis na tela, para nada sumir sem explicação. O
+ *   ômega-3 saiu de lá em 18/10, quando a nutricionista o passou de novo;
+ * - o whey, suspenso no protocolo antigo, voltou. Hoje é o whey isolado sem
+ *   lactose do plano alimentar e mora na aba Dieta.
  *
  * Os avisos do Mounjaro foram conferidos na bula brasileira e no guia do
  * paciente da FDA; os da testosterona, nas bulas do gel (a do Androgel no
@@ -38,14 +56,22 @@ import type { RotinaBloco } from "./protocol";
 /** Períodos da rotina: manhã (até 12h), dia (12h–18h) e noite (depois das 18h). */
 export type PeriodoRotina = RotinaBloco["periodo"];
 
-export type BlocoSuplemento = "manha" | "almoco" | "noite" | "semanal";
+export type BlocoSuplemento = "manha" | "almoco" | "tarde" | "noite" | "semanal";
 
 /**
  * medicamento = remédio com bula e receita — só o médico mexe;
  * prescricao = passado pelo médico, na dose da receita;
+ * nutricionista = do protocolo da nutricionista (18/10), na dose que ela passou;
  * suplemento = de venda livre, parte da rotina.
  */
-export type StatusSuplemento = "medicamento" | "prescricao" | "suplemento";
+export type StatusSuplemento = "medicamento" | "prescricao" | "nutricionista" | "suplemento";
+
+/**
+ * De que momento do dia o horário de um item é contado. acordar e deitar são
+ * os horários dela (Ajustes → Seus horários); café, almoço e lanche saem da
+ * janela de comer (lib/janela.ts → horariosDaJanela).
+ */
+export type Ancora = "acordar" | "cafe" | "almoco" | "lanche" | "deitar";
 
 export type Supplement = {
   id: string;
@@ -67,11 +93,31 @@ export type Supplement = {
   /** O que mudou em relação à lista antiga — a troca não passa em silêncio. */
   antes?: string;
   status: StatusSuplemento;
+  /**
+   * Hora do lembrete: `minutos` antes (negativo) ou depois do momento da
+   * âncora — { ancora: "cafe", minutos: -20 } = 20 min antes do café. Sem
+   * isto, o item não tem lembrete.
+   */
+  horario?: { ancora: Ancora; minutos: number };
+  /**
+   * Quantos dias antes da cirurgia o item para. Só vale quando a data da
+   * contagem regressiva é a da cirurgia; a pausa continua depois dela, até o
+   * médico liberar (ver lib/lembretes.ts → suplementoEmPausa).
+   */
+  pausaAntesDaCirurgiaDias?: number;
+  /**
+   * A linha do lembrete no celular, quando não é "nome curto — dose" (a dose
+   * longa demais para a tela bloqueada, ou o aviso que só lembra o dia). Com
+   * ela, as telas mostram "Lembrete às HH:MM": a hora é a do aviso, e quem
+   * manda no horário de tomar é a receita.
+   */
+  lembrete?: string;
 };
 
 export const ROTULO_STATUS: Record<StatusSuplemento, string> = {
   medicamento: "Medicamento",
   prescricao: "Prescrição médica",
+  nutricionista: "Nutricionista",
   suplemento: "Suplemento",
 };
 
@@ -89,19 +135,25 @@ export const BLOCOS_SUPLEMENTOS: {
   {
     id: "manha",
     titulo: "De manhã",
-    detalhe: "No começo do dia.",
+    detalhe: "Ao acordar e antes do café da manhã.",
     periodo: "manha",
   },
   {
     id: "almoco",
-    titulo: "Depois do almoço",
-    detalhe: "Logo depois da refeição do meio do dia.",
+    titulo: "No almoço",
+    detalhe: "Antes, junto e depois da refeição do meio do dia — cada um na sua hora.",
+    periodo: "dia",
+  },
+  {
+    id: "tarde",
+    titulo: "Antes do lanche da tarde",
+    detalhe: "20 min antes da última refeição do dia.",
     periodo: "dia",
   },
   {
     id: "noite",
     titulo: "À noite",
-    detalhe: "Antes de dormir, com a janela de comer já fechada.",
+    detalhe: "30 min antes de deitar, com a janela de comer já fechada.",
     periodo: "noite",
   },
   {
@@ -111,6 +163,15 @@ export const BLOCOS_SUPLEMENTOS: {
     periodo: "dia-todo",
   },
 ];
+
+// Os dois psyllium e os dois que param antes da cirurgia levam o mesmo aviso.
+// Entalou é emergência (192); intestino preso com a barriga dura é atendimento
+// no mesmo dia — e a próxima dose espera.
+const ALERTA_PSYLLIUM =
+  "Sempre com bastante água: seco ou com pouca água, ele pode entalar ou prender o intestino. Sentiu que entalou — dor ou aperto no peito, não consegue engolir nem a saliva, ou falta de ar: ligue 192 (SAMU). Barriga muito dura e estufada: não tome a próxima dose, procure atendimento no mesmo dia e avise a nutricionista.";
+
+const ALERTA_PAUSA_CIRURGIA =
+  "Pausar 30 dias antes da cirurgia e só voltar quando o médico liberar. Ponha a data em Ajustes → Contagem regressiva e marque “É a data da cirurgia”: o app avisa e pausa sozinho.";
 
 export const SUPPLEMENTS: Supplement[] = [
   /* ----------------------------- manhã ----------------------------------- */
@@ -123,6 +184,7 @@ export const SUPPLEMENTS: Supplement[] = [
     funcao: "Hormônio receitado pelo médico. O app só lembra — dose e ajuste são com ele.",
     comoUsar: [
       "Sempre no mesmo horário. A lista não diz qual, então aqui ela fica de manhã — vale o que o médico indicou.",
+      "O lembrete chega na hora de acordar, só para lembrar: passe no horário de sempre, depois do banho.",
       // Banho logo depois de passar leva parte da dose embora.
       "Passe depois do banho, na pele limpa e seca. Se o banho do treino cair dentro das horas sem molhar, treine antes, tome banho e passe depois dele — e mantenha esse horário nos outros dias.",
       "Lave as mãos com água e sabão logo depois de passar.",
@@ -147,34 +209,142 @@ export const SUPPLEMENTS: Supplement[] = [
       "Espinhas, pelos novos, queda de cabelo ou voz mais grossa: avise o médico logo — a mudança na voz pode não voltar.",
     ],
     status: "medicamento",
+    horario: { ancora: "acordar", minutos: 0 },
+    lembrete: "Testosterona — 1 pump, no horário que o médico indicou",
   },
   {
     id: "creatina",
     nome: "Creatina",
     curto: "Creatina",
-    dose: "Dose habitual, todo dia",
+    dose: "5 g — logo depois do treino; nos dias sem treino, ao acordar",
     bloco: "manha",
     funcao:
       "Mais força e recuperação no treino. Treino que rende é o que protege o músculo enquanto a gordura sai.",
     comoUsar: [
-      "A dose habitual costuma ser de 3 a 5 g — siga a que você já usa.",
+      "5 g por dose, como a nutricionista passou.",
       "Todo dia, inclusive sem treino: o efeito vem de manter o músculo abastecido. Não precisa ciclar.",
-      "O horário importa pouco; o que conta é não pular. Ficou de manhã, como já estava.",
+      "Dia de treino: logo depois dele. Dia sem treino: ao acordar. O lembrete vem na hora de acordar — se for treinar, deixe para depois do treino.",
       "Beba água ao longo do dia.",
     ],
-    status: "suplemento",
+    antes: "Era a dose habitual, de manhã. Em 18/10 a nutricionista passou 5 g, depois do treino.",
+    status: "nutricionista",
+    horario: { ancora: "acordar", minutos: 0 },
+  },
+  {
+    id: "probiotico",
+    nome: "Probiótico multi-cepas",
+    curto: "Probiótico",
+    dose: "10 bilhões UFC, em jejum ao acordar",
+    bloco: "manha",
+    funcao: "Ajuda o intestino a funcionar e cuida da flora intestinal.",
+    comoUsar: ["Em jejum, logo ao acordar, com água."],
+    status: "nutricionista",
+    horario: { ancora: "acordar", minutos: 0 },
+  },
+  {
+    id: "mio-cafe",
+    nome: "Mio-inositol",
+    curto: "Mio-inositol (manhã)",
+    dose: "2 g — 20 min antes do café da manhã",
+    bloco: "manha",
+    funcao: "Ajuda o corpo a usar melhor o açúcar do sangue.",
+    comoUsar: ["Misture o pó em um pouco de água."],
+    status: "nutricionista",
+    horario: { ancora: "cafe", minutos: -20 },
   },
 
-  /* -------------------------- depois do almoço ---------------------------- */
+  /* ------------------------------ almoço --------------------------------- */
+  {
+    id: "psyllium-almoco",
+    nome: "Psyllium (casca) em pó",
+    curto: "Psyllium (almoço)",
+    dose: "10 g (1 colher de sopa) em 200–300 ml de água, 15–20 min antes do almoço",
+    bloco: "almoco",
+    funcao:
+      "Fibra que ajuda o intestino e o controle do açúcar e do colesterol depois das refeições.",
+    comoUsar: [
+      "Misture em 200–300 ml de água e beba logo, antes de engrossar.",
+      "15 a 20 minutos antes da refeição.",
+    ],
+    alertas: [ALERTA_PSYLLIUM],
+    status: "nutricionista",
+    horario: { ancora: "almoco", minutos: -20 },
+  },
+  {
+    // O mesmo id do ômega 3 da lista antiga: o histórico de antes de 29/09
+    // continua junto do item de agora.
+    id: "omega3",
+    nome: "Ômega-3 (EPA/DHA) em óleo",
+    curto: "Ômega-3",
+    dose: "EPA 1.600 mg + DHA 800 mg (2,4 g no total), junto do almoço",
+    bloco: "almoco",
+    funcao: "Gordura boa para o coração e para as gorduras do sangue.",
+    comoUsar: ["Junto do almoço — com comida que tem gordura, o corpo aproveita melhor."],
+    alertas: [ALERTA_PAUSA_CIRURGIA],
+    antes: "Tinha saído na lista de 29/09. Voltou em 18/10, no protocolo da nutricionista.",
+    status: "nutricionista",
+    horario: { ancora: "almoco", minutos: 0 },
+    pausaAntesDaCirurgiaDias: 30,
+  },
   {
     id: "formula",
     nome: "Fórmula",
     curto: "Fórmula",
-    dose: "1 dose após o almoço",
+    dose: "1 dose após o almoço (a nutricionista pediu para manter a fórmula atual)",
     bloco: "almoco",
-    funcao:
-      "A fórmula que o médico prescreveu. O que vai nela está na receita — por isso o app não promete efeito.",
+    funcao: "Vitaminas e minerais da fórmula de sempre.",
+    comoUsar: [
+      "Na fórmula: metilfolato 1 mg, piridoxal-5-fosfato (vitamina B6) 25 mg, biotina 5 mg, niacina (B3) 50 mg, cobre 1 mg, selênio 50 mcg e zinco quelato 10 mg.",
+    ],
     status: "prescricao",
+    horario: { ancora: "almoco", minutos: 30 },
+    lembrete: "Fórmula — 1 dose após o almoço",
+  },
+  {
+    id: "curcumina",
+    nome: "Curcumina (extrato padronizado)",
+    curto: "Curcumina",
+    dose: "500 mg, depois do almoço",
+    bloco: "almoco",
+    funcao: "Antioxidante e anti-inflamatório.",
+    comoUsar: ["Depois do almoço, que tem gordura."],
+    alertas: [ALERTA_PAUSA_CIRURGIA],
+    status: "nutricionista",
+    horario: { ancora: "almoco", minutos: 30 },
+    pausaAntesDaCirurgiaDias: 30,
+  },
+
+  /* ----------------------- antes do lanche da tarde ----------------------- */
+  {
+    id: "mio-lanche",
+    nome: "Mio-inositol",
+    curto: "Mio-inositol (tarde)",
+    dose: "2 g — 20 min antes do lanche da tarde",
+    bloco: "tarde",
+    funcao: "Ajuda o corpo a usar melhor o açúcar do sangue.",
+    comoUsar: ["Misture o pó em um pouco de água."],
+    observacao:
+      "Na receita está 'antes do jantar'. Como no seu plano a última refeição é o lanche da tarde, o app pôs antes dele — confirme com a nutricionista.",
+    status: "nutricionista",
+    horario: { ancora: "lanche", minutos: -20 },
+  },
+  {
+    id: "psyllium-lanche",
+    nome: "Psyllium (casca) em pó",
+    curto: "Psyllium (tarde)",
+    dose: "10 g em 200–300 ml de água, 15–20 min antes do lanche da tarde",
+    bloco: "tarde",
+    funcao:
+      "Fibra que ajuda o intestino e o controle do açúcar e do colesterol depois das refeições.",
+    comoUsar: [
+      "Misture em 200–300 ml de água e beba logo, antes de engrossar.",
+      "15 a 20 minutos antes da refeição.",
+    ],
+    observacao:
+      "Na receita está 'antes do jantar'. Como no seu plano a última refeição é o lanche da tarde, o app pôs antes dele — confirme com a nutricionista.",
+    alertas: [ALERTA_PSYLLIUM],
+    status: "nutricionista",
+    horario: { ancora: "lanche", minutos: -20 },
   },
 
   /* ----------------------------- noite ----------------------------------- */
@@ -189,6 +359,7 @@ export const SUPPLEMENTS: Supplement[] = [
     comoUsar: ["Deixe dissolver embaixo da língua, sem engolir inteiro nem mastigar."],
     antes: "Estava de manhã. A lista de 29/09 diz à noite — vale a lista.",
     status: "prescricao",
+    horario: { ancora: "deitar", minutos: -30 },
   },
   {
     id: "colageno",
@@ -201,9 +372,20 @@ export const SUPPLEMENTS: Supplement[] = [
       "Colágeno é proteína, então tem um pouco de caloria. Se quiser o jejum da noite sem nada, pergunte ao médico se os comprimidos podem ir para a última refeição da janela. Até lá, vale a lista: à noite.",
     ],
     observacao:
-      "Não entra na conta da proteína do dia: é pouca e de um tipo incompleto. Os 90–100 g vêm da comida e do whey.",
+      "Não entra na conta da proteína do dia: é pouca e de um tipo incompleto. A proteína vem das refeições do plano alimentar.",
     antes: "O app mandava dissolver na água ou no chá da noite. Agora são 4 comprimidos.",
     status: "suplemento",
+    horario: { ancora: "deitar", minutos: -30 },
+  },
+  {
+    id: "magnesio-glicinato",
+    nome: "Magnésio glicinato",
+    curto: "Magnésio",
+    dose: "300 mg — 30 min antes de deitar",
+    bloco: "noite",
+    funcao: "Ajuda o intestino, relaxa os músculos e ajuda no sono.",
+    status: "nutricionista",
+    horario: { ancora: "deitar", minutos: -30 },
   },
 
   /* -------------------------- uma vez por semana -------------------------- */
@@ -214,6 +396,10 @@ export const SUPPLEMENTS: Supplement[] = [
     dose: "1 aplicação por semana, na quinta",
     bloco: "semanal",
     dias: [4], // quinta-feira
+    // A bula deixa a qualquer hora do dia: o lembrete chega cedo e só avisa
+    // que é o dia — a hora continua a de costume.
+    horario: { ancora: "acordar", minutos: 0 },
+    lembrete: "Dia do Mounjaro: aplique hoje, no horário de costume.",
     funcao:
       "Tirzepatida: diminui a fome e deixa a digestão mais lenta — é por causa dele que comer à noite pesa. Na bula, 2,5 mg é a dose de início; se e quando sobe, quem decide é o médico.",
     comoUsar: [
@@ -233,7 +419,7 @@ export const SUPPLEMENTS: Supplement[] = [
       "Sinais de alergia forte — inchaço na boca ou na garganta, dificuldade para respirar ou engolir, tontura forte, coração muito acelerado ou desmaio: ligue 192 (SAMU), sem ir dirigindo. Inchaço no rosto ou vermelhidão e coceira fortes pelo corpo, sem esses sinais: procure atendimento na hora. Vergões ou coceira leves: avise o médico. Em todos os casos, não aplique de novo antes de falar com ele.",
       "Vômito ou diarreia que não param, ou sinais de desidratação (boca seca, pouco xixi, tontura): procure atendimento. Desidratação pesa nos rins.",
       "Dor no alto da barriga, febre, pele ou olhos amarelados ou fezes claras: avise o médico logo — pode ser a vesícula.",
-      // A bula fala do pescoço (tireoide): falta de ar que vem aos poucos é
+      // A bula fala de caroço no pescoço: falta de ar que vem aos poucos é
       // conversa com o médico. A de repente é emergência — a mesma ordem de
       // data/alarmes.ts.
       "Caroço ou inchaço no pescoço, rouquidão que não passa, dificuldade para engolir ou falta de ar que vem piorando aos poucos: avise o médico. Falta de ar de repente é outra coisa: 192 (SAMU).",
@@ -257,9 +443,10 @@ export const SUPPLEMENTS: Supplement[] = [
     dose: "1 cápsula por semana, no domingo, depois do café da manhã",
     bloco: "semanal",
     dias: [0], // domingo
+    horario: { ancora: "cafe", minutos: 20 },
     funcao: "Ajuda o corpo a aproveitar o cálcio e a cuidar dos ossos. A dose é a que o médico passou.",
     observacao:
-      "Vitamina D se dissolve em gordura: depois do café da manhã, que tem ovo e queijo, o corpo aproveita melhor.",
+      "Vitamina D se dissolve em gordura: depois do café da manhã, que tem ovo, azeite ou pasta de amendoim, o corpo aproveita melhor.",
     antes: "Era na segunda. A lista de 29/09 passou para o domingo.",
     status: "prescricao",
   },
@@ -270,21 +457,29 @@ export const SUPPLEMENTS: Supplement[] = [
 /* -------------------------------------------------------------------------- */
 
 const NAO_ESTA_NA_LISTA =
-  "Não está na lista que você mandou em 29/09. Se ainda toma, avise para voltar ao app.";
+  "Não estão na lista do médico de 29/09 nem no protocolo da nutricionista de 18/10. Se ainda toma algum deles, avise para voltar ao app.";
 
-/** Estavam na lista antiga e não vieram na de 29/09. Os ids são os do histórico. */
+/**
+ * Estavam na lista antiga e não vieram na de 29/09. Os ids são os do
+ * histórico. O ômega 3 saiu daqui em 18/10: voltou com a nutricionista, com o
+ * mesmo id.
+ */
 export const FORA_DA_LISTA: { id: string; nome: string; porque: string }[] = [
   { id: "nac", nome: "NAC", porque: NAO_ESTA_NA_LISTA },
   { id: "glutamina", nome: "Glutamina", porque: NAO_ESTA_NA_LISTA },
-  { id: "omega3", nome: "Ômega 3", porque: NAO_ESTA_NA_LISTA },
-  { id: "magnesio", nome: "Pró Magnésio", porque: NAO_ESTA_NA_LISTA },
+  {
+    id: "magnesio",
+    nome: "Pró Magnésio",
+    porque:
+      "Não está na lista do médico de 29/09. O magnésio de agora é outro: o magnésio glicinato, do protocolo da nutricionista, no bloco da noite. Ainda toma o Pró Magnésio? Pergunte a ela antes de tomar os dois.",
+  },
 ];
 
 /** Estava suspenso no protocolo antigo e voltou com o plano novo. */
 export const VOLTOU_NA_DIETA = {
   nome: "Whey protein",
   texto:
-    "Estava suspenso no protocolo antigo, por ser derivado do leite. No plano novo ele voltou, no lanche da tarde — e fica na aba Dieta, junto das refeições.",
+    "Whey protein isolado sem lactose — 25–30 g, depois do treino ou como lanche da tarde. Está no plano alimentar (aba Dieta).",
 };
 
 /* -------------------------------------------------------------------------- */

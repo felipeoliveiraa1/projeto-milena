@@ -10,8 +10,8 @@ import { TABELA_BIOIMPEDANCIA, limparExamesLocais } from "./bioimpedancia";
  *
  * Cada parte é opcional de propósito: quase sempre o que se quer apagar é o
  * progresso (dias, pesagens, medidas, fotos, exames), e não a configuração —
- * metas, janela do jejum, fase do treino e a rotina que ela montou continuam
- * de pé, a não ser que ela peça.
+ * metas, janela do jejum, horários, lembretes, contagem regressiva e a rotina
+ * que ela montou continuam de pé, a não ser que ela peça.
  *
  * Não tem desfazer. Quem chama isto já confirmou.
  */

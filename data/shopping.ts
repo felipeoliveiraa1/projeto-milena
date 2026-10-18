@@ -1,23 +1,38 @@
 /**
- * Catálogo de compras do cardápio da recomposição corporal.
+ * Catálogo de compras do plano da nutricionista (18/10/2026).
  *
- * Só entra aqui o que o cardápio da semana usa (data/meals.ts) e o que é de
- * despensa. As quantidades são de uma semana inteira — marcar os sete dias na
- * dieta dá exatamente esta compra.
+ * A lista da semana é calculada: para cada refeição ela escolhe em quantos dias
+ * come a opção 1 (o resto da semana é a opção 2), e a quantidade de cada
+ * ingrediente é a soma de (porção × dias) em todas as opções que o usam. As
+ * porções moram no próprio plano (data/meals.ts), na unidade daqui: `un`, `g`
+ * ou `ml`.
  *
- * Os ids são referenciados pelo cardápio — mexer em um id quebra a lista
- * automática, então mantenha-os estáveis. Os que já existiam no Desinflama-se
- * (ovos, frango, legumes, frutas, temperos) continuam com o mesmo id.
+ * Os ids ficam gravados nas marcas de "já comprado" (shopping_state.items), por
+ * isso um id antigo só volta para o mesmo alimento. Os que eram de alimentos que
+ * saíram do plano (pão, patinho, iogurte proteico, o whey de antes…) não voltam
+ * para outra coisa: a marca antiga passaria a valer para o item novo.
  */
+
+import { PLANO_ALIMENTAR, REFEICOES_ORDEM, type RefeicaoPlanoId } from "./meals";
+
+export type Unidade = "un" | "g" | "ml";
 
 export type ShoppingItem = {
   id: string;
   nome: string;
-  quantidade: string;
+  /** A unidade das porções no plano (data/meals.ts). */
+  unidade: Unidade;
   /** Aviso de rótulo ou de preparo que importa na hora de comprar. */
   nota?: string;
-  /** Itens de despensa que entram na lista mesmo sem estar no cardápio do dia. */
+  /** Despensa: entra em toda lista, mesmo que a semana não use. */
   essencial?: boolean;
+  /** Quantidade escrita à mão — a dos essenciais, que não sai da conta. */
+  quantidade?: string;
+  /**
+   * Como o total da semana vira texto de compra ("2 latas", "1 dúzia e meia").
+   * Sem ela, vale o arredondamento padrão da unidade.
+   */
+  formato?: (total: number) => string;
 };
 
 export type ShoppingCategory = {
@@ -27,108 +42,148 @@ export type ShoppingCategory = {
   itens: ShoppingItem[];
 };
 
+/* -------------------------------------------------------------------------- */
+/* Arredondamento                                                             */
+/* -------------------------------------------------------------------------- */
+
+// As porções são frações exatas (½ tomate, ¼ de pepino), mas a soma em ponto
+// flutuante pode passar um fio do inteiro: 2,0000000001 não vira 3 tomates.
+const acima = (n: number, passo = 1) => Math.ceil(n / passo - 1e-9) * passo;
+
+const plural = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`;
+
+/**
+ * Arredonda para cima no passo do tamanho — de 10 em 10 até 100, de 50 em 50
+ * até 1.000, depois de 100 em 100 — e escreve em g/kg ou ml/L. A troca de
+ * unidade é depois do arredondamento: 980 g vira "1 kg", nunca "1000 g".
+ */
+function formatarMedida(total: number, pequena: string, grande: string): string {
+  if (total <= 0) return `0 ${pequena}`;
+  const passo = total < 100 ? 10 : total < 1000 ? 50 : 100;
+  const n = acima(total, passo);
+  if (n < 1000) return `${n} ${pequena}`;
+  return `${String(n / 1000).replace(".", ",")} ${grande}`;
+}
+
+export const formatarGramas = (total: number) => formatarMedida(total, "g", "kg");
+const formatarMl = (total: number) => formatarMedida(total, "ml", "L");
+
+const unidades = (total: number) => plural(acima(total), "unidade", "unidades");
+
+/** Ovos de meia em meia dúzia: "meia dúzia", "1 dúzia e meia", "3 dúzias". */
+export function formatarOvos(total: number): string {
+  const meias = acima(total / 6);
+  const duzias = Math.floor(meias / 2);
+  const meia = meias % 2 === 1;
+  const texto =
+    duzias === 0
+      ? "meia dúzia"
+      : `${plural(duzias, "dúzia", "dúzias")}${meia ? " e meia" : ""}`;
+  return `${texto} (${acima(total)} na semana)`;
+}
+
+/** Colheres de sopa de 10 g — a medida das sementes no plano. */
+const colheres = (total: number) =>
+  `${formatarGramas(total)} (${plural(acima(total / 10), "colher de sopa", "colheres de sopa")})`;
+
+export function formatarQuantidade(item: ShoppingItem, total: number): string {
+  if (item.formato && total > 0) return item.formato(total);
+  if (item.quantidade) return item.quantidade;
+  if (item.unidade === "g") return formatarGramas(total);
+  if (item.unidade === "ml") return formatarMl(total);
+  return unidades(total);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Catálogo                                                                   */
+/* -------------------------------------------------------------------------- */
+
 export const SHOPPING_LIST: ShoppingCategory[] = [
   {
     id: "proteinas",
-    nome: "Carnes e ovos",
+    nome: "Carnes, peixes e ovos",
     icone: "🍗",
     itens: [
+      // As claras contam como ovo inteiro: é assim que se compra.
+      { id: "pr-ovos", nome: "Ovos", unidade: "un", formato: formatarOvos },
+      {
+        id: "pr-sardinha-atum",
+        nome: "Sardinha ou atum em lata",
+        unidade: "g",
+        // Uma lata rende uns 100 g escorridos — duas porções do café da manhã.
+        formato: (g) => `${plural(acima(g / 100), "lata", "latas")} (uns ${formatarGramas(g)} escorridos)`,
+        nota: "50 g por café da manhã. No lugar, o plano também aceita 80 g de peito de frango desfiado.",
+      },
       {
         id: "pr-frango-peito",
         nome: "Peito de frango",
-        quantidade: "800 g",
-        nota: "Dá 3 almoços de 120 g e 2 fechamentos de 70 g. Compre com folga: cru, ele encolhe no preparo.",
-      },
-      {
-        id: "pr-patinho",
-        nome: "Patinho",
-        quantidade: "400 g",
-        nota: "Metade em iscas, metade moído. Peça para moer na hora, sem a capa de gordura.",
+        unidade: "g",
+        nota: "150 g grelhado por almoço — é o peso pronto. Cru, o frango encolhe no preparo: compre com folga.",
       },
       {
         id: "pr-peixe",
-        nome: "Filé de peixe (tilápia, merluza ou pescada)",
-        quantidade: "400 g",
-        nota: "Qualquer peixe de que você goste — frutos do mar e sardinha, não. De vez em quando, salmão ou truta.",
-      },
-      {
-        id: "pr-ovos",
-        nome: "Ovos",
-        quantidade: "2 dúzias",
-        nota: "Sobra um pouco de propósito: para as claras a mais nos dias sem fechamento e para um lanche com proteína, se precisar.",
+        nome: "Filé de peixe (tilápia, merluza, pescada…)",
+        unidade: "g",
+        nota: "140 g por almoço, grelhado ou assado. Cru, encolhe um pouco: compre com folga.",
       },
     ],
   },
   {
     id: "laticinios",
-    nome: "Laticínios e whey",
+    nome: "Sem lactose, whey e bebida vegetal",
     icone: "🧀",
     itens: [
       {
-        id: "la-queijo-minas",
-        nome: "Queijo minas frescal — o do pote preto",
-        quantidade: "300 g",
-        nota: "Foi o melhor dos avaliados no resumo: equilíbrio entre proteína, calorias, gordura saturada e sódio.",
+        id: "la-queijo-branco",
+        nome: "Queijo branco sem lactose",
+        unidade: "g",
+        nota: "50 g por café da manhã.",
       },
       {
-        id: "la-ricota",
-        nome: "Ricota fresca (ou cottage)",
-        quantidade: "250 g",
-        nota: "Sólida, para o café da manhã de sexta; o resto fecha a janela no sábado.",
+        id: "la-kefir-iogurte",
+        nome: "Kefir ou iogurte natural sem lactose",
+        unidade: "g",
+        nota: "150 g por lanche. Natural: sem açúcar na lista de ingredientes.",
       },
       {
-        id: "la-iogurte-proteico",
-        nome: "Iogurte proteico",
-        quantidade: "3 potes",
-        // O socorro do jejum é açúcar rápido e sozinho; o iogurte é o lanche
-        // que vem depois dele, nunca o socorro em si.
-        nota: "Confira no rótulo: 15–17 g de proteína por pote. O terceiro é de reserva — para um lanchinho na janela ou para o lanche depois do socorro do jejum.",
+        id: "la-whey-isolado",
+        nome: "Whey protein isolado sem lactose",
+        unidade: "g",
+        // Sem arredondar para pacote: o whey se compra por pote, e o que importa
+        // é saber se o que tem em casa dá para a semana.
+        formato: (g) => `${acima(g, 10)} g (${plural(acima(g / 30), "dose", "doses")} de até 30 g)`,
+        nota: "Olhe quanto ainda tem no pote antes de comprar outro.",
       },
       {
-        id: "la-whey",
-        nome: "Whey Chef Zero",
-        quantidade: "280 g",
-        nota: "São 40 g por dia. Olhe quanto ainda tem no pote antes de comprar outro.",
-      },
-      {
-        id: "la-creme-ricota",
-        nome: "Creme de ricota light",
-        quantidade: "1 pote",
-        nota: "Opcional, pelo sabor. Não é fonte principal de proteína.",
+        id: "la-bebida-vegetal",
+        nome: "Bebida vegetal sem açúcar",
+        unidade: "ml",
+        formato: (ml) =>
+          `${plural(acima(ml / 1000), "caixa de 1 L", "caixas de 1 L")} (${formatarMl(ml)} na semana)`,
+        nota: "200 ml por shake. Aberta, dura poucos dias na geladeira — veja no rótulo.",
       },
     ],
   },
   {
     id: "carbos",
-    nome: "Pão e carboidratos",
-    icone: "🥖",
+    nome: "Quinoa e grão-de-bico",
+    icone: "🫘",
     itens: [
       {
-        id: "ca-pao",
-        nome: "Pão francês (para tirar o miolo)",
-        // Um por café da manhã: os sete dias levam pão desde que a quinta voltou a ter.
-        quantidade: "7 unidades",
-        nota: "Congela bem: tire o miolo, congele e esquente na hora.",
+        id: "ca-quinoa",
+        nome: "Quinoa em grão",
+        unidade: "g",
+        nota: "60 g por almoço. Prefere mais carboidrato? A outra escolha do plano é 100 g de batata-doce assada.",
       },
       {
-        id: "ca-arroz",
-        nome: "Arroz",
-        quantidade: "1 pacote pequeno",
-        nota: "É 'um pouco' em dois almoços — um pacote dura semanas.",
-      },
-      { id: "ca-batata", nome: "Batata", quantidade: "500 g" },
-      { id: "ca-mandioca", nome: "Mandioca (aipim)", quantidade: "300 g" },
-      {
-        id: "ca-mandioquinha",
-        nome: "Mandioquinha (batata-baroa)",
-        quantidade: "300 g",
-        nota: "Se não gostar, troque por mandioca ou batata.",
-      },
-      {
-        id: "ca-macarrao",
-        nome: "Macarrão integral sem glúten",
-        quantidade: "1 pacote",
-        nota: "Integral e sem glúten, como o resumo pede. Um pacote dura mais de uma semana.",
+        id: "ca-grao-de-bico",
+        nome: "Grão-de-bico",
+        unidade: "g",
+        // Cozido, ele passa do dobro do peso seco (uns 2,2 vezes); uma lata
+        // escorrida dá uns 240 g. O seco vai no "uns", de 50 em 50 g.
+        formato: (g) =>
+          `${formatarGramas(g)} cozido (uns ${Math.max(50, Math.round(g / 2.2 / 50) * 50)} g do grão seco, ou ${plural(acima(g / 240), "lata", "latas")} de pronto)`,
+        nota: "150 g cozido por almoço. A outra escolha do plano é 60 g de arroz integral.",
       },
     ],
   },
@@ -136,31 +191,15 @@ export const SHOPPING_LIST: ShoppingCategory[] = [
     id: "folhas",
     nome: "Folhas",
     icone: "🥬",
-    // Folha verde-escura no almoço, todo dia (ajustes de 12/10): a rúcula vai na
-    // terça, na quarta e no sábado; o agrião, na sexta; o espinafre, refogado,
-    // na quinta. A alface segue em cinco almoços, em porção menor. fo-agriao e
-    // fo-espinafre já existiram com estes mesmos alimentos: se aparecerem
-    // riscados na lista, é marcação antiga — um toque em Desmarcar resolve.
     itens: [
-      { id: "fo-alface", nome: "Alface", quantidade: "2 pés" },
       {
-        id: "fo-rucula",
-        nome: "Rúcula",
-        quantidade: "2 maços",
-        nota: "Dura 2 a 3 dias: um maço na compra da semana, para terça e quarta; o outro no meio da semana, para o sábado.",
-      },
-      { id: "fo-couve", nome: "Couve-manteiga", quantidade: "1 maço" },
-      {
-        id: "fo-agriao",
-        nome: "Agrião",
-        quantidade: "1 maço",
-        nota: "Dura 2 a 3 dias: compre perto de sexta ou troque por rúcula.",
-      },
-      {
-        id: "fo-espinafre",
-        nome: "Espinafre",
-        quantidade: "1 maço",
-        nota: "Refogado no alho, na quinta.",
+        // Mesmo alimento do catálogo antigo: o id continua.
+        id: "fo-alface",
+        nome: "Alface ou mix de folhas",
+        unidade: "g",
+        // Um pé de alface dá uns 300 g de folha limpa.
+        formato: (g) => `${formatarGramas(g)} de folhas (uns ${plural(acima(g / 300), "pé", "pés")} de alface)`,
+        nota: "Lavada e bem seca, dura uns 4 dias: compre metade agora e metade no meio da semana.",
       },
     ],
   },
@@ -169,53 +208,82 @@ export const SHOPPING_LIST: ShoppingCategory[] = [
     nome: "Legumes",
     icone: "🥦",
     itens: [
-      { id: "le-tomate", nome: "Tomate", quantidade: "8 unidades" },
-      { id: "le-pepino", nome: "Pepino", quantidade: "3 unidades" },
-      { id: "le-cenoura", nome: "Cenoura", quantidade: "4 unidades" },
-      { id: "le-brocolis", nome: "Brócolis", quantidade: "1 maço" },
-      { id: "le-abobrinha", nome: "Abobrinha", quantidade: "2 unidades" },
-      { id: "le-vagem", nome: "Vagem", quantidade: "250 g" },
-      { id: "le-chuchu", nome: "Chuchu", quantidade: "2 unidades" },
-      { id: "le-abobora-cabotia", nome: "Abóbora cabotiá", quantidade: "1 pedaço" },
+      { id: "le-tomate", nome: "Tomate", unidade: "un", formato: unidades },
+      { id: "le-pepino", nome: "Pepino", unidade: "un", formato: unidades },
+      { id: "le-cenoura", nome: "Cenoura", unidade: "un", formato: unidades },
+      {
+        id: "le-cozidos",
+        nome: "Legumes para cozinhar (abobrinha, brócolis, vagem, chuchu…)",
+        unidade: "g",
+        nota: "100 g por almoço. Varie à vontade.",
+      },
     ],
   },
   {
     id: "frutas",
     nome: "Frutas",
-    icone: "🍌",
+    icone: "🍎",
     itens: [
       {
-        id: "fr-banana",
-        nome: "Banana",
-        quantidade: "5 unidades",
-        nota: "Madura demais? Congele em rodelas para bater com o whey.",
+        id: "fr-maca",
+        nome: "Maçã pequena",
+        unidade: "un",
+        formato: unidades,
+        nota: "Pequena mesmo: 80–100 g.",
       },
-      { id: "fr-morango", nome: "Morango", quantidade: "2 caixas" },
-      { id: "fr-maca", nome: "Maçã pequena", quantidade: "1 unidade" },
+      {
+        id: "fr-vermelhas",
+        nome: "Frutas vermelhas (morango, mirtilo ou uva roxa)",
+        unidade: "g",
+        // Uma caixinha de morango tem uns 250 g.
+        formato: (g) => `${formatarGramas(g)} (${plural(acima(g / 250), "caixinha", "caixinhas")})`,
+        nota: "30 g por lanche. Congeladas, sem açúcar, também servem.",
+      },
       {
         id: "fr-limao",
         nome: "Limão",
+        unidade: "un",
         quantidade: "6 unidades",
-        nota: "Para a água da manhã, a salada e o peixe.",
+        nota: "Para a água da manhã e o molho da salada.",
         essencial: true,
       },
     ],
   },
   {
     id: "extras",
-    nome: "Fibra e azeite",
+    nome: "Sementes, castanhas e azeite",
     icone: "🫒",
     itens: [
       {
-        // Uma colher por dia desde 12/10: no iogurte de segunda e quinta, batida
-        // com o whey nos outros dias. Um id só para as duas sementes — a
-        // linhaça não ganha item próprio.
-        id: "go-chia",
-        nome: "Chia ou linhaça triturada",
-        quantidade: "1 pacote pequeno (uns 100 g na semana — 7 colheres)",
-        nota: "Todo dia, 1 colher de sopa. A linhaça vai triturada (compre triturada ou bata em casa) e fica na geladeira, em pote fechado.",
+        id: "se-linhaca",
+        nome: "Linhaça moída",
+        unidade: "g",
+        formato: colheres,
+        nota: "Moída: inteira, ela passa direto. Depois de aberta, na geladeira, em pote fechado.",
       },
-      { id: "go-azeite", nome: "Azeite extravirgem", quantidade: "1 garrafa", essencial: true },
+      { id: "se-chia", nome: "Chia", unidade: "g", formato: colheres },
+      {
+        id: "se-pasta-amendoim",
+        nome: "Pasta de amendoim natural (sem açúcar)",
+        unidade: "g",
+        nota: "10 g por shake. Na lista de ingredientes, só amendoim. Um pote dura semanas.",
+      },
+      {
+        id: "se-castanhas",
+        nome: "Amêndoas ou castanhas-do-pará",
+        unidade: "un",
+        formato: unidades,
+        nota: "5 por lanche.",
+      },
+      {
+        // Mesmo alimento do catálogo antigo: o id continua.
+        id: "go-azeite",
+        nome: "Azeite de oliva extravirgem",
+        unidade: "ml",
+        essencial: true,
+        quantidade: "1 garrafa",
+        formato: (ml) => `1 garrafa (o plano usa uns ${formatarMl(ml)} na semana)`,
+      },
     ],
   },
   {
@@ -223,32 +291,29 @@ export const SHOPPING_LIST: ShoppingCategory[] = [
     nome: "Temperos",
     icone: "🌿",
     itens: [
-      { id: "te-alho", nome: "Alho", quantidade: "1 cabeça", essencial: true },
-      { id: "te-cebola", nome: "Cebola", quantidade: "4 unidades", essencial: true },
-      { id: "te-cheiro-verde", nome: "Cheiro-verde (salsinha e cebolinha)", quantidade: "1 maço" },
-      { id: "te-sal", nome: "Sal", quantidade: "1 pacote", essencial: true },
+      { id: "te-alho", nome: "Alho", unidade: "un", quantidade: "1 cabeça", essencial: true },
+      { id: "te-cebola", nome: "Cebola", unidade: "un", quantidade: "3 unidades", essencial: true },
+      { id: "te-sal", nome: "Sal", unidade: "un", quantidade: "1 pacote", essencial: true },
     ],
   },
   {
     id: "bebidas",
-    nome: "Bebidas e rituais",
-    // O café saiu em 12/10, a pedido dela: a xícara da categoria virou a do chá.
-    // Saiu do catálogo junto, porque era essencial e entraria em toda lista. O
-    // id dele não volta para outra coisa: a marcação de comprado ficou no banco.
+    nome: "Chás e rituais",
     icone: "🍵",
     itens: [
       {
-        id: "be-cha",
-        nome: "Chá sem cafeína (camomila, cidreira ou erva-doce)",
-        // Sem o café, o chá é a bebida quente do dia e do jejum.
-        quantidade: "2 caixas",
-        // Hortelã piora o refluxo, e azia é efeito comum do Mounjaro.
-        nota: "Para o dia e para o jejum, sem açúcar. Chá verde, preto, branco e mate têm cafeína. Hortelã, só se não tiver azia.",
+        // Id novo: o "be-cha" de antes era só chá sem cafeína.
+        id: "be-chas",
+        nome: "Chás da nutricionista (verde, gengibre, canela, hibisco, cavalinha, dente-de-leão)",
+        unidade: "un",
+        quantidade: "1 ou 2 caixas",
+        nota: "Sem açúcar, até 1 litro por dia somando todos. O verde tem cafeína: à noite, prefira os outros.",
         essencial: true,
       },
       {
         id: "be-propolis",
         nome: "Própolis",
+        unidade: "un",
         quantidade: "1 frasco",
         nota: "Ritual da manhã, junto com o limão — só se cair bem. Compre quando estiver acabando.",
         essencial: true,
@@ -265,4 +330,66 @@ export const CATALOGO = new Map(
 
 export const ESSENCIAIS = SHOPPING_LIST.flatMap((c) => c.itens.filter((i) => i.essencial).map((i) => i.id));
 
-export const TOTAL_ITENS = SHOPPING_LIST.reduce((s, c) => s + c.itens.length, 0);
+/* -------------------------------------------------------------------------- */
+/* A conta da semana                                                          */
+/* -------------------------------------------------------------------------- */
+
+const DIAS_DA_SEMANA = 7;
+
+/** Em quantos dias da semana ela come a opção 1 de cada refeição; o resto é a opção 2. */
+export type DiasDaOpcao1 = Record<RefeicaoPlanoId, number>;
+
+export const DIAS_PADRAO: DiasDaOpcao1 = { cafe: 4, almoco: 4, lanche: 4 };
+
+/** Chave do localStorage: a divisão é do aparelho, como uma preferência de tela. */
+export const CHAVE_DIAS_LISTA = "mais-leve-lista-dias";
+
+/** Aceita qualquer coisa (o que estava gravado) e devolve uma divisão válida, de 0 a 7. */
+export function normalizaDias(valor: unknown): DiasDaOpcao1 {
+  const dias = { ...DIAS_PADRAO };
+  if (!valor || typeof valor !== "object") return dias;
+  for (const id of REFEICOES_ORDEM) {
+    const n = (valor as Record<string, unknown>)[id];
+    if (typeof n === "number" && Number.isInteger(n) && n >= 0 && n <= DIAS_DA_SEMANA) dias[id] = n;
+  }
+  return dias;
+}
+
+/** Total da semana de cada ingrediente: Σ (porção × dias da opção). */
+export function totaisDaSemana(dias: DiasDaOpcao1): Map<string, number> {
+  const totais = new Map<string, number>();
+  for (const refeicao of PLANO_ALIMENTAR) {
+    const daOpcao1 = dias[refeicao.id];
+    for (const opcao of refeicao.opcoes) {
+      const n = opcao.numero === 1 ? daOpcao1 : DIAS_DA_SEMANA - daOpcao1;
+      if (n <= 0) continue;
+      for (const item of opcao.itens) {
+        for (const { id, qtd } of item.ingredientes) {
+          totais.set(id, (totais.get(id) ?? 0) + qtd * n);
+        }
+      }
+    }
+  }
+  return totais;
+}
+
+export type LinhaDaLista = { item: ShoppingItem; total: number; quantidade: string };
+
+/**
+ * A lista da semana, por categoria, na ordem do catálogo. Entra o que a semana
+ * usa e os essenciais de despensa; categoria sem nada some.
+ */
+export function listaDaSemana(
+  dias: DiasDaOpcao1,
+): { categoria: ShoppingCategory; itens: LinhaDaLista[] }[] {
+  const totais = totaisDaSemana(dias);
+  return SHOPPING_LIST.map((categoria) => ({
+    categoria,
+    itens: categoria.itens
+      .map((item) => {
+        const total = totais.get(item.id) ?? 0;
+        return { item, total, quantidade: formatarQuantidade(item, total) };
+      })
+      .filter((l) => l.total > 0 || l.item.essencial),
+  })).filter((g) => g.itens.length > 0);
+}

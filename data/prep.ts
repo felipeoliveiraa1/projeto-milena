@@ -1,10 +1,13 @@
 /**
- * Preparo e conservação dos alimentos do cardápio da semana.
+ * Preparo e conservação dos alimentos do plano da nutricionista (18/10/2026).
  *
  * O que congela, o que só refrigera e o que precisa ser feito na hora — para
- * a semana caber em um mutirão e um reforço. As porções seguem o resumo de
- * alimentação: 120 g de frango, carne ou peixe no almoço, 70 g de frango no
- * fechamento.
+ * as proteínas e os grãos da semana caberem numa sessão de preparo. As porções
+ * são as do plano (data/meals.ts): 150 g de frango e 140 g de peixe no almoço.
+ *
+ * As validades são as regras gerais de segurança dos alimentos: comida pronta
+ * fica até 3 dias na geladeira e até 3 meses no congelador, bem fechada. O
+ * rótulo do produto vale mais que a regra geral.
  */
 
 export type PrepItem = {
@@ -26,22 +29,20 @@ export type PrepGrupo = {
 };
 
 export const ESTRATEGIA = {
-  titulo: "Um mutirão e um reforço",
+  titulo: "Uma sessão de preparo na semana",
   texto:
-    "O cardápio se repete toda semana, então a compra e o preparo viram rotina. Um mutirão no dia da compra e um reforço rápido no meio da semana. Na geladeira fica o que você come em até 3 dias; o resto vai congelado em porções.",
+    "As proteínas e os grãos da semana saem de uma vez, no dia da compra, na divisão de opções que você escolheu na lista. Na geladeira fica o que você come em até 3 dias; o resto vai congelado em porções.",
   passos: [
-    "Faça a compra pela lista — ela já sai com as quantidades da semana.",
-    "Comece pelo que demora: arroz, batata, mandioca, mandioquinha e abóbora.",
-    // O cardápio pede o frango de três jeitos — não é tudo desfiado.
-    "Prepare o frango da semana — grelhado (segunda), em cubos ao molho (quarta) e desfiado (sexta e fechamentos) — e separe em porções de 120 g (almoço) e 70 g (fecha a janela).",
-    "Porcione o patinho e o peixe crus, uma refeição por pacote, e congele.",
-    "Enquanto isso, higienize e seque as folhas.",
-    "Resfrie rápido antes de congelar e etiquete tudo com nome e data.",
-    // Agrião (sexta) e rúcula (sábado) duram 2 a 3 dias: comprados no mutirão,
-    // não chegam ao fim da semana.
-    "No meio da semana: passe para a geladeira o que vai até domingo, cozinhe mais ovos, se precisar, e compre agrião e rúcula frescos para o fim da semana.",
+    "Faça a compra pela lista — ela já sai com as quantidades da divisão que você escolheu.",
+    "Comece pelo que demora: o grão-de-bico (de molho na véspera, se for o seco), a quinoa e a batata-doce.",
+    "Grelhe o frango e separe em porções de 150 g para o almoço — e, se for usar no café da manhã no lugar da sardinha ou do atum, porções de 80 g desfiado.",
+    "Porcione o peixe cru com uma folga — os 140 g do plano são do peixe já grelhado ou assado, e ele encolhe no preparo — e congele.",
+    "Cozinhe os legumes da semana e alguns ovos para os lanches.",
+    "Enquanto isso, lave e seque bem as folhas e corte os legumes crus da salada.",
+    "Resfrie rápido antes de guardar e etiquete tudo com nome e data.",
+    "No meio da semana: passe para a geladeira o que vai até domingo e compre folhas frescas, se precisar.",
   ],
-  dica: "Uma balança de cozinha ajuda nas duas medidas que mais importam: 120 g de frango, carne ou peixe no almoço e 40 g de whey no lanche.",
+  dica: "Uma balança de cozinha ajuda nas medidas que mais importam: 150 g de frango e 140 g de peixe no almoço, e a dose do whey.",
 };
 
 export const PREPARO: PrepGrupo[] = [
@@ -53,67 +54,41 @@ export const PREPARO: PrepGrupo[] = [
     itens: [
       {
         id: "p-frango",
-        nome: "Frango",
-        como: "Grelhado, em cubos ou desfiado. Cozinhe, resfrie e divida em porções de 120 g e de 70 g.",
-      },
-      {
-        id: "p-patinho",
-        nome: "Patinho",
-        como: "Congele cru, já em iscas ou moído, uma refeição por pacote. O moído também pode ir refogado e pronto.",
+        nome: "Frango grelhado ou desfiado",
+        como: "Grelhe, resfrie e divida em porções de 150 g (almoço) — ou de 80 g desfiado, para o café da manhã.",
+        validade: "até 3 meses congelado",
       },
       {
         id: "p-peixe",
-        nome: "Peixe",
-        como: "Congele cru, limpo e já porcionado.",
+        nome: "Peixe porcionado",
+        como: "Congele cru, limpo e porcionado, com uma folga sobre os 140 g: a medida do plano é a do peixe pronto.",
+        validade: "até 3 meses congelado",
         alerta: "Tempere com limão só perto do preparo — o limão 'cozinha' o peixe na geladeira.",
       },
       {
-        id: "p-arroz",
-        nome: "Arroz",
-        como: "Cozinhe, resfrie rápido e congele em porções pequenas — no almoço é só um pouco.",
-        alerta: "Não deixe o arroz pronto esfriando fora da geladeira por horas.",
-      },
-      { id: "p-mandioca", nome: "Mandioca", como: "Cozinhe, escorra e congele em porções." },
-      {
-        id: "p-mandioquinha",
-        nome: "Mandioquinha",
-        como: "Cozinhe e congele já em purê.",
-        alerta: "Em pedaços, fica mole e aguada ao descongelar.",
+        id: "p-grao-de-bico",
+        nome: "Grão-de-bico cozido",
+        como: "Deixe o seco de molho de 8 a 12 horas, troque a água e cozinhe até ficar macio. Escorra, resfrie e congele em porções de 150 g.",
+        validade: "até 3 meses congelado",
       },
       {
-        id: "p-batata",
-        nome: "Batata",
-        como: "Congela, mas só funciona bem em purê.",
-        alerta: "Em cubos, vira borracha — cozida ou assada, faça para 2 ou 3 dias e deixe na geladeira.",
+        id: "p-quinoa",
+        nome: "Quinoa cozida",
+        como: "Lave bem antes de cozinhar (tira o amargo). Cozinhe, resfrie rápido e congele em porções.",
+        validade: "até 3 meses congelado",
+        alerta: "Não deixe a quinoa pronta esfriando fora da geladeira por horas.",
       },
       {
-        id: "p-pao",
-        nome: "Pão francês",
-        como: "Tire o miolo, congele em saquinho e esquente na frigideira, no forno ou na torradeira.",
+        id: "p-batata-doce",
+        nome: "Batata-doce assada",
+        como: "Asse, deixe esfriar e congele em porções de 100 g. Esquente no forno ou na frigideira.",
+        validade: "até 3 meses congelado",
       },
       {
-        id: "p-legumes",
-        nome: "Brócolis, vagem e cenoura",
-        como: "Branqueie (1–2 min na água fervente), resfrie no gelo, seque e congele.",
-      },
-      { id: "p-abobora", nome: "Abóbora cabotiá", como: "Cozinhe ou asse e congele em cubos ou amassada." },
-      {
-        id: "p-couve",
-        nome: "Couve",
-        como: "Lave, seque, tire os talos grossos e fatie. Congela crua, pronta para refogar.",
-      },
-      {
-        // Folha escura de quinta desde os ajustes de 12/10.
-        id: "p-espinafre",
-        nome: "Espinafre",
-        como: "O melhor é refogar no alho no dia de comer. Para guardar, branqueie (1–2 min na água fervente), resfrie no gelo, esprema bem e congele em porções — vai direto do congelador para a panela.",
-      },
-      { id: "p-cheiro-verde", nome: "Cheiro-verde", como: "Lave, seque bem, pique e congele solto." },
-      { id: "p-cebola", nome: "Cebola picada", como: "Congele picada, pronta para o refogado." },
-      {
-        id: "p-frutas-whey",
-        nome: "Banana e morango",
-        como: "Maduros demais? Congele em pedaços — vão bem batidos com o whey.",
+        id: "p-legumes-cozidos",
+        nome: "Legumes cozidos",
+        como: "Brócolis, vagem, cenoura e abobrinha: branqueie (1–2 min na água fervente), resfrie no gelo, seque e congele em porções de 100 g.",
+        validade: "até 3 meses congelado",
       },
     ],
   },
@@ -123,62 +98,49 @@ export const PREPARO: PrepGrupo[] = [
     descricao: "Prepare pouco e para poucos dias.",
     icone: "fridge",
     itens: [
-      { id: "p-ovos", nome: "Ovos cozidos", como: "Guarde com casca na geladeira.", validade: "até 5 dias" },
       {
-        id: "p-claras",
-        nome: "Claras separadas",
-        como: "Se separar antes, guarde em pote fechado e use logo.",
-        validade: "até 2 dias",
+        id: "p-ovos",
+        nome: "Ovos cozidos",
+        como: "Guarde com casca, em pote fechado, na geladeira.",
+        validade: "até 5 dias",
       },
       {
         id: "p-proteina-pronta",
-        nome: "Frango, carne e peixe prontos",
+        nome: "Frango, peixe e grãos prontos",
         como: "Na geladeira, só o que você come nos próximos dias. O resto, congelado.",
         validade: "até 3 dias",
       },
       {
-        id: "p-queijo",
-        nome: "Queijo minas, ricota e cottage",
-        como: "No pote, bem fechados, na parte mais fria da geladeira.",
-        validade: "poucos dias depois de abertos — siga o rótulo",
-        alerta: "Não congele: ficam esfarelados e soltam água.",
+        id: "p-folhas",
+        nome: "Salada lavada e seca",
+        como: "Higienize, seque muito bem e guarde em pote fechado com papel-toalha.",
+        validade: "3 a 4 dias",
+        alerta: "Folha guardada molhada estraga rápido.",
       },
       {
-        id: "p-iogurte",
-        nome: "Iogurte proteico",
-        // A chia vai sempre molhada, nunca seca: no iogurte, ela precisa de uns
-        // minutos para hidratar antes de descer.
-        como: "Fechado na geladeira até a hora de comer. Com a chia ou a linhaça: misture e espere uns minutos antes de comer.",
-      },
-      { id: "p-folhas", nome: "Folhas", como: "Higienize, seque muito bem e guarde em pote com papel-toalha." },
-      {
-        // Folhas escuras de terça, quarta, sexta e sábado desde os ajustes de 12/10.
-        id: "p-agriao-rucula",
-        nome: "Agrião e rúcula",
-        como: "Mais delicados que a alface: higienize, seque muito bem e guarde em pote com papel-toalha.",
-        validade: "2 a 3 dias",
-      },
-      { id: "p-tomate-pepino", nome: "Tomate e pepino", como: "Guarde inteiros e corte perto de comer." },
-      {
-        id: "p-legumes-prontos",
-        nome: "Legumes cozidos e refogados",
-        como: "Abobrinha, chuchu, couve e cenoura prontos.",
+        id: "p-legumes-crus",
+        nome: "Legumes crus cortados",
+        como: "Cenoura ralada e pepino em pote fechado. O tomate, corte perto de comer.",
         validade: "até 3 dias",
       },
       {
-        id: "p-macarrao",
-        nome: "Macarrão integral sem glúten",
-        como: "Cozinhe só o que der para 2 ou 3 dias — sem glúten, amolece rápido.",
+        id: "p-linhaca",
+        nome: "Linhaça moída",
+        como: "Depois de aberta, na geladeira, em pote bem fechado e longe da luz.",
+        alerta: "Moída, ela perde o frescor rápido: cheiro de ranço, jogue fora.",
       },
       {
-        id: "p-morango",
-        nome: "Morango",
-        como: "Na geladeira, sem lavar. Lave só na hora de comer, senão estraga rápido.",
+        id: "p-kefir",
+        nome: "Kefir ou iogurte natural",
+        como: "Fechado na geladeira até a hora de comer. Com a chia: misture e espere uns minutos antes de comer.",
+        validade: "siga o rótulo — aberto, poucos dias",
+        alerta: "Não congele: separa e fica aguado.",
       },
       {
-        id: "p-fora",
-        nome: "Banana e cebola inteira",
-        como: "Fora da geladeira, em lugar fresco e arejado. Cebola cortada, aí sim, vai para a geladeira.",
+        id: "p-queijo",
+        nome: "Queijo branco sem lactose",
+        como: "No pote, bem fechado, na parte mais fria da geladeira.",
+        validade: "poucos dias depois de aberto — siga o rótulo",
       },
     ],
   },
@@ -188,12 +150,20 @@ export const PREPARO: PrepGrupo[] = [
     descricao: "Não adianta adiantar — perde textura, sabor ou segurança.",
     icone: "flame",
     itens: [
-      { id: "p-omelete", nome: "Omelete e ovos mexidos", como: "Sempre na hora, numa frigideira antiaderente." },
       {
-        id: "p-whey",
-        nome: "Whey do lanche",
-        // Na segunda e na quinta a chia vai no iogurte, não aqui: uma vez por dia.
-        como: "Bata na hora de tomar — com a colher de chia ou linhaça, nos dias em que ela vai no whey — e tome logo, porque a chia engrossa. O pó fica fora da geladeira, com o pote bem fechado.",
+        id: "p-omelete",
+        nome: "Omelete e ovos mexidos",
+        como: "Sempre na hora, numa frigideira antiaderente, com o fio de azeite do plano.",
+      },
+      {
+        id: "p-shake",
+        nome: "Shake de whey",
+        como: "Bata na hora de tomar e tome logo. O pó fica fora da geladeira, com o pote bem fechado.",
+      },
+      {
+        id: "p-molho",
+        nome: "Molho de azeite e limão",
+        como: "A colher de azeite com o limão espremido na hora.",
       },
       {
         id: "p-salada-temperada",
@@ -207,13 +177,6 @@ export const PREPARO: PrepGrupo[] = [
         como: "Descongele na geladeira, nunca em cima da pia, e prepare.",
         alerta: "Peixe descongelado não volta cru para o congelador.",
       },
-      {
-        id: "p-frutas-cortadas",
-        nome: "Frutas cortadas",
-        como: "Corte na hora — banana e maçã escurecem rápido.",
-      },
     ],
   },
 ];
-
-export const TOTAL_ITENS_PREPARO = PREPARO.reduce((s, g) => s + g.itens.length, 0);
