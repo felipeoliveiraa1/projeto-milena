@@ -42,7 +42,7 @@ import {
   toggleShoppingItem,
   type ShoppingState,
 } from "@/lib/storage";
-import { cn } from "@/lib/utils";
+import { cn, juntarUnidades } from "@/lib/utils";
 
 const ICONE_PREPARO = { snow: Snowflake, fridge: Refrigerator, flame: Flame };
 
@@ -245,50 +245,50 @@ export default function ListaPage() {
                 const [o1, o2] = refeicaoDoPlano(id).opcoes;
                 const nome = REFEICOES_META[id].nome;
                 return (
-                  <div
-                    key={id}
-                    className="flex items-center justify-between gap-3 rounded-xl2 border border-line bg-bone/50 p-3.5"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold text-ink">{nome}</p>
-                      {/* Anunciado a cada toque no − e no +: o número sozinho não diz nada. */}
-                      <p className="text-xs text-ink-muted tabular" aria-live="polite">
-                        <span className="whitespace-nowrap">Opção 1: {diasTexto(n)}</span>
-                        {" · "}
-                        <span className="whitespace-nowrap">Opção 2: {diasTexto(7 - n)}</span>
-                      </p>
-                      <p className="mt-0.5 truncate text-[0.6875rem] text-ink-muted">
-                        {o1.nome} · {o2.nome}
-                      </p>
+                  // O nome divide a linha só com o − e o +; a divisão e os pratos
+                  // vêm embaixo, na largura toda — em 320 px eles quebravam em
+                  // três linhas e o nome do prato sumia nas reticências.
+                  <div key={id} className="rounded-xl2 border border-line bg-bone/50 p-3.5">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="min-w-0 text-sm font-bold text-ink">{nome}</p>
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          className="h-10 w-10"
+                          disabled={n <= 0}
+                          onClick={() => mudarDias(id, n - 1)}
+                          aria-label={`${nome}: um dia a menos da opção 1`}
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span
+                          className="w-5 text-center text-sm font-bold text-ink tabular"
+                          aria-hidden
+                        >
+                          {n}
+                        </span>
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          className="h-10 w-10"
+                          disabled={n >= 7}
+                          onClick={() => mudarDias(id, n + 1)}
+                          aria-label={`${nome}: um dia a mais da opção 1`}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex shrink-0 items-center gap-1.5">
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        className="h-9 w-9"
-                        disabled={n <= 0}
-                        onClick={() => mudarDias(id, n - 1)}
-                        aria-label={`${nome}: um dia a menos da opção 1`}
-                      >
-                        <Minus className="h-4 w-4" />
-                      </Button>
-                      <span
-                        className="w-5 text-center text-sm font-bold text-ink tabular"
-                        aria-hidden
-                      >
-                        {n}
-                      </span>
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        className="h-9 w-9"
-                        disabled={n >= 7}
-                        onClick={() => mudarDias(id, n + 1)}
-                        aria-label={`${nome}: um dia a mais da opção 1`}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    {/* Anunciado a cada toque no − e no +: o número sozinho não diz nada. */}
+                    <p className="mt-1.5 text-xs text-ink-muted tabular" aria-live="polite">
+                      <span className="whitespace-nowrap">Opção 1: {diasTexto(n)}</span>
+                      {" · "}
+                      <span className="whitespace-nowrap">Opção 2: {diasTexto(7 - n)}</span>
+                    </p>
+                    <p className="mt-0.5 text-[0.6875rem] leading-relaxed text-ink-muted">
+                      {o1.nome} · {o2.nome}
+                    </p>
                   </div>
                 );
               })}
@@ -327,8 +327,11 @@ export default function ListaPage() {
                     </div>
                   </div>
                   <Progress value={pct} />
-                  <div className="flex flex-wrap gap-2 border-t border-line pt-4">
+                  {/* WhatsApp na largura toda; os outros dois lado a lado (um
+                      embaixo do outro abaixo de 360 px, onde não cabem). */}
+                  <div className="grid gap-2 border-t border-line pt-4 min-[360px]:grid-cols-2">
                     <Button
+                      className="min-[360px]:col-span-2"
                       onClick={() =>
                         window.open(
                           `https://wa.me/?text=${encodeURIComponent(buildShareText())}`,
@@ -338,10 +341,10 @@ export default function ListaPage() {
                     >
                       <MessageCircle className="h-4 w-4" /> WhatsApp
                     </Button>
-                    <Button onClick={compartilhar} variant="outline">
+                    <Button onClick={compartilhar} variant="outline" className="px-3">
                       <Share2 className="h-4 w-4" /> Compartilhar
                     </Button>
-                    <Button onClick={() => copiar()} variant="ghost">
+                    <Button onClick={() => copiar()} variant="outline" className="px-3">
                       {copied ? (
                         <>
                           <Check className="h-4 w-4 text-brand" /> Copiado
@@ -391,7 +394,7 @@ export default function ListaPage() {
                             >
                               {item.nome}
                             </p>
-                            <p className="text-xs text-ink-muted tabular">{quantidade}</p>
+                            <p className="text-xs text-ink-muted tabular">{juntarUnidades(quantidade)}</p>
                             {item.nota && (
                               <p className="mt-1.5 rounded-lg bg-gold-soft px-2.5 py-1.5 text-[0.6875rem] leading-relaxed text-gold">
                                 {item.nota}

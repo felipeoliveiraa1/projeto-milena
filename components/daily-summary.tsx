@@ -90,17 +90,20 @@ export function DailySummary() {
     ? ""
     : status.naoComecou
       ? `${PLANO.nome} começa em breve`
-      : `${PLANO.nome} · semana ${status.semana}`;
+      : `${PLANO.nome} · semana\u00a0${status.semana}`;
 
   return (
     <Card className="overflow-hidden border-brand-deep bg-brand-deep text-bone">
       <CardContent className="space-y-5 p-6">
-        <div className="flex items-start justify-between gap-5">
-          <div className="min-w-0 pt-1">
-            <p className="eyebrow text-bone/50">
-              {agora ? dataExtenso(new Date(`${data}T00:00:00`)) : " "}
-            </p>
-            <h2 className="font-display mt-1.5 text-[2rem] leading-none text-bone">
+        {/* A data e a legenda ocupam a largura toda; só a saudação divide a
+            linha com o anel. Em 320 px, a coluna ao lado do anel tinha 108 px:
+            "Boa tarde, Milena" virava três linhas, e a legenda outras três. */}
+        <div>
+          <p className="eyebrow text-bone/50">
+            {agora ? dataExtenso(new Date(`${data}T00:00:00`)) : " "}
+          </p>
+          <div className="mt-2 flex items-center justify-between gap-4">
+            <h2 className="font-display min-w-0 text-[2rem] leading-none text-bone">
               {ehHoje ? (
                 <>
                   {agora ? saudacao(agora.getHours()) : "Olá"},<br />
@@ -114,23 +117,22 @@ export function DailySummary() {
                 </>
               )}
             </h2>
-            <p className="mt-3 text-sm text-bone/70">{legenda || " "}</p>
+            <Ring
+              value={hydrated ? pct : 0}
+              size={96}
+              stroke={8}
+              trackClassName="text-bone/15"
+              barClassName="text-bone"
+            >
+              <span className="font-display text-2xl leading-none text-bone tabular">
+                {hydrated ? pct : 0}%
+              </span>
+              <span className="mt-1 text-[0.625rem] font-semibold tracking-wider text-bone/50 uppercase">
+                do dia
+              </span>
+            </Ring>
           </div>
-
-          <Ring
-            value={hydrated ? pct : 0}
-            size={104}
-            stroke={8}
-            trackClassName="text-bone/15"
-            barClassName="text-bone"
-          >
-            <span className="font-display text-2xl leading-none text-bone tabular">
-              {hydrated ? pct : 0}%
-            </span>
-            <span className="mt-1 text-[0.625rem] font-semibold tracking-wider text-bone/50 uppercase">
-              do dia
-            </span>
-          </Ring>
+          <p className="mt-2 text-sm text-bone/70">{legenda || " "}</p>
         </div>
 
         {/* Abaixo de 360 px, 2 × 2: em 4 colunas os rótulos vazavam da caixinha. */}

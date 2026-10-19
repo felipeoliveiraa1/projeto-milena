@@ -1,26 +1,32 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, CalendarHeart, PauseCircle } from "lucide-react";
+import { ArrowRight, CalendarHeart, PauseCircle, Stethoscope } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SUPPLEMENTS } from "@/data/supplements";
-import { dataCurtaDe, diasAte, inicioDaPausa } from "@/lib/lembretes";
+import {
+  dataCurtaDe,
+  diasAte,
+  EXAMES_ANTES_DA_CIRURGIA_DIAS,
+  inicioDaPausa,
+  inicioDosExames,
+} from "@/lib/lembretes";
 import { usePreferencias } from "@/lib/settings";
 import { useAgoraVivo } from "@/lib/now";
 import { dataExtensoNaFrase, hojeKey } from "@/lib/date";
 
-/** "Ômega-3 e curcumina": o primeiro nome como está, os outros em minúscula. */
+/** "Testosterona, Ômega-3, Curcumina e Mounjaro" — os nomes como estão na Farmácia. */
 function juntarNomes(nomes: string[]): string {
-  const ajustados = nomes.map((n, i) => (i === 0 ? n : n.charAt(0).toLowerCase() + n.slice(1)));
-  if (ajustados.length <= 1) return ajustados.join("");
-  return `${ajustados.slice(0, -1).join(", ")} e ${ajustados[ajustados.length - 1]}`;
+  if (nomes.length <= 1) return nomes.join("");
+  return `${nomes.slice(0, -1).join(", ")} e ${nomes[nomes.length - 1]}`;
 }
 
 /**
  * Contagem regressiva da tela inicial, para a data que ela escolhe em Ajustes.
- * Quando a data é a da cirurgia, avisa a pausa do ômega-3 e da curcumina, que
- * a nutricionista pediu 30 dias antes.
+ * Quando a data é a da cirurgia, avisa os exames pré-operatórios (45 dias
+ * antes) e as pausas de 30 dias antes: ômega-3 e curcumina, pela nutricionista;
+ * testosterona e Mounjaro, pela orientação da cirurgia.
  *
  * Não aparece nada até as preferências chegarem — senão o cartão "escolha a
  * data" piscaria antes da contagem de verdade. O "hoje" anda com o relógio e
@@ -60,6 +66,8 @@ export function ContagemRegressiva() {
       ? titulo.charAt(0).toUpperCase() + titulo.slice(1)
       : `para ${titulo}`
     : null;
+
+  const exames = inicioDosExames(prefs);
 
   // Os itens que param antes da cirurgia, agrupados pelo dia em que a pausa começa.
   const pausas = cirurgia
@@ -104,10 +112,23 @@ export function ContagemRegressiva() {
             </p>
             <p className="mt-2 text-sm leading-snug text-ink-muted">
               {doQue && <span className="font-semibold text-ink-soft">{doQue} · </span>}
-              {dataEscrita}
+              {/* O dia da semana inteiro na quebra: nunca "terça-" / "feira". */}
+              <span className="whitespace-nowrap">{dataEscrita.slice(0, dataEscrita.indexOf(" "))}</span>
+              {dataEscrita.slice(dataEscrita.indexOf(" "))}
             </p>
           </div>
         </div>
+
+        {exames && hoje <= data && (
+          <p className="flex items-start gap-2 rounded-xl2 bg-surface/70 px-3.5 py-2.5 text-xs leading-relaxed text-ink-soft">
+            <Stethoscope className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold" />
+            <span>
+              {hoje < exames
+                ? `Exames pré-operatórios: a partir de ${dataCurtaDe(exames)}, ${EXAMES_ANTES_DA_CIRURGIA_DIAS} dias antes.`
+                : `Exames pré-operatórios: hora de fazer — desde ${dataCurtaDe(exames)}.`}
+            </span>
+          </p>
+        )}
 
         {pausas.map(([inicio, { nomes, dias: antes }]) => {
           const quem = juntarNomes(nomes);

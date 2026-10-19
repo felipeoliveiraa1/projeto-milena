@@ -60,16 +60,17 @@ export default function RootLayout({
 
         <DiaProvider>
           <AuthGate>
-            <header className="sticky top-0 z-40 border-b border-line/70 bg-bone/80 backdrop-blur-xl">
+            <header className="sticky top-0 z-40 border-b border-line/70 bg-bone/90 backdrop-blur-xl">
               <div className="mx-auto flex max-w-3xl items-center gap-3 px-5 py-3.5 md:px-6">
                 <BrandMark className="h-10 w-10" />
                 <Wordmark />
                 <div className="ml-auto flex items-center gap-2">
                   <HeaderStatus />
+                  {/* 36 px de círculo, 44 px de área de toque (o ::after). */}
                   <Link
                     href="/ajustes"
                     aria-label="Ajustes"
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface/80 text-ink-muted transition hover:text-ink"
+                    className="relative flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface/80 text-ink-muted transition after:absolute after:-inset-1 after:content-[''] hover:text-ink"
                   >
                     <Settings className="h-4 w-4" />
                   </Link>

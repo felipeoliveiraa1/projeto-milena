@@ -142,7 +142,7 @@ export function RotinaItemRow({
                     disabled={bloqueado}
                     onClick={() => digitar(ativo ? "" : o)}
                     className={cn(
-                      "rounded-full border px-2.5 py-1 text-xs font-semibold transition",
+                      "inline-flex h-8 items-center rounded-full border px-3 text-xs font-semibold transition",
                       ativo
                         ? "border-plum bg-plum text-bone"
                         : "border-line bg-surface text-ink-muted hover:border-plum/40 hover:text-ink",
@@ -162,7 +162,8 @@ export function RotinaItemRow({
               placeholder={bloqueado ? "carregando…" : item.placeholder}
               disabled={bloqueado}
               rows={item.opcoes ? 2 : 3}
-              className="w-full resize-y rounded-xl2 border border-line bg-surface px-3.5 py-2.5 text-sm leading-relaxed text-ink transition placeholder:text-ink-muted focus-visible:border-plum/50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-plum/10 disabled:opacity-60"
+              // 16 px: abaixo disso o iPhone dá zoom ao tocar na caixa.
+              className="block w-full resize-y appearance-none rounded-xl2 border border-line bg-surface px-3.5 py-2.5 text-base leading-relaxed text-ink transition placeholder:text-ink-muted focus-visible:border-plum/50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-plum/10 disabled:opacity-60"
             />
             {salvo && (
               <span className="absolute right-3 bottom-3 flex items-center gap-1 rounded-full bg-brand-soft px-2 py-0.5 text-[0.625rem] font-bold text-brand">

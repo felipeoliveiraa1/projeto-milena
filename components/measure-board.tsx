@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Plus, Ruler, Trash2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Eyebrow } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { CAMPO_NA_LINHA, GrupoCampos, LinhaCampo } from "@/components/ui/campo";
 import { Button } from "@/components/ui/button";
 import {
   CAMPOS_MEDIDAS,
@@ -114,20 +115,28 @@ export function MeasureBoard() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Input type="date" value={data} max={hojeKey()} onChange={(e) => setData(e.target.value)} />
-          <div className="grid grid-cols-2 gap-2">
+          <GrupoCampos>
+            <LinhaCampo rotulo="Data">
+              <Input
+                type="date"
+                value={data}
+                max={hojeKey()}
+                onChange={(e) => setData(e.target.value)}
+                className={cn(CAMPO_NA_LINHA, "w-44")}
+              />
+            </LinhaCampo>
             {CAMPOS_MEDIDAS.map((c) => (
-              <label key={c.chave} className="space-y-1">
-                <span className="text-xs font-semibold text-ink-soft">{c.rotulo}</span>
+              <LinhaCampo key={c.chave} rotulo={c.rotulo}>
                 <Input
                   inputMode="decimal"
                   placeholder="cm"
                   value={rascunho[c.chave] ?? ""}
                   onChange={(e) => setRascunho((r) => ({ ...r, [c.chave]: e.target.value }))}
+                  className={cn(CAMPO_NA_LINHA, "w-22")}
                 />
-              </label>
+              </LinhaCampo>
             ))}
-          </div>
+          </GrupoCampos>
           <Button onClick={salvar} className="w-full">
             <Plus className="h-4 w-4" /> Salvar medidas
           </Button>

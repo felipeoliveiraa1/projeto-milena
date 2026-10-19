@@ -29,7 +29,7 @@ import { usePreferencias } from "@/lib/settings";
 import { idsRotinaDoDia, useRotina } from "@/lib/routine";
 import { useDia } from "@/components/day-context";
 import { diaDaSemana } from "@/lib/date";
-import { cn } from "@/lib/utils";
+import { cn, juntarUnidades } from "@/lib/utils";
 
 const TITULO = {
   manha: { texto: "Rotina da manhã", Icone: Sunrise },
@@ -263,28 +263,29 @@ export function RoutineNow() {
                     onToggle={() => alternar(s.id, toggleSupplement)}
                     label={`Marcar ${s.nome}`}
                   >
-                    <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                    {/* Sempre o nome em cima e, embaixo, a hora, o "semanal" e a
+                        dose numa linha só. Com a hora antes do nome, ora ela
+                        ficava na mesma linha, ora sozinha em cima. */}
+                    <span
+                      className={cn(
+                        "block text-sm font-medium",
+                        marcado ? "text-ink-muted line-through" : "text-ink",
+                      )}
+                    >
+                      {juntarUnidades(s.nome)}
+                    </span>
+                    <span className="mt-1 block text-xs leading-relaxed text-ink-muted">
                       {selo && (
-                        <span className="rounded-full bg-clay-soft px-1.5 py-0.5 text-[0.625rem] font-bold text-clay tabular">
+                        <span className="mr-1.5 inline-block rounded-full bg-clay-soft px-1.5 text-[0.625rem] leading-4 font-bold text-clay-deep tabular">
                           {selo}
                         </span>
                       )}
-                      <span
-                        className={cn(
-                          "text-sm font-medium",
-                          marcado ? "text-ink-muted line-through" : "text-ink",
-                        )}
-                      >
-                        {s.nome}
-                      </span>
                       {ehSemanal(s) && (
-                        <span className="rounded-full bg-gold-soft px-1.5 py-0.5 text-[0.625rem] font-bold text-gold">
+                        <span className="mr-1.5 inline-block rounded-full bg-gold-soft px-1.5 text-[0.625rem] leading-4 font-bold text-gold">
                           semanal
                         </span>
                       )}
-                    </span>
-                    <span className="mt-0.5 block text-xs leading-relaxed text-ink-muted">
-                      {s.dose}
+                      {juntarUnidades(s.dose)}
                     </span>
                   </CheckRow>
                   {falhou(s.id) && <NaoSalvou />}

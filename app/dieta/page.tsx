@@ -51,7 +51,7 @@ import { JejumCard } from "@/components/jejum-card";
 import { horariosDaJanela, useJanela } from "@/lib/jejum";
 import { usePreferencias } from "@/lib/settings";
 import { formatarAgua } from "@/lib/score";
-import { cn } from "@/lib/utils";
+import { cn, juntarUnidades } from "@/lib/utils";
 
 const BADGE_MUDANCA: Record<Mudanca["tipo"], { texto: string; classe: string }> = {
   // Terracota, a cor da nutrição: o plano da nutricionista é o que vale agora.
@@ -112,14 +112,14 @@ export default function DietaPage() {
             <a
               key={a.href}
               href={a.href}
-              className="shrink-0 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-semibold text-ink-soft transition hover:bg-bone"
+              className="inline-flex h-9 shrink-0 items-center rounded-full border border-line bg-surface px-3.5 text-xs font-semibold text-ink-soft transition hover:bg-bone"
             >
               {a.texto}
             </a>
           ))}
           <Link
             href="/lista"
-            className="flex shrink-0 items-center gap-1.5 rounded-full border border-clay/30 bg-clay-soft px-3 py-1.5 text-xs font-semibold text-clay-deep transition hover:bg-clay-soft/70"
+            className="flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-clay/30 bg-clay-soft px-3.5 text-xs font-semibold text-clay-deep transition hover:bg-clay-soft/70"
           >
             <ShoppingBasket className="h-3.5 w-3.5" /> Lista de compras
           </Link>
@@ -303,7 +303,8 @@ export default function DietaPage() {
                   <p className="mt-1 text-sm font-bold text-bone">{s.rotulo}</p>
                   <p className="text-[0.625rem] leading-tight text-bone/60">{s.direcao}</p>
                   <p className="mt-1 text-[0.625rem] leading-tight font-semibold text-bone/80">
-                    {s.onde} →
+                    {/* A seta vai junto da última palavra, nunca sozinha na linha. */}
+                    {s.onde}&nbsp;→
                   </p>
                 </Link>
               );
@@ -377,17 +378,23 @@ export default function DietaPage() {
                     : "border-line bg-bone/50",
                 )}
               >
-                <div className="flex flex-wrap items-center gap-2">
-                  {m.tipo === "seguranca" && <ShieldAlert className="h-4 w-4 text-danger" />}
-                  <p className="text-sm font-bold text-ink">{m.tema}</p>
+                {/* O selo sempre em cima e o tema embaixo: ao lado do tema, ora
+                    cabia na mesma linha, ora caía sozinho na de baixo. */}
+                <div className="space-y-1.5">
                   <span
                     className={cn(
-                      "rounded-full px-2 py-0.5 text-[0.625rem] font-bold",
+                      "inline-block rounded-full px-2 py-0.5 text-[0.625rem] font-bold",
                       badge.classe,
                     )}
                   >
                     {badge.texto}
                   </span>
+                  <p className="flex items-start gap-1.5 text-sm font-bold text-ink">
+                    {m.tipo === "seguranca" && (
+                      <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
+                    )}
+                    <span>{m.tema}</span>
+                  </p>
                 </div>
                 <p className="text-xs leading-relaxed text-ink-muted">
                   <strong className="text-ink-soft">Antes:</strong> {m.antes}
@@ -448,12 +455,11 @@ export default function DietaPage() {
 function OpcaoCard({ opcao }: { opcao: OpcaoRefeicao }) {
   return (
     <div className="rounded-xl2 border border-line bg-bone/50 p-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded-full bg-clay px-2 py-0.5 text-[0.625rem] font-bold text-bone">
-          Opção {opcao.numero}
-        </span>
-        <p className="text-sm font-bold text-ink">{opcao.nome}</p>
-      </div>
+      {/* O selo sempre em cima do nome: ao lado, ora cabia, ora não. */}
+      <span className="inline-block rounded-full bg-clay px-2 py-0.5 text-[0.625rem] font-bold text-bone">
+        Opção {opcao.numero}
+      </span>
+      <p className="mt-1.5 text-sm font-bold text-ink">{opcao.nome}</p>
       <p className="mt-1 text-xs text-ink-muted tabular">
         ~{opcao.proteina} g de proteína (estimativa)
       </p>
@@ -461,7 +467,7 @@ function OpcaoCard({ opcao }: { opcao: OpcaoRefeicao }) {
         {opcao.itens.map((it) => (
           <li key={it.texto} className="flex items-start gap-2 text-sm leading-relaxed text-ink-soft">
             <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-clay" />
-            {it.texto}
+            {juntarUnidades(it.texto)}
           </li>
         ))}
       </ul>

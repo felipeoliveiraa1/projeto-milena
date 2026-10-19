@@ -14,7 +14,8 @@ import {
 
 type Acao = "ativar" | "teste" | "desativar";
 
-const AVISO = "rounded-xl2 bg-surface px-3.5 py-2.5 text-xs leading-relaxed text-ink-soft";
+// Uma caixa só, sem moldura em volta: o card de Ajustes já é a moldura.
+const AVISO = "rounded-xl2 bg-bone-deep/60 px-3.5 py-3 text-xs leading-relaxed text-ink-soft";
 
 /**
  * Os lembretes NESTE aparelho: estado, ativar, teste e desativar. Não é um

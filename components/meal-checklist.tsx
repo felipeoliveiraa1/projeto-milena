@@ -21,7 +21,7 @@ import { Progress } from "@/components/ui/progress";
 import { getDay, getTextoDoDia, setTextoDoDia, toggleMeal } from "@/lib/storage";
 import { duracaoJanela, formatarDuracao, horariosDaJanela, useJanela } from "@/lib/jejum";
 import { useDia } from "@/components/day-context";
-import { cn } from "@/lib/utils";
+import { cn, juntarUnidades } from "@/lib/utils";
 
 /** A opção que ela comeu: 1, 2 ou nenhuma escolhida. */
 type Opcao = 1 | 2 | null;
@@ -343,8 +343,9 @@ export function MealChecklist() {
                       onClick={() => escolherOpcao(id, o.numero)}
                       aria-pressed={ativa}
                       aria-label={`${REFEICOES_META[id].nome}: opção ${o.numero}, ${o.nome}`}
+                      // 36 px de altura: é o toque mais usado da tela inicial.
                       className={cn(
-                        "rounded-full border px-3 py-1 text-xs font-semibold transition disabled:opacity-50",
+                        "inline-flex h-9 items-center rounded-full border px-3.5 text-xs font-semibold transition disabled:opacity-50",
                         ativa
                           ? "border-clay bg-clay text-bone"
                           : "border-line bg-surface text-ink-soft hover:border-clay/40 hover:text-ink",
@@ -377,7 +378,7 @@ export function MealChecklist() {
                             className="flex items-start gap-2 text-sm leading-relaxed text-ink-soft"
                           >
                             <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-clay" />
-                            {it.texto}
+                            {juntarUnidades(it.texto)}
                           </li>
                         ))}
                       </ul>

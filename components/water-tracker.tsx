@@ -130,7 +130,7 @@ export function WaterTracker() {
     <Card>
       <CardHeader>
         <div className="flex items-start justify-between gap-3">
-          <div>
+          <div className="min-w-0">
             <Eyebrow className="text-brand-mid">Hidratação</Eyebrow>
             <CardTitle className="mt-1.5">Água do dia</CardTitle>
             {/* Só com as preferências carregadas: antes, o plano seria o de fábrica. */}
@@ -157,11 +157,12 @@ export function WaterTracker() {
               </>
             )}
           </div>
-          <div className="text-right">
+          {/* Inteiro numa linha: em 320 px o "900 ml" quebrava em "900" / "ml". */}
+          <div className="shrink-0 text-right whitespace-nowrap">
             <p className="font-display text-3xl leading-none text-ink tabular">
               {hydrated ? formatar(ml) : "0 ml"}
             </p>
-            <p className="text-xs text-ink-muted tabular">meta {formatar(meta)}</p>
+            <p className="mt-1 text-xs text-ink-muted tabular">meta {formatar(meta)}</p>
           </div>
         </div>
       </CardHeader>

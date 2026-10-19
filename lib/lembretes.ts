@@ -240,6 +240,54 @@ function lembretesDeRemedios(prefs: Preferencias, data: string): Lembrete[] {
   });
 }
 
+/** Os exames pré-operatórios começam 45 dias antes da cirurgia (orientação de 18/10). */
+export const EXAMES_ANTES_DA_CIRURGIA_DIAS = 45;
+
+/** Dia em que começam os exames pré-operatórios (AAAA-MM-DD), ou null sem data de cirurgia. */
+export function inicioDosExames(prefs: Preferencias): string | null {
+  const { data, cirurgia } = prefs.contagem;
+  if (!cirurgia || !data) return null;
+  return somarDias(data, -EXAMES_ANTES_DA_CIRURGIA_DIAS);
+}
+
+/**
+ * Avisos de um dia só, ligados à data da cirurgia: no dia em que começam os
+ * exames e no dia em que cada grupo de remédios entra em pausa. Os remédios
+ * somem sozinhos da lista e dos alarmes; o aviso é para ela não estranhar —
+ * e para saber que só voltam com a liberação do médico.
+ */
+/** "a, b e c". */
+function juntarComE(nomes: string[]): string {
+  return nomes.length <= 1 ? nomes.join("") : `${nomes.slice(0, -1).join(", ")} e ${nomes[nomes.length - 1]}`;
+}
+
+function lembretesDaCirurgia(prefs: Preferencias, data: string): Lembrete[] {
+  const lista: Lembrete[] = [];
+  if (inicioDosExames(prefs) === data) {
+    lista.push({
+      id: "cirurgia-exames",
+      hora: horaDaAncora(prefs, "cafe"),
+      tipo: "remedio",
+      titulo: "Cirurgia · exames",
+      corpo: `Faltam ${EXAMES_ANTES_DA_CIRURGIA_DIAS} dias para a cirurgia: hora de começar os exames pré-operatórios.`,
+      url: "/",
+    });
+  }
+  const pausamHoje = SUPPLEMENTS.filter((s) => inicioDaPausa(prefs, s) === data);
+  if (pausamHoje.length > 0) {
+    const dias = pausamHoje[0].pausaAntesDaCirurgiaDias;
+    lista.push({
+      id: "cirurgia-pausa",
+      hora: horaDaAncora(prefs, "acordar"),
+      tipo: "remedio",
+      titulo: "Cirurgia · pausa a partir de hoje",
+      corpo: `${dias} dias antes da cirurgia: ${juntarComE(pausamHoje.map((s) => s.curto))} param hoje e só voltam quando o médico liberar.`,
+      url: "/rotina",
+    });
+  }
+  return lista;
+}
+
 /**
  * Todos os lembretes de um dia (AAAA-MM-DD), em ordem de hora. Sem `todos`,
  * respeita os tipos que ela desligou em Ajustes (lembretesRemedios,
@@ -253,6 +301,7 @@ export function agendaDoDia(
   const todos = opcoes?.todos === true;
   const lista = [
     ...(todos || prefs.lembretesRemedios ? lembretesDeRemedios(prefs, data) : []),
+    ...(todos || prefs.lembretesRemedios ? lembretesDaCirurgia(prefs, data) : []),
     ...(todos || prefs.lembretesAgua ? lembretesDeAgua(prefs) : []),
   ];
   const ordemTipo = { remedio: 0, agua: 1 } as const;

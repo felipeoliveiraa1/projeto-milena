@@ -170,6 +170,12 @@ export const BLOCOS_SUPLEMENTOS: {
 const ALERTA_PSYLLIUM =
   "Sempre com bastante água: seco ou com pouca água, ele pode entalar ou prender o intestino. Sentiu que entalou — dor ou aperto no peito, não consegue engolir nem a saliva, ou falta de ar: ligue 192 (SAMU). Barriga muito dura e estufada: não tome a próxima dose, procure atendimento no mesmo dia e avise a nutricionista.";
 
+// Orientação que ela recebeu para a cirurgia plástica (18/10): testosterona e
+// Mounjaro param 30 dias antes, e os exames pré-operatórios começam 45 dias
+// antes (lib/lembretes.ts). A pausa é a mesma do ômega-3 e da curcumina.
+const ALERTA_PAUSA_CIRURGIA_MEDICO =
+  "Cirurgia: parar 30 dias antes, como foi orientado para a cirurgia, e só voltar quando o médico liberar. Com a data em Ajustes → Contagem regressiva e “É a data da cirurgia” marcada, o app avisa e pausa sozinho.";
+
 const ALERTA_PAUSA_CIRURGIA =
   "Pausar 30 dias antes da cirurgia e só voltar quando o médico liberar. Ponha a data em Ajustes → Contagem regressiva e marque “É a data da cirurgia”: o app avisa e pausa sozinho.";
 
@@ -203,14 +209,17 @@ export const SUPPLEMENTS: Supplement[] = [
       // decide é um médico, nunca ela sozinha.
       "A bula da testosterona pede atenção a sinais de coágulo: uma perna só inchada, doída, quente ou vermelha — pronto-socorro no mesmo dia; falta de ar de repente, dor no peito, tosse com sangue ou desmaio — 192 (SAMU), sem ir dirigindo. No atendimento, conte que usa testosterona em gel e não passe a próxima dose antes de falar com um médico. Avise também o médico que receitou.",
       // Cirurgia e dias de cama são a hora clássica do coágulo, para qualquer
-      // pessoa: a decisão de manter ou parar é do médico, com tempo.
-      "Cirurgia, internação ou dias de cama pela frente: pergunte ao cirurgião e ao médico que receitou se a testosterona continua. Nunca pare por conta própria.",
+      // pessoa. Para a cirurgia plástica, a orientação que ela recebeu (18/10)
+      // é parar 30 dias antes; fora disso, a decisão é do médico, com tempo.
+      ALERTA_PAUSA_CIRURGIA_MEDICO,
+      "Internação ou dias de cama por outro motivo: pergunte ao médico que receitou se a testosterona continua. Nunca pare por conta própria.",
       "Menstruação atrasada, suspeita de gravidez ou planos de engravidar: fale com o médico antes da próxima dose. Testosterona não pode ser usada na gravidez.",
       "Espinhas, pelos novos, queda de cabelo ou voz mais grossa: avise o médico logo — a mudança na voz pode não voltar.",
     ],
     status: "medicamento",
     horario: { ancora: "acordar", minutos: 0 },
     lembrete: "Testosterona — 1 pump, no horário que o médico indicou",
+    pausaAntesDaCirurgiaDias: 30,
   },
   {
     id: "creatina",
@@ -400,6 +409,7 @@ export const SUPPLEMENTS: Supplement[] = [
     // que é o dia — a hora continua a de costume.
     horario: { ancora: "acordar", minutos: 0 },
     lembrete: "Dia do Mounjaro: aplique hoje, no horário de costume.",
+    pausaAntesDaCirurgiaDias: 30,
     funcao:
       "Tirzepatida: diminui a fome e deixa a digestão mais lenta — é por causa dele que comer à noite pesa. Na bula, 2,5 mg é a dose de início; se e quando sobe, quem decide é o médico.",
     comoUsar: [
@@ -432,7 +442,8 @@ export const SUPPLEMENTS: Supplement[] = [
       // do começo e de cada aumento de dose. A escolha do método fica com o
       // ginecologista, que vê a lista de remédios e os exames.
       "Testosterona e Mounjaro não combinam com gravidez: se houver chance de engravidar, combine com o médico como evitar. O método se escolhe com o ginecologista, levando a lista de remédios e os seus exames. Anticoncepcional em comprimido pode perder efeito nas 4 semanas depois de começar o Mounjaro e depois de cada aumento de dose: nesse período, camisinha junto — trocar de método, só com o ginecologista.",
-      "Antes da cirurgia plástica ou de qualquer anestesia, avise o cirurgião e o anestesista: o Mounjaro faz o estômago esvaziar mais devagar, e isso importa na anestesia.",
+      ALERTA_PAUSA_CIRURGIA_MEDICO,
+      "Qualquer outra anestesia: avise o cirurgião e o anestesista que usa Mounjaro — ele faz o estômago esvaziar mais devagar, e isso importa na anestesia.",
     ],
     status: "medicamento",
   },

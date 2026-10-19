@@ -75,7 +75,7 @@ import { idsRotinaDoDia, novoId, useRotina } from "@/lib/routine";
 import { useDia } from "@/components/day-context";
 import { DaySwitch } from "@/components/day-switch";
 import { dataCurta, diaDaSemana, hojeKey } from "@/lib/date";
-import { cn } from "@/lib/utils";
+import { cn, juntarUnidades } from "@/lib/utils";
 
 const ICONE_BLOCO: Record<string, typeof Sunrise> = {
   manha: Sunrise,
@@ -312,8 +312,12 @@ export default function RotinaPage() {
               <p className="eyebrow text-plum/70">Jornada</p>
               <p className="font-display mt-1 text-3xl leading-none text-ink tabular">
                 {status.naoComecou ? "A começar" : `Semana ${status.semana}`}
+                {/* "· dia 68" inteiro na quebra: em 320 px o ponto ficava sozinho no fim da linha. */}
                 {!status.naoComecou && (
-                  <span className="text-lg text-ink-muted"> · dia {status.dia}</span>
+                  <>
+                    {" "}
+                    <span className="whitespace-nowrap text-lg text-ink-muted">· dia {status.dia}</span>
+                  </>
                 )}
               </p>
               <p className="mt-1.5 text-xs text-ink-muted tabular">
@@ -324,25 +328,30 @@ export default function RotinaPage() {
 
           <div className="mt-4 border-t border-plum/10 pt-4">
             {editandoData ? (
-              <div className="flex flex-wrap items-center gap-2">
-                <Input
-                  type="date"
-                  value={novaData}
-                  max={hojeKey()}
-                  onChange={(e) => setRascunhoData(e.target.value)}
-                  className="max-w-45"
-                />
-                <Button size="sm" onClick={salvarData}>
-                  Salvar
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => setEditandoData(false)}>
-                  Cancelar
-                </Button>
+              <div className="space-y-2">
+                <label className="block space-y-1.5">
+                  <span className="text-xs font-semibold text-ink-soft">Comecei em</span>
+                  <Input
+                    type="date"
+                    value={novaData}
+                    max={hojeKey()}
+                    onChange={(e) => setRascunhoData(e.target.value)}
+                  />
+                </label>
+                <div className="flex gap-2">
+                  <Button variant="ghost" onClick={() => setEditandoData(false)}>
+                    Cancelar
+                  </Button>
+                  <Button onClick={salvarData} className="flex-1">
+                    Salvar
+                  </Button>
+                </div>
               </div>
             ) : (
               <button
                 onClick={() => setEditandoData(true)}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-plum transition hover:text-ink"
+                // Área de toque de 44 px de altura, sem mudar o espaço na tela.
+                className="relative inline-flex items-center gap-1.5 text-xs font-semibold text-plum transition after:absolute after:-inset-x-2 after:-inset-y-3.5 after:content-[''] hover:text-ink"
               >
                 <Pencil className="h-3 w-3" />
                 Comecei em {status.inicio.split("-").reverse().join("/")} · ajustar
@@ -678,7 +687,7 @@ function RemedioCard({
             )}
           >
             <Pill className="mr-1.5 inline h-3.5 w-3.5 text-clay" />
-            {s.nome}
+            {juntarUnidades(s.nome)}
           </p>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
             {horario && !pausado && (
@@ -700,7 +709,7 @@ function RemedioCard({
               {ROTULO_STATUS[s.status]}
             </span>
           </div>
-          <p className="mt-1.5 text-xs font-semibold text-ink-soft">{s.dose}</p>
+          <p className="mt-1.5 text-xs font-semibold text-ink-soft">{juntarUnidades(s.dose)}</p>
           {outroDia !== undefined && !pausado && (
             <p className="mt-1 text-xs text-ink-muted">{outroDia}</p>
           )}
@@ -710,67 +719,16 @@ function RemedioCard({
             </p>
           )}
           {avisoPausa && !pausado && (
-            <p className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-gold">
-              <PauseCircle className="h-3.5 w-3.5 shrink-0" /> {avisoPausa}
+            <p className="mt-1 flex items-start gap-1.5 text-xs font-semibold text-gold">
+              <PauseCircle className="mt-px h-3.5 w-3.5 shrink-0" /> {avisoPausa}
             </p>
-          )}
-
-          {mostrarTudo && (
-            <div className="space-y-2">
-              <p className="mt-2 text-sm leading-relaxed text-ink-soft">{s.funcao}</p>
-
-              {s.comoUsar && (
-                <ul className="space-y-1.5">
-                  {s.comoUsar.map((passo) => (
-                    <li
-                      key={passo}
-                      className="flex items-start gap-2 text-xs leading-relaxed text-ink-soft"
-                    >
-                      <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-clay" />
-                      <span>{passo}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-
-              {s.observacao && (
-                <p className="rounded-xl bg-gold-soft p-3 text-xs leading-relaxed text-gold">
-                  {s.observacao}
-                </p>
-              )}
-
-              {s.alertas && s.alertas.length > 0 && (
-                <div className="rounded-xl border border-danger/15 bg-danger-soft/60 p-3">
-                  <p className="flex items-center gap-1.5 text-[0.6875rem] font-bold text-danger">
-                    <TriangleAlert className="h-3.5 w-3.5" /> Fique de olho
-                  </p>
-                  <ul className="mt-1.5 space-y-1.5">
-                    {s.alertas.map((alerta) => (
-                      <li
-                        key={alerta}
-                        className="flex items-start gap-2 text-xs leading-relaxed text-ink-soft"
-                      >
-                        <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-danger" />
-                        <span>{alerta}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {s.antes && (
-                <p className="text-[0.6875rem] leading-relaxed text-ink-muted">
-                  <strong className="text-ink-soft">O que mudou:</strong> {s.antes}
-                </p>
-              )}
-            </div>
           )}
 
           {!ehDoDia && (
             // 44 px de altura para o dedo acertar — é por aqui que entra a dose
-            // atrasada do Mounjaro. A margem negativa embaixo come parte do
-            // respiro que a altura extra criaria no cartão.
-            <div className="mt-1 -mb-3 flex flex-wrap items-center gap-x-4">
+            // atrasada do Mounjaro. A margem negativa come parte do respiro
+            // que a altura extra criaria no cartão.
+            <div className={cn("mt-1 flex flex-wrap items-center gap-x-4", !mostrarTudo && "-mb-3")}>
               <button
                 type="button"
                 onClick={() => setAberto(!aberto)}
@@ -803,6 +761,59 @@ function RemedioCard({
           )}
         </div>
       </div>
+
+      {/* As orientações usam a largura toda do cartão: recuadas sob o
+          checkbox, os avisos de segurança ficavam numa coluna de 190 px. */}
+      {mostrarTudo && (
+        <div className="mt-3 space-y-2 border-t border-line/70 pt-3">
+          <p className="text-sm leading-relaxed text-ink-soft">{s.funcao}</p>
+
+          {s.comoUsar && (
+            <ul className="space-y-1.5">
+              {s.comoUsar.map((passo) => (
+                <li
+                  key={passo}
+                  className="flex items-start gap-2 text-xs leading-relaxed text-ink-soft"
+                >
+                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-clay" />
+                  <span>{juntarUnidades(passo)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {s.observacao && (
+            <p className="rounded-xl bg-gold-soft p-3 text-xs leading-relaxed text-gold">
+              {s.observacao}
+            </p>
+          )}
+
+          {s.alertas && s.alertas.length > 0 && (
+            <div className="rounded-xl border border-danger/15 bg-danger-soft/60 p-3">
+              <p className="flex items-center gap-1.5 text-[0.6875rem] font-bold text-danger">
+                <TriangleAlert className="h-3.5 w-3.5" /> Fique de olho
+              </p>
+              <ul className="mt-1.5 space-y-1.5">
+                {s.alertas.map((alerta) => (
+                  <li
+                    key={alerta}
+                    className="flex items-start gap-2 text-xs leading-relaxed text-ink-soft"
+                  >
+                    <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-danger" />
+                    <span>{alerta}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {s.antes && (
+            <p className="text-[0.6875rem] leading-relaxed text-ink-muted">
+              <strong className="text-ink-soft">O que mudou:</strong> {s.antes}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

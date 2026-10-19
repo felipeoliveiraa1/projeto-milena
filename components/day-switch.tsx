@@ -29,9 +29,10 @@ export function DaySwitch() {
 
   if (!aberto) {
     return (
+      // A área de toque passa dos 16 px do texto para 44 px, sem mudar o espaço na tela.
       <button
         onClick={() => setAberto(true)}
-        className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink-muted transition hover:text-ink"
+        className="relative inline-flex items-center gap-1.5 text-xs font-semibold text-ink-muted transition after:absolute after:-inset-x-2 after:-inset-y-3.5 after:content-[''] hover:text-ink"
       >
         <CalendarDays className="h-3.5 w-3.5" />
         Lançar um dia anterior
@@ -51,7 +52,8 @@ export function DaySwitch() {
             setAberto(false);
           }
         }}
-        className="max-w-45"
+        aria-label="Dia para lançar"
+        className="w-48 max-w-full"
       />
       <Button size="sm" variant="ghost" onClick={() => setAberto(false)}>
         Cancelar

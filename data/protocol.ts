@@ -250,5 +250,5 @@ export const SEGURANCA = [
   // Ajustes de 12/10. É o que toda consulta antes de anestesia pergunta; com
   // tudo na mão antes de marcar, o cirurgião e o anestesista planejam o
   // preparo, e o médico que receitou decide sobre cada remédio a tempo.
-  "Antes de marcar a cirurgia plástica (ou qualquer anestesia), leve ao cirurgião e ao anestesista a lista de todos os remédios — Mounjaro e testosterona inclusive — e todos os seus exames, também os que não estão no app. Conte se você ou alguém da família de sangue já teve trombose ou embolia. O Mounjaro costuma precisar de ajuste antes; a testosterona, só o médico decide se para.",
+  "Antes de marcar a cirurgia plástica (ou qualquer anestesia), leve ao cirurgião e ao anestesista a lista de todos os remédios — Mounjaro e testosterona inclusive — e todos os seus exames, também os que não estão no app. Conte se você ou alguém da família de sangue já teve trombose ou embolia. Para a cirurgia, a orientação é: exames pré-operatórios a partir de 45 dias antes; testosterona e Mounjaro — e o ômega-3 e a curcumina — param 30 dias antes e só voltam quando o médico liberar. Com a data da cirurgia em Ajustes, o app avisa cada etapa.",
 ];

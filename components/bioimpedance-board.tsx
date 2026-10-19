@@ -24,6 +24,7 @@ import {
   Eyebrow,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { CAMPO_NA_LINHA, GrupoCampos, LinhaCampo } from "@/components/ui/campo";
 import { Button } from "@/components/ui/button";
 import {
   DICAS_EXAME,
@@ -434,43 +435,43 @@ export function BioimpedanceBoard() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid grid-cols-2 gap-2">
-            <label className="space-y-1">
-              <span className="text-xs font-semibold text-ink-soft">Data do exame</span>
+          <GrupoCampos>
+            <LinhaCampo rotulo="Data do exame">
               <Input
                 type="date"
                 value={rascunho.date}
                 max={hojeKey()}
                 onChange={(e) => editarCampo("date", e.target.value)}
+                className={cn(CAMPO_NA_LINHA, "w-44")}
               />
-            </label>
-            <label className="space-y-1">
-              <span className="text-xs font-semibold text-ink-soft">Sua idade</span>
+            </LinhaCampo>
+            <LinhaCampo rotulo="Sua idade">
               <Input
                 inputMode="numeric"
                 placeholder="anos"
                 value={rascunho.idade}
                 onChange={(e) => editarCampo("idade", e.target.value)}
+                className={cn(CAMPO_NA_LINHA, "w-22")}
               />
-            </label>
-          </div>
+            </LinhaCampo>
+          </GrupoCampos>
           <p className="-mt-1 text-[0.6875rem] leading-relaxed text-ink-muted">
             A idade entra porque as faixas de gordura e de músculo mudam aos 40.
           </p>
 
-          <div className="grid grid-cols-2 gap-2">
+          <GrupoCampos>
             {CAMPOS.map((c) => (
-              <label key={c.chave} className="space-y-1">
-                <span className="text-xs font-semibold text-ink-soft">{c.rotulo}</span>
+              <LinhaCampo key={c.chave} rotulo={c.rotulo}>
                 <Input
                   inputMode="decimal"
                   placeholder={c.unidade}
                   value={rascunho[c.chave]}
                   onChange={(e) => editarCampo(c.chave, e.target.value)}
+                  className={cn(CAMPO_NA_LINHA, "w-22")}
                 />
-              </label>
+              </LinhaCampo>
             ))}
-          </div>
+          </GrupoCampos>
 
           <label className="block space-y-1">
             <span className="text-xs font-semibold text-ink-soft">Anotação (opcional)</span>

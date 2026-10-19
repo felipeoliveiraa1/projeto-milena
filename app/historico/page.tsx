@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Check,
@@ -230,8 +230,19 @@ export default function HistoricoPage() {
                         </span>
                       )}
                     </div>
+                    {/* Quebra só depois da vírgula: "Sexta-feira," / "16 de outubro". */}
                     <p className="text-xs text-ink-muted">
-                      {dataExtenso(new Date(data + "T00:00:00"))}
+                      {dataExtenso(new Date(data + "T00:00:00"))
+                        .split(", ")
+                        .map((parte, i, partes) => (
+                          <Fragment key={i}>
+                            {i > 0 && " "}
+                            <span className="whitespace-nowrap">
+                              {parte}
+                              {i < partes.length - 1 && ","}
+                            </span>
+                          </Fragment>
+                        ))}
                     </p>
                     <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[0.6875rem] text-ink-muted tabular">
                       <span className="flex items-center gap-1">

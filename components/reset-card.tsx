@@ -135,7 +135,6 @@ export function ResetCard() {
             value={novoInicio}
             max={hojeKey()}
             onChange={(e) => setNovoInicio(e.target.value)}
-            className="max-w-45"
           />
         </label>
 
