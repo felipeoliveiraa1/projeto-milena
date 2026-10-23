@@ -85,8 +85,8 @@ const NOME_ANCORA: Record<Ancora, { antes: string; junto: string; depois: string
  * O "depois" sai sem os minutos: a receita diz só "após o almoço" ou "depois
  * do café", e os minutos são a folga que o app deu ao lembrete. O "antes"
  * leva os minutos, que vêm da receita ("20 min antes do café"). Antes de
- * deitar sai "à noite, antes de deitar": a B12 e o colágeno vieram só "à
- * noite", e a dose de cada item, logo abaixo na tela, diz o resto.
+ * deitar sai "à noite, antes de deitar": a B12 veio só "à noite", e a
+ * dose de cada item, logo abaixo na tela, diz o resto.
  */
 export function descreverHorario(s: Supplement): string | null {
   if (!s.horario) return null;

@@ -99,7 +99,7 @@ export const JEJUM = {
       // eles aqui, o texto ao pé da letra mandaria esperar o café para tomar.
       item: "Remédios e suplementos do jejum",
       detalhe:
-        "Nos horários da Farmácia: de manhã, o probiótico e o mio-inositol antes do café (e a creatina, nos dias sem treino); à noite, a B12 derrete embaixo da língua e o colágeno e o magnésio vão com água. Mudar o horário de qualquer um, só com quem receitou.",
+        "Nos horários da Farmácia: de manhã, o probiótico e o mio-inositol antes do café (e a creatina, nos dias sem treino); à noite, a B12 derrete embaixo da língua e o magnésio vai com água. O colágeno vai junto do café da manhã. Mudar o horário de qualquer um, só com quem receitou.",
     },
   ],
   /**

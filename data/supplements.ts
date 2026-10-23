@@ -135,7 +135,7 @@ export const BLOCOS_SUPLEMENTOS: {
   {
     id: "manha",
     titulo: "De manhã",
-    detalhe: "Ao acordar e antes do café da manhã.",
+    detalhe: "Ao acordar e no café da manhã.",
     periodo: "manha",
   },
   {
@@ -261,6 +261,26 @@ export const SUPPLEMENTS: Supplement[] = [
     status: "nutricionista",
     horario: { ancora: "cafe", minutos: -20 },
   },
+  {
+    // 22/10, a pedido dela: saiu da noite para o café da manhã. O horário não
+    // muda o efeito do Verisol (o que conta é tomar todo dia); assim o jejum
+    // da noite fica sem nada, e o psyllium (12:10 e 17:10) fica longe.
+    id: "colageno",
+    nome: "Colágeno Verisol ProFit",
+    curto: "Colágeno",
+    dose: "4 comprimidos, junto do café da manhã",
+    bloco: "manha",
+    funcao: "Para a pele: o Verisol é um colágeno estudado para firmeza e elasticidade.",
+    comoUsar: [
+      "Junto do café da manhã: dentro da janela, o jejum da noite fica sem nada — e longe do psyllium, que pode atrasar a absorção do que for tomado junto.",
+      "O horário não muda o efeito: o que conta é tomar todo dia.",
+    ],
+    observacao:
+      "Não entra na conta da proteína do dia: é pouca e de um tipo incompleto. A proteína vem das refeições do plano alimentar.",
+    antes: "Até 22/10 era à noite, como na lista de 29/09. Desde 23/10 vai junto do café da manhã, para o jejum da noite ficar sem nada.",
+    status: "suplemento",
+    horario: { ancora: "cafe", minutos: 0 },
+  },
 
   /* ------------------------------ almoço --------------------------------- */
   {
@@ -368,22 +388,6 @@ export const SUPPLEMENTS: Supplement[] = [
     comoUsar: ["Deixe dissolver embaixo da língua, sem engolir inteiro nem mastigar."],
     antes: "Estava de manhã. A lista de 29/09 diz à noite — vale a lista.",
     status: "prescricao",
-    horario: { ancora: "deitar", minutos: -30 },
-  },
-  {
-    id: "colageno",
-    nome: "Colágeno Verisol ProFit",
-    curto: "Colágeno",
-    dose: "4 comprimidos à noite",
-    bloco: "noite",
-    funcao: "Para a pele: o Verisol é um colágeno estudado para firmeza e elasticidade.",
-    comoUsar: [
-      "Colágeno é proteína, então tem um pouco de caloria. Se quiser o jejum da noite sem nada, pergunte ao médico se os comprimidos podem ir para a última refeição da janela. Até lá, vale a lista: à noite.",
-    ],
-    observacao:
-      "Não entra na conta da proteína do dia: é pouca e de um tipo incompleto. A proteína vem das refeições do plano alimentar.",
-    antes: "O app mandava dissolver na água ou no chá da noite. Agora são 4 comprimidos.",
-    status: "suplemento",
     horario: { ancora: "deitar", minutos: -30 },
   },
   {

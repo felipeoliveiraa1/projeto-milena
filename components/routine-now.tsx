@@ -65,7 +65,7 @@ export function RoutineNow() {
   /** Item cujo toque (ou texto) não foi gravado — o aviso aparece logo abaixo dele. */
   const [naoSalvou, setNaoSalvou] = useState<{ data: string; id: string } | null>(null);
   // Anda com o relógio: de madrugada (até 05:00) ainda é noite — B12 e
-  // colágeno continuam aqui, e os da manhã só entram com o dia novo.
+  // magnésio continuam aqui, e os da manhã só entram com o dia novo.
   const periodo = usePeriodoAgora() ?? "manha";
   const { blocos } = useRotina();
   const { data, ehHoje } = useDia();
