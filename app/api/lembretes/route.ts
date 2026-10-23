@@ -100,6 +100,27 @@ async function disparar(req: NextRequest): Promise<Response> {
     if (erroConfig) throw new Error(`app_config: ${erroConfig.message}`);
     const prefs = lerPreferencias(config?.preferencias);
 
+    // Diagnóstico (só com a senha): a agenda inteira de hoje do jeito que o
+    // servidor enxerga, sem gravar nem mandar nada. Serve para conferir de
+    // fora por que um lembrete não chegou.
+    if (req.nextUrl.searchParams.get("agenda") === "1") {
+      return resposta(200, {
+        agora: { data: agora.data, hora: agora.hora },
+        lembretes: { remedios: prefs.lembretesRemedios, agua: prefs.lembretesAgua },
+        agua: {
+          metaMl: prefs.aguaMetaMl,
+          copoMl: prefs.aguaCopoMl,
+          inicio: prefs.aguaInicio,
+          fim: prefs.aguaFim,
+        },
+        janela: { inicio: prefs.janelaInicio, fim: prefs.janelaFim },
+        acordar: prefs.horaAcordar,
+        dormir: prefs.horaDormir,
+        horariosEditados: prefs.horariosRemedios,
+        agenda: agendaDoDia(prefs, agora.data).map((l) => ({ id: l.id, hora: l.hora, titulo: l.titulo })),
+      });
+    }
+
     const vencidos = agendaDoDia(prefs, agora.data).filter((l) => {
       const m = paraMinutos(l.hora);
       return m > agora.minutos - JANELA_MINUTOS && m <= agora.minutos;
