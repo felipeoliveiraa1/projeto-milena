@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import Link from "next/link";
 import {
   AlarmClock,
@@ -11,6 +11,7 @@ import {
   Droplet,
   ListChecks,
   LogOut,
+  Pill,
   Plus,
   RotateCcw,
   Scale,
@@ -34,6 +35,7 @@ import {
   ehDataValida,
   ehHoraAcordarValida,
   ehHoraDormirValida,
+  ehHoraRemedioValida,
   ehJanelaAguaValida,
   ehJanelaValida,
   usePreferencias,
@@ -42,13 +44,19 @@ import {
 import { duracaoJanela, formatarDuracao, paraMinutos } from "@/lib/jejum";
 import {
   agendaDoDia,
+  comHorarioDoRemedio,
   dataCurtaDe,
+  descreverHorarioPadrao,
   EXAMES_ANTES_DA_CIRURGIA_DIAS,
+  horarioDoSuplemento,
+  horarioFoiEditado,
+  horarioPadraoDoSuplemento,
   inicioDaPausa,
   inicioDosExames,
   planoDeAgua,
+  suplementoEmPausa,
 } from "@/lib/lembretes";
-import { SUPPLEMENTS } from "@/data/supplements";
+import { NOMES_DIAS, SUPPLEMENTS, ehSemanal, type Supplement } from "@/data/supplements";
 import { emailDaSessao, sair, useSessao } from "@/lib/auth";
 import { hojeKey } from "@/lib/date";
 import { useAgoraVivo } from "@/lib/now";
@@ -83,7 +91,14 @@ export default function AjustesPage() {
   const dormirOk = ehHoraDormirValida(atual.horaDormir);
   const contagem = atual.contagem;
   const dataOk = contagem.data === null || ehDataValida(contagem.data);
-  const tudoOk = janelaOk && aguaOk && acordarOk && dormirOk && dataOk;
+  const horariosOk = Object.values(atual.horariosRemedios).every(ehHoraRemedioValida);
+  const tudoOk = janelaOk && aguaOk && acordarOk && dormirOk && dataOk && horariosOk;
+
+  // Os remédios na ordem da hora salva, e não na do rascunho: mudando a hora
+  // de um, a linha não pula de lugar (nem fecha o seletor) no meio da escolha.
+  const remediosPorHora = [...SUPPLEMENTS].sort((a, b) =>
+    (horarioDoSuplemento(a, prefs) ?? "99:99").localeCompare(horarioDoSuplemento(b, prefs) ?? "99:99"),
+  );
 
   // Prévia dos copos: só com a água válida (copo zero daria copos infinitos).
   const plano = aguaOk ? planoDeAgua(atual) : null;
@@ -343,6 +358,39 @@ export default function AjustesPage() {
                 A hora de dormir precisa ficar entre 18:00 e 23:59.
               </p>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Horários dos remédios ------------------------------------------- */}
+        <Card id="horarios-remedios" className="scroll-mt-24">
+          <CardHeader>
+            <Eyebrow className="text-clay">Farmácia</Eyebrow>
+            <CardTitle className="mt-1.5 flex items-center gap-2">
+              <Pill className="h-4.5 w-4.5 text-clay" /> Horários dos remédios
+            </CardTitle>
+            <CardDescription>
+              O app calcula cada horário pela receita, pela janela de comer e pelos seus
+              horários de acordar e dormir. Mudou aqui, muda o alarme — para todos os
+              aparelhos, depois de salvar.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <GrupoCampos>
+              {remediosPorHora.map((s) => (
+                <LinhaHorarioRemedio
+                  key={s.id}
+                  s={s}
+                  prefs={atual}
+                  // Em pausa pela data da cirurgia: continua aqui, para a hora
+                  // já estar certa quando o médico liberar.
+                  emPausa={hoje !== null && dataOk && suplementoEmPausa(s, atual, hoje)}
+                  desativado={carregando}
+                  onMudar={(hora) =>
+                    editar({ horariosRemedios: comHorarioDoRemedio(atual, s, hora) })
+                  }
+                />
+              ))}
+            </GrupoCampos>
           </CardContent>
         </Card>
 
@@ -738,5 +786,107 @@ function Opcao({
         <span className="mt-0.5 block text-xs leading-relaxed text-ink-muted">{detalhe}</span>
       </span>
     </label>
+  );
+}
+
+/**
+ * Uma linha de "Horários dos remédios": o nome, a hora que vale e, quando a
+ * hora é dela, a do app embaixo e o "Voltar ao padrão". A linha é sempre
+ * <div> (por isso o rodapé vai sempre, mesmo vazio): o botão aparece no meio
+ * da escolha, e trocar <label> por <div> nessa hora recriaria o campo e
+ * fecharia o seletor de hora do iPhone. O nome continua abrindo o campo,
+ * pelo <label> só em volta dele.
+ */
+function LinhaHorarioRemedio({
+  s,
+  prefs,
+  emPausa,
+  desativado,
+  onMudar,
+}: {
+  s: Supplement;
+  /** As preferências na tela, com o rascunho. */
+  prefs: Preferencias;
+  emPausa: boolean;
+  desativado: boolean;
+  /** A hora nova do item; `null` volta para a do app. */
+  onMudar: (hora: string | null) => void;
+}) {
+  const id = useId();
+  const padrao = horarioPadraoDoSuplemento(s, prefs);
+  const comoPadrao = descreverHorarioPadrao(s);
+  // O valor do rascunho como ela deixou — até vazio ou antes das 05:00 —,
+  // para o campo mostrar o que ela pôs, com o erro embaixo.
+  const escolhido = prefs.horariosRemedios[s.id] as string | undefined;
+  const invalido = escolhido !== undefined && !ehHoraRemedioValida(escolhido);
+  const dela = invalido || horarioFoiEditado(s, prefs);
+  const dias = ehSemanal(s) && s.dias ? ` · ${s.dias.map((d) => NOMES_DIAS[d]).join(" e ")}` : "";
+
+  return (
+    <LinhaCampo
+      rotulo={
+        // Em linha que quebra, com espaço entre os dois: o selo que desce
+        // para a linha de baixo fica alinhado com o nome, sem recuo.
+        <label htmlFor={id} className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+          <span>
+            {s.curto}
+            {dias}
+          </span>
+          {emPausa && (
+            <span className="rounded-full bg-line-soft px-1.5 text-[0.625rem] leading-4 font-bold text-ink-muted">
+              em pausa
+            </span>
+          )}
+        </label>
+      }
+      detalhe={
+        dela ? (
+          <>
+            Padrão do app: {padrao ?? "—"}
+            {/* O parêntese desce inteiro para a linha de baixo, em vez de
+                quebrar no meio ("(depois / do almoço)"). */}
+            {comoPadrao && (
+              <>
+                {" "}
+                <span className="inline-block">({comoPadrao})</span>
+              </>
+            )}
+          </>
+        ) : (
+          comoPadrao
+        )
+      }
+      rodape={
+        <>
+          {invalido && (
+            <span className="mt-1 block text-xs font-semibold leading-snug text-danger">
+              Escolha um horário entre 05:00 e 23:59.
+            </span>
+          )}
+          {dela && (
+            // 44 px de altura para o dedo; a margem negativa come o respiro de
+            // baixo da linha, que a altura extra já cobre.
+            <button
+              type="button"
+              disabled={desativado}
+              onClick={() => onMudar(null)}
+              className="-mb-2 inline-flex min-h-11 items-center gap-1 text-xs font-semibold text-clay transition hover:text-ink disabled:opacity-40"
+            >
+              <RotateCcw className="h-3.5 w-3.5" /> Voltar ao padrão
+            </button>
+          )}
+        </>
+      }
+    >
+      <Input
+        id={id}
+        disabled={desativado}
+        type="time"
+        aria-invalid={invalido || undefined}
+        value={escolhido ?? padrao ?? ""}
+        onChange={(e) => onMudar(e.target.value)}
+        className={cn(CAMPO_NA_LINHA, "w-22")}
+      />
+    </LinhaCampo>
   );
 }

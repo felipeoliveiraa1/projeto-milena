@@ -66,7 +66,7 @@ Precisa do **iOS 16.4 ou mais novo**. No iPhone, notificação de site só funci
 3. Abra o **Mais Leve pelo ícone** da Tela de Início (não pelo Safari) e entre com o login dela.
 4. Vá em **Ajustes** (a engrenagem) → **Lembretes no celular** → **Ativar lembretes neste celular** → **Permitir**.
 5. Toque em **Enviar um teste**. Em alguns segundos chega "Mais Leve · teste".
-6. Na mesma tela, as chaves **Remédios** e **Água** escolhem o que avisa, e a lista mostra os horários de hoje. Mudou algo? Salve.
+6. Na mesma tela, as chaves **Remédios** e **Água** escolhem o que avisa, e a lista mostra os horários de hoje. A hora de cada remédio muda em **Ajustes → Horários dos remédios**. Mudou algo? Salve.
 
 Pode ativar mais de um aparelho (o seu também): cada um recebe os mesmos avisos.
 
@@ -121,5 +121,5 @@ Para voltar, rode a seção 6 da `0007_lembretes.sql` de novo.
 - É uma **notificação com som, não um despertador**: não toca sem parar e não fura o modo silencioso.
 - O aviso pode atrasar um ou dois minutos (o cron roda de minuto em minuto, e a Apple entrega quando o aparelho acorda). Um aviso que não conseguiu sair em meia hora é descartado — não chega um lembrete velho.
 - O lembrete some sozinho se ela **já marcou** no app antes da hora (remédio tomado ou água registrada).
-- **Nenhum lembrete sai antes das 05:00**, a hora em que o dia do app vira: até lá, o que ela marca ainda vai para o dia anterior. Por isso a hora de acordar, o primeiro copo de água e a abertura da janela começam às 05:00, no mínimo, e nenhum remédio é lembrado antes da hora de acordar.
+- **Nenhum lembrete sai antes das 05:00**, a hora em que o dia do app vira: até lá, o que ela marca ainda vai para o dia anterior. Por isso a hora de acordar, o primeiro copo de água e a abertura da janela começam às 05:00, no mínimo, e nenhum remédio é lembrado antes da hora de acordar — a não ser que ela mesma escolha uma hora mais cedo em **Horários dos remédios** (também a partir das 05:00).
 - Se os avisos pararem num aparelho (troca de celular, app reinstalado, notificação desligada nos Ajustes do iPhone): abra o app pelo ícone → Ajustes → **Desativar neste celular** → **Ativar** de novo.

@@ -21,14 +21,17 @@ export function GrupoCampos({ className, ...props }: React.HTMLAttributes<HTMLDi
 
 /**
  * Uma linha do grupo. É um <label>: tocar no rótulo abre o campo. Com
- * `acao` (um botão ao lado do campo), vira <div> — botão dentro de label
- * repassaria o toque para o campo.
+ * `acao` (um botão ao lado do campo) ou `rodape`, vira <div> — botão dentro
+ * de label repassaria o toque para o campo, e o do rodapé, que vem antes do
+ * campo, viraria o controle do próprio rótulo. Sem o <label>, o campo precisa
+ * de `aria-label`.
  */
 export function LinhaCampo({
   rotulo,
   detalhe,
   children,
   acao,
+  rodape,
   className,
 }: {
   rotulo: React.ReactNode;
@@ -37,9 +40,16 @@ export function LinhaCampo({
   children: React.ReactNode;
   /** Botão depois do campo (remover, por exemplo). */
   acao?: React.ReactNode;
+  /**
+   * Embaixo do rótulo e do detalhe: aviso de erro ou botão pequeno ("Voltar
+   * ao padrão"). Linha que pode ganhar botão no meio da edição passa o rodapé
+   * sempre, mesmo vazio: trocar <label> por <div> recriaria o campo e
+   * fecharia o seletor de hora do iPhone no meio da escolha.
+   */
+  rodape?: React.ReactNode;
   className?: string;
 }) {
-  const Caixa = acao ? "div" : "label";
+  const Caixa = acao || rodape ? "div" : "label";
   return (
     <Caixa className={cn("flex min-h-15 items-center gap-3 px-3.5 py-2", className)}>
       {/* O rótulo cresce e quebra em palavras; o campo encolhe só se faltar espaço (320 px). */}
@@ -48,6 +58,7 @@ export function LinhaCampo({
         {detalhe && (
           <span className="mt-0.5 block text-xs leading-snug text-ink-muted">{detalhe}</span>
         )}
+        {rodape}
       </span>
       <span className="flex min-w-0 items-center justify-end gap-1">
         {children}

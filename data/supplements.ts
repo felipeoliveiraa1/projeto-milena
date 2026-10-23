@@ -15,13 +15,24 @@
  *   acordar), e a fórmula continua a mesma, agora com a composição escrita;
  * - a receita põe o mio-inositol e o psyllium da tarde "antes do jantar".
  *   Como a última refeição do plano é o lanche da tarde, eles ficaram antes
- *   dele — com o aviso para confirmar com a nutricionista;
+ *   dele — com o aviso para confirmar com a nutricionista (e o ajuste de
+ *   22/10, abaixo);
  * - ômega-3 e curcumina param 30 dias antes da cirurgia
  *   (pausaAntesDaCirurgiaDias) e só voltam com a liberação do médico.
  *
+ * O ajuste de 22/10, com o ok da nutricionista: a fibra do psyllium pode
+ * atrasar a absorção do que vai junto, então os outros suplementos ficam de
+ * 1 a 2 h longe dele. O psyllium continua 20 min antes do almoço e do lanche,
+ * como na receita; a fórmula e a curcumina passaram para 2 h depois do
+ * psyllium do almoço, e o mio-inositol da tarde, para 1 h antes do psyllium
+ * da tarde. O ômega-3 continua junto do almoço, porque precisa da gordura da
+ * refeição. Nenhuma dose mudou.
+ *
  * Cada item tem um horário relativo (acordar, café, almoço, lanche, deitar):
  * os lembretes do celular e as telas calculam a hora a partir dos horários
- * dela e da janela de comer — ver lib/lembretes.ts.
+ * dela e da janela de comer — ver lib/lembretes.ts. Ela pode trocar o horário
+ * de qualquer item em Ajustes → Horários dos remédios; aí vale o dela
+ * (Preferencias.horariosRemedios).
  *
  * A lista de 29/09, em relação à antiga (a do Desinflama-se):
  * - entraram testosterona, fórmula e Mounjaro;
@@ -81,6 +92,11 @@ export type Supplement = {
   curto: string;
   /** Dose e frequência como vieram na lista. */
   dose: string;
+  /**
+   * Bloco da receita. Na Farmácia, o item de todo dia aparece no bloco da hora
+   * em que cai (lib/lembretes.ts → blocoDoSuplemento): com os horários de
+   * fábrica, é este; com um horário escolhido por ela, pode ser outro.
+   */
   bloco: BlocoSuplemento;
   /** Dias da semana em que ele entra (0 = domingo). Sem isto, é todo dia. */
   dias?: number[];
@@ -112,6 +128,12 @@ export type Supplement = {
    * manda no horário de tomar é a receita.
    */
   lembrete?: string;
+  /**
+   * A linha do lembrete quando o horário foi ela que escolheu (Ajustes →
+   * Horários dos remédios). O aviso de fábrica do Mounjaro chega cedo e só
+   * lembra o dia; na hora que ela pôs, ele vira a hora da aplicação.
+   */
+  lembreteNoHorario?: string;
 };
 
 export const ROTULO_STATUS: Record<StatusSuplemento, string> = {
@@ -147,7 +169,9 @@ export const BLOCOS_SUPLEMENTOS: {
   {
     id: "tarde",
     titulo: "Antes do lanche da tarde",
-    detalhe: "20 min antes da última refeição do dia.",
+    // Desde 22/10 o mio-inositol vem 1 h antes do psyllium: não são mais os
+    // dois 20 min antes da refeição.
+    detalhe: "Antes da última refeição do dia — cada um na sua hora.",
     periodo: "dia",
   },
   {
@@ -294,6 +318,7 @@ export const SUPPLEMENTS: Supplement[] = [
     comoUsar: [
       "Misture em 200–300 ml de água e beba logo, antes de engrossar.",
       "15 a 20 minutos antes da refeição.",
+      "A fórmula e a curcumina ficam 2 h depois dele, com o ok da nutricionista (22/10). O ômega-3 continua junto do almoço, porque precisa da gordura da refeição.",
     ],
     alertas: [ALERTA_PSYLLIUM],
     status: "nutricionista",
@@ -323,10 +348,13 @@ export const SUPPLEMENTS: Supplement[] = [
     bloco: "almoco",
     funcao: "Vitaminas e minerais da fórmula de sempre.",
     comoUsar: [
+      "Fica 2 h depois do psyllium do almoço, com o ok da nutricionista (22/10): a fibra pode atrasar a absorção do que vai junto.",
       "Na fórmula: metilfolato 1 mg, piridoxal-5-fosfato (vitamina B6) 25 mg, biotina 5 mg, niacina (B3) 50 mg, cobre 1 mg, selênio 50 mcg e zinco quelato 10 mg.",
     ],
     status: "prescricao",
-    horario: { ancora: "almoco", minutos: 30 },
+    // 22/10: o psyllium é 20 min antes do almoço; 1h40 depois do almoço dá
+    // 2 h depois dele — e continua "após o almoço", como na receita.
+    horario: { ancora: "almoco", minutos: 100 },
     lembrete: "Fórmula — 1 dose após o almoço",
   },
   {
@@ -336,10 +364,11 @@ export const SUPPLEMENTS: Supplement[] = [
     dose: "500 mg, depois do almoço",
     bloco: "almoco",
     funcao: "Antioxidante e anti-inflamatório.",
-    comoUsar: ["Depois do almoço, que tem gordura."],
+    comoUsar: ["Depois do almoço, 2 h depois do psyllium — com o ok da nutricionista (22/10)."],
     alertas: [ALERTA_PAUSA_CIRURGIA],
     status: "nutricionista",
-    horario: { ancora: "almoco", minutos: 30 },
+    // 22/10: junto da fórmula, 2 h depois do psyllium do almoço.
+    horario: { ancora: "almoco", minutos: 100 },
     pausaAntesDaCirurgiaDias: 30,
   },
 
@@ -348,14 +377,15 @@ export const SUPPLEMENTS: Supplement[] = [
     id: "mio-lanche",
     nome: "Mio-inositol",
     curto: "Mio-inositol (tarde)",
-    dose: "2 g — 20 min antes do lanche da tarde",
+    dose: "2 g — à tarde, 1 h antes do psyllium",
     bloco: "tarde",
     funcao: "Ajuda o corpo a usar melhor o açúcar do sangue.",
     comoUsar: ["Misture o pó em um pouco de água."],
     observacao:
-      "Na receita está 'antes do jantar'. Como no seu plano a última refeição é o lanche da tarde, o app pôs antes dele — confirme com a nutricionista.",
+      "Na receita: 20 min antes do jantar. Como a última refeição é o lanche da tarde e o psyllium vai 20 min antes dele, a nutricionista autorizou (22/10) separar os dois: o mio-inositol vem 1 h antes do psyllium.",
     status: "nutricionista",
-    horario: { ancora: "lanche", minutos: -20 },
+    // 22/10: 1h20 antes do lanche = 1 h antes do psyllium da tarde.
+    horario: { ancora: "lanche", minutos: -80 },
   },
   {
     id: "psyllium-lanche",
@@ -368,6 +398,7 @@ export const SUPPLEMENTS: Supplement[] = [
     comoUsar: [
       "Misture em 200–300 ml de água e beba logo, antes de engrossar.",
       "15 a 20 minutos antes da refeição.",
+      "O mio-inositol da tarde vem 1 h antes dele, com o ok da nutricionista (22/10), para os dois não se atrapalharem.",
     ],
     observacao:
       "Na receita está 'antes do jantar'. Como no seu plano a última refeição é o lanche da tarde, o app pôs antes dele — confirme com a nutricionista.",
@@ -413,6 +444,8 @@ export const SUPPLEMENTS: Supplement[] = [
     // que é o dia — a hora continua a de costume.
     horario: { ancora: "acordar", minutos: 0 },
     lembrete: "Dia do Mounjaro: aplique hoje, no horário de costume.",
+    // Com a hora que ela escolheu em Ajustes, o aviso já é o da aplicação.
+    lembreteNoHorario: "Mounjaro — hora da aplicação de hoje.",
     pausaAntesDaCirurgiaDias: 30,
     funcao:
       "Tirzepatida: diminui a fome e deixa a digestão mais lenta — é por causa dele que comer à noite pesa. Na bula, 2,5 mg é a dose de início; se e quando sobe, quem decide é o médico.",
@@ -527,22 +560,13 @@ export function diasAteProxima(s: Supplement, diaSemana: number): number {
   return 0;
 }
 
-/** Tudo o que entra num dia da semana: os diários e os semanais daquele dia. */
+/**
+ * Tudo o que entra num dia da semana: os diários e os semanais daquele dia. O
+ * período de cada um na tela inicial sai da hora em que ele cai — ver
+ * lib/lembretes.ts → periodoDoSuplemento.
+ */
 export function suplementosDoDia(diaSemana: number): Supplement[] {
   return SUPPLEMENTS.filter((s) => entraNoDia(s, diaSemana));
-}
-
-/**
- * O que cabe num período da rotina: os diários do bloco daquele período e,
- * se for o dia deles, os semanais — que valem o dia todo.
- */
-export function suplementosDoPeriodo(periodo: PeriodoRotina, diaSemana: number): Supplement[] {
-  const blocos = new Set(
-    BLOCOS_SUPLEMENTOS.filter((b) => b.periodo === periodo || b.periodo === "dia-todo").map(
-      (b) => b.id,
-    ),
-  );
-  return suplementosDoDia(diaSemana).filter((s) => blocos.has(s.bloco));
 }
 
 /**

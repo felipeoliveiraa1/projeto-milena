@@ -20,6 +20,7 @@ export {
   ehDataValida,
   ehHoraAcordarValida,
   ehHoraDormirValida,
+  ehHoraRemedioValida,
   ehJanelaAguaValida,
   ehJanelaValida,
   PREFERENCIAS_PADRAO,
@@ -138,8 +139,9 @@ export function usePreferencias() {
     setOrigem(await salvarPreferencias(limpo));
   }, []);
 
-  // "Padrão" volta as metas e horários de fábrica, mas não apaga a data da
-  // contagem: ela é da vida dela, não um ajuste.
+  // "Padrão" volta as metas e horários de fábrica — os dos remédios também, que
+  // voltam a ser os calculados pelo app —, mas não apaga a data da contagem:
+  // ela é da vida dela, não um ajuste.
   const restaurar = useCallback(async () => {
     const padrao = { ...clonarPadrao(), contagem: { ...prefs.contagem } };
     setPrefs(padrao);

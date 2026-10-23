@@ -1,8 +1,10 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import {
   Activity,
+  AlarmClock,
   CalendarClock,
   CalendarDays,
   CheckCircle2,
@@ -64,10 +66,11 @@ import {
 } from "@/lib/storage";
 import { setInicio, statusPlano, useInicio } from "@/lib/protocol";
 import {
+  blocoDoSuplemento,
   dataCurtaDe,
-  descreverHorario,
   horarioDoSuplemento,
   inicioDaPausa,
+  seloDoHorario,
   suplementoEmPausa,
 } from "@/lib/lembretes";
 import { usePreferencias } from "@/lib/settings";
@@ -247,17 +250,14 @@ export default function RotinaPage() {
     return faltam === 1 ? `amanhã, ${nome}` : `${nome}, ${dataCurta(quando)}`;
   }
 
-  /** "07:40 · 20 min antes do café". Enquanto as preferências carregam, nada. */
+  /**
+   * "07:40 · 20 min antes do café", "14:30 · horário seu" ou "Lembrete às
+   * 07:00" (Mounjaro, testosterona, fórmula) — ver seloDoHorario. Enquanto as
+   * preferências carregam, nada: a hora seria a de fábrica.
+   */
   function horarioDe(s: Supplement): string | undefined {
     if (carregandoPrefs) return undefined;
-    const hora = horarioDoSuplemento(s, prefs);
-    if (!hora) return undefined;
-    // Item com linha de lembrete própria (Mounjaro, testosterona, fórmula): a
-    // hora é a do aviso no celular, e a de tomar é a da receita — a de costume,
-    // no caso do Mounjaro e da testosterona.
-    if (s.lembrete) return `Lembrete às ${hora}`;
-    const como = descreverHorario(s);
-    return como ? `${hora} · ${como}` : hora;
+    return seloDoHorario(s, prefs) ?? undefined;
   }
 
   /** Pausa antes da cirurgia, no dia na tela: a que já vale e a que vem aí. */
@@ -469,18 +469,30 @@ export default function RotinaPage() {
 
       {/* Remédios e suplementos ---------------------------------------------- */}
       <header className="pt-2">
-        <Eyebrow className="text-clay">Farmácia</Eyebrow>
+        <div className="flex items-center justify-between gap-3">
+          <Eyebrow className="text-clay">Farmácia</Eyebrow>
+          {/* 44 px de altura para o dedo; as margens negativas devolvem o
+              espaço, para o cabeçalho não crescer. */}
+          <Link
+            href="/ajustes#horarios-remedios"
+            className="-my-3.5 inline-flex min-h-11 shrink-0 items-center gap-1 text-xs font-semibold text-clay transition hover:text-ink"
+          >
+            <AlarmClock className="h-3.5 w-3.5" /> Mudar horários
+          </Link>
+        </div>
         <h3 className="font-display mt-2 text-3xl leading-none text-ink">
           Remédios e suplementos
         </h3>
         <p className="mt-2 text-sm leading-relaxed text-ink-muted">
-          Remédios do médico e o protocolo da nutricionista (18/10). Nada aqui muda sem quem
-          receitou — nem dose, nem horário.
+          Remédios do médico e o protocolo da nutricionista (18/10). A dose só muda com
+          quem receitou; os horários dos lembretes você ajusta em “Mudar horários”.
         </p>
       </header>
 
       {BLOCOS_SUPLEMENTOS.map((bloco) => {
-        const doBloco = SUPPLEMENTS.filter((s) => s.bloco === bloco.id);
+        // O de todo dia fica no bloco da hora em que cai — a que ela escolheu
+        // em Ajustes ou a do app; o semanal, no dele.
+        const doBloco = SUPPLEMENTS.filter((s) => blocoDoSuplemento(s, prefs) === bloco.id);
         if (doBloco.length === 0) return null;
         // O semanal só se marca no dia dele. Nos outros dias ele continua
         // aqui, com a data da próxima vez — as orientações do Mounjaro (e o

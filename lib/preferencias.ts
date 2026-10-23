@@ -48,6 +48,12 @@ export type Preferencias = {
   /** Lembretes no celular, por tipo. Valem para todos os aparelhos ativados. */
   lembretesRemedios: boolean;
   lembretesAgua: boolean;
+  /**
+   * O horário que ela escolheu para um remédio, "HH:MM", pelo id do item
+   * (data/supplements.ts). Item fora daqui fica no horário que o app calcula
+   * pela receita, pela janela e pelos horários dela (lib/lembretes.ts).
+   */
+  horariosRemedios: Record<string, string>;
 };
 
 export const PREFERENCIAS_PADRAO: Preferencias = {
@@ -69,6 +75,7 @@ export const PREFERENCIAS_PADRAO: Preferencias = {
   contagem: { data: null, titulo: "", cirurgia: false },
   lembretesRemedios: true,
   lembretesAgua: true,
+  horariosRemedios: {},
 };
 
 /**
@@ -163,6 +170,39 @@ export function ehHoraDormirValida(v: unknown): boolean {
   return m !== null && m >= 18 * 60;
 }
 
+/**
+ * O horário que ela escolhe para um remédio vai das 05:00 às 23:59: antes das
+ * 05:00 a marca ainda iria para a véspera, e o servidor dos lembretes não
+ * saberia se ela já tomou.
+ */
+export function ehHoraRemedioValida(v: unknown): boolean {
+  const m = minutos(v);
+  return m !== null && m >= INICIO_DO_DIA;
+}
+
+/** Folga para os ids de hoje e os que vierem; mais que isso é lixo gravado. */
+const MAX_HORARIOS_REMEDIOS = 40;
+const MAX_ID_REMEDIO = 40;
+
+/**
+ * Os horários dos remédios com as chaves em ordem alfabética: a mesma escolha
+ * vira sempre o mesmo JSON, e a tela de Ajustes compara "mudou?" sem depender
+ * da ordem em que ela mexeu.
+ */
+export function horariosEmOrdem(pares: [string, string][]): Record<string, string> {
+  return Object.fromEntries([...pares].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
+}
+
+/** Só os horários que servem: id de 1 a 40 letras e hora válida, no máximo 40 deles. */
+function horariosRemediosValidos(valor: unknown): Record<string, string> {
+  if (!valor || typeof valor !== "object" || Array.isArray(valor)) return {};
+  const certos = Object.entries(valor as Record<string, unknown>).filter(
+    (par): par is [string, string] =>
+      par[0].length > 0 && par[0].length <= MAX_ID_REMEDIO && ehHoraRemedioValida(par[1]),
+  );
+  return horariosEmOrdem(certos.slice(0, MAX_HORARIOS_REMEDIOS));
+}
+
 /** AAAA-MM-DD de uma data que existe no calendário. */
 export function ehDataValida(v: unknown): v is string {
   if (typeof v !== "string" || !DATA.test(v)) return false;
@@ -214,6 +254,8 @@ export function normalizaPreferencias(valor: unknown): Preferencias | null {
     contagem: contagemValida(p.contagem),
     lembretesRemedios: typeof p.lembretesRemedios === "boolean" ? p.lembretesRemedios : P.lembretesRemedios,
     lembretesAgua: typeof p.lembretesAgua === "boolean" ? p.lembretesAgua : P.lembretesAgua,
+    // Gravado antes de 22/10 não tem o campo: nenhum horário escolhido.
+    horariosRemedios: horariosRemediosValidos(p.horariosRemedios),
   };
 }
 
@@ -236,5 +278,6 @@ export function clonarPadrao(): Preferencias {
     ...PREFERENCIAS_PADRAO,
     aguaPorcoes: [...PREFERENCIAS_PADRAO.aguaPorcoes],
     contagem: { ...PREFERENCIAS_PADRAO.contagem },
+    horariosRemedios: { ...PREFERENCIAS_PADRAO.horariosRemedios },
   };
 }

@@ -7,13 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, Eyebrow } from "@/components/
 import { CheckRow } from "@/components/check-row";
 import { RotinaItemRow } from "@/components/routine-item";
 import { Button } from "@/components/ui/button";
-import {
-  SUPPLEMENTS,
-  ehSemanal,
-  suplementosDoDia,
-  suplementosDoPeriodo,
-  type Supplement,
-} from "@/data/supplements";
+import { SUPPLEMENTS, ehSemanal, suplementosDoDia, type Supplement } from "@/data/supplements";
 import {
   getDayComErro,
   getTextoDoDia,
@@ -24,7 +18,12 @@ import {
   type DayCheck,
 } from "@/lib/storage";
 import { usePeriodoAgora } from "@/lib/protocol";
-import { horarioDoSuplemento, suplementoEmPausa } from "@/lib/lembretes";
+import {
+  horarioDoSuplemento,
+  periodoDoSuplemento,
+  seloDoHorario,
+  suplementoEmPausa,
+} from "@/lib/lembretes";
 import { usePreferencias } from "@/lib/settings";
 import { idsRotinaDoDia, useRotina } from "@/lib/routine";
 import { useDia } from "@/components/day-context";
@@ -162,7 +161,8 @@ export function RoutineNow() {
   const pct = itens.length > 0 ? Math.round((feitos / itens.length) * 100) : 0;
   const { texto, Icone } = ehHoje ? TITULO[periodo] : { texto: "Rotina do dia", Icone: Sun };
 
-  // Hoje: os remédios do período e os semanais do dia que ainda estavam
+  // Hoje: os remédios de todo dia cuja hora cai no período — a hora que ela
+  // escolheu em Ajustes ou a do app — e os semanais do dia que ainda estavam
   // pendentes. Dia que já passou: tudo o que era daquele dia. Em pausa antes
   // da cirurgia não aparece — nem para marcar —, e a lista segue a ordem das
   // horas. Enquanto as preferências carregam, ainda não se sabe a data da
@@ -172,8 +172,10 @@ export function RoutineNow() {
   const hora = (s: Supplement) => horarioDoSuplemento(s, prefs) ?? "99:99";
   const remedios = (
     ehHoje
-      ? suplementosDoPeriodo(periodo, diaSemana).filter(
-          (s) => !ehSemanal(s) || (atual?.semanaisPendentes.includes(s.id) ?? false),
+      ? suplementosDoDia(diaSemana).filter((s) =>
+          ehSemanal(s)
+            ? (atual?.semanaisPendentes.includes(s.id) ?? false)
+            : periodoDoSuplemento(s, prefs) === periodo,
         )
       : suplementosDoDia(diaSemana)
   )
@@ -251,11 +253,10 @@ export function RoutineNow() {
             </div>
             {remedios.map((s) => {
               const marcado = !!dia && dia.supplements[s.id] === true;
-              // Enquanto as preferências carregam, a hora seria a de fábrica.
-              const horaDoItem = carregandoPrefs ? null : horarioDoSuplemento(s, prefs);
-              // Com linha de lembrete própria, a hora é a do aviso, não a de
-              // tomar — o mesmo selo de /rotina.
-              const selo = horaDoItem && s.lembrete ? `Lembrete às ${horaDoItem}` : horaDoItem;
+              // O mesmo selo de /rotina: "14:30 · horário seu", "Lembrete às
+              // 07:00" ou "07:40 · 20 min antes do café". Enquanto as
+              // preferências carregam, nenhum: a hora seria a de fábrica.
+              const selo = carregandoPrefs ? null : seloDoHorario(s, prefs);
               return (
                 <Fragment key={s.id}>
                   <CheckRow
@@ -263,9 +264,14 @@ export function RoutineNow() {
                     onToggle={() => alternar(s.id, toggleSupplement)}
                     label={`Marcar ${s.nome}`}
                   >
-                    {/* Sempre o nome em cima e, embaixo, a hora, o "semanal" e a
-                        dose numa linha só. Com a hora antes do nome, ora ela
-                        ficava na mesma linha, ora sozinha em cima. */}
+                    {/* Sempre o nome em cima, a hora e o "semanal" embaixo dele
+                        e a dose na linha de baixo, como nos cartões de /rotina.
+                        Com a hora antes do nome, ora ela ficava na mesma linha,
+                        ora sozinha em cima; e com a dose logo depois de um selo
+                        longo ("12:10 · 20 min antes do almoço"), a dose quebrava
+                        aos pedaços. A linha dos selos guarda a altura enquanto
+                        as preferências carregam, para nada pular quando a hora
+                        chega. */}
                     <span
                       className={cn(
                         "block text-sm font-medium",
@@ -274,17 +280,19 @@ export function RoutineNow() {
                     >
                       {juntarUnidades(s.nome)}
                     </span>
-                    <span className="mt-1 block text-xs leading-relaxed text-ink-muted">
+                    <span className="mt-1 flex min-h-4 flex-wrap gap-1.5">
                       {selo && (
-                        <span className="mr-1.5 inline-block rounded-full bg-clay-soft px-1.5 text-[0.625rem] leading-4 font-bold text-clay-deep tabular">
+                        <span className="rounded-full bg-clay-soft px-1.5 text-[0.625rem] leading-4 font-bold text-clay-deep tabular">
                           {selo}
                         </span>
                       )}
                       {ehSemanal(s) && (
-                        <span className="mr-1.5 inline-block rounded-full bg-gold-soft px-1.5 text-[0.625rem] leading-4 font-bold text-gold">
+                        <span className="rounded-full bg-gold-soft px-1.5 text-[0.625rem] leading-4 font-bold text-gold">
                           semanal
                         </span>
                       )}
+                    </span>
+                    <span className="mt-1 block text-xs leading-relaxed text-ink-muted">
                       {juntarUnidades(s.dose)}
                     </span>
                   </CheckRow>

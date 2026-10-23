@@ -9,16 +9,19 @@
  * O horário de cada remédio é relativo a um momento do dia (ver `horario` em
  * data/supplements.ts): acordar e deitar são os horários dela; café, almoço e
  * lanche saem da janela de comer. Mudou a janela ou a hora de acordar, todos
- * os lembretes andam junto.
+ * os lembretes andam junto — menos o remédio cuja hora ela mesma escolheu em
+ * Ajustes (Preferencias.horariosRemedios): esse fica na hora dela.
  */
 
-import { horariosDaJanela, paraHHMM, paraMinutos } from "./janela";
-import type { Preferencias } from "./preferencias";
+import { formatarDuracao, horariosDaJanela, paraHHMM, paraMinutos } from "./janela";
+import { ehHoraRemedioValida, horariosEmOrdem, type Preferencias } from "./preferencias";
 import {
   SUPPLEMENTS,
   ehSemanal,
   entraNoDia,
   type Ancora,
+  type BlocoSuplemento,
+  type PeriodoRotina,
   type Supplement,
 } from "@/data/supplements";
 
@@ -59,16 +62,102 @@ export function horaDaAncora(prefs: Preferencias, ancora: Ancora): string {
 }
 
 /**
- * "HH:MM" do item no dia, ou null se ele não tem horário. Nunca antes da hora
- * de acordar: com o café logo depois de acordar, o mio-inositol de "20 min
- * antes do café" cairia com ela ainda dormindo — aí o aviso vem na hora de
- * acordar. E fica sempre dentro do mesmo dia.
+ * "HH:MM" que o app calcula para o item, ou null se ele não tem horário. Nunca
+ * antes da hora de acordar: com o café logo depois de acordar, o mio-inositol
+ * de "20 min antes do café" cairia com ela ainda dormindo — aí o aviso vem na
+ * hora de acordar. E fica sempre dentro do mesmo dia.
  */
-export function horarioDoSuplemento(s: Supplement, prefs: Preferencias): string | null {
+export function horarioPadraoDoSuplemento(s: Supplement, prefs: Preferencias): string | null {
   if (!s.horario) return null;
   const m = paraMinutos(horaDaAncora(prefs, s.horario.ancora)) + s.horario.minutos;
   const acordar = paraMinutos(prefs.horaAcordar);
   return paraHHMM(Math.max(acordar, Math.min(ULTIMO_MINUTO_DO_DIA, Math.round(m))));
+}
+
+/** A hora que ela escolheu para o item em Ajustes, se for uma hora que vale. */
+function horarioEscolhido(s: Supplement, prefs: Preferencias): string | null {
+  const hora = prefs.horariosRemedios[s.id];
+  return ehHoraRemedioValida(hora) ? hora : null;
+}
+
+/**
+ * "HH:MM" do item no dia: a hora que ela escolheu em Ajustes ou, sem escolha,
+ * a que o app calcula. A dela vale como está, até antes da hora de acordar —
+ * foi ela que pôs.
+ */
+export function horarioDoSuplemento(s: Supplement, prefs: Preferencias): string | null {
+  return horarioEscolhido(s, prefs) ?? horarioPadraoDoSuplemento(s, prefs);
+}
+
+/** A hora do item é uma que ela escolheu, diferente da que o app calcula? */
+export function horarioFoiEditado(s: Supplement, prefs: Preferencias): boolean {
+  const escolhido = horarioEscolhido(s, prefs);
+  return escolhido !== null && escolhido !== horarioPadraoDoSuplemento(s, prefs);
+}
+
+/**
+ * Os horários escolhidos com o deste item trocado por `hora`. Escolher de novo
+ * a hora do app, ou `null` ("Voltar ao padrão"), tira a chave: assim o item
+ * volta a andar junto quando a janela ou a hora de acordar mudam. A hora entra
+ * como veio — até vazia ou antes das 05:00 —, porque é o rascunho da tela:
+ * ela mostra o erro e não deixa salvar, como nos outros campos.
+ */
+export function comHorarioDoRemedio(
+  prefs: Preferencias,
+  s: Supplement,
+  hora: string | null,
+): Record<string, string> {
+  const outros = Object.entries(prefs.horariosRemedios).filter(([id]) => id !== s.id);
+  const volta = hora === null || hora === horarioPadraoDoSuplemento(s, prefs);
+  return horariosEmOrdem(volta ? outros : [...outros, [s.id, hora]]);
+}
+
+/** Os blocos da Farmácia que têm hora: todos menos o semanal. */
+type BlocoDoDia = Exclude<BlocoSuplemento, "semanal">;
+
+/**
+ * Em que bloco da Farmácia cai uma hora: manhã até 12h, almoço até 16h, tarde
+ * até 18h, noite depois. Com os horários de fábrica, cada item cai no bloco
+ * da receita; com uma hora escolhida por ela, vale a hora — o remédio que ela
+ * pôs às 19:00 aparece à noite.
+ */
+export function blocoPelaHora(hora: string): BlocoDoDia {
+  const m = paraMinutos(hora);
+  if (m < 12 * 60) return "manha";
+  if (m < 16 * 60) return "almoco";
+  if (m < 18 * 60) return "tarde";
+  return "noite";
+}
+
+/**
+ * O bloco do item na Farmácia: o semanal fica no dele, porque vale o dia todo;
+ * o de todo dia, no bloco da hora em que cai.
+ */
+export function blocoDoSuplemento(s: Supplement, prefs: Preferencias): BlocoSuplemento {
+  if (ehSemanal(s)) return "semanal";
+  const hora = horarioDoSuplemento(s, prefs);
+  return hora ? blocoPelaHora(hora) : s.bloco;
+}
+
+/** O `periodo` de cada bloco em BLOCOS_SUPLEMENTOS: almoço e tarde são o "dia" da tela inicial. */
+const PERIODO_DO_BLOCO: Record<BlocoDoDia, PeriodoRotina> = {
+  manha: "manha",
+  almoco: "dia",
+  tarde: "dia",
+  noite: "noite",
+};
+
+/**
+ * Em que período da tela inicial o item entra, pela hora em que cai: manhã
+ * até 12h, dia até 18h, noite depois — as mesmas viradas do período da
+ * rotina (lib/protocol.ts). O semanal não depende disto: no dia dele, fica na
+ * tela o dia todo, até ser marcado.
+ */
+export function periodoDoSuplemento(s: Supplement, prefs: Preferencias): PeriodoRotina {
+  const hora = horarioDoSuplemento(s, prefs);
+  if (hora) return PERIODO_DO_BLOCO[blocoPelaHora(hora)];
+  // Sem hora (nenhum item da lista hoje): o bloco da receita.
+  return s.bloco === "semanal" ? "dia" : PERIODO_DO_BLOCO[s.bloco];
 }
 
 const NOME_ANCORA: Record<Ancora, { antes: string; junto: string; depois: string }> = {
@@ -80,22 +169,45 @@ const NOME_ANCORA: Record<Ancora, { antes: string; junto: string; depois: string
 };
 
 /**
- * "20 min antes do café", "ao acordar", "depois do almoço". null sem horário.
+ * Como o app conta a hora do item: "20 min antes do café", "1h20 antes do
+ * lanche", "ao acordar", "depois do almoço". null sem horário.
  *
  * O "depois" sai sem os minutos: a receita diz só "após o almoço" ou "depois
  * do café", e os minutos são a folga que o app deu ao lembrete. O "antes"
- * leva os minutos, que vêm da receita ("20 min antes do café"). Antes de
- * deitar sai "à noite, antes de deitar": a B12 veio só "à noite", e a
- * dose de cada item, logo abaixo na tela, diz o resto.
+ * leva os minutos, que vêm da receita ("20 min antes do café") — de uma hora
+ * para cima, no jeito curto do app ("1 h", "1h20"). Antes de deitar sai "à
+ * noite, antes de deitar": a B12 veio só "à noite", e a dose de cada item,
+ * logo abaixo na tela, diz o resto.
  */
-export function descreverHorario(s: Supplement): string | null {
+export function descreverHorarioPadrao(s: Supplement): string | null {
   if (!s.horario) return null;
   const { ancora, minutos } = s.horario;
   const nome = NOME_ANCORA[ancora];
   if (minutos === 0) return nome.junto;
   if (minutos > 0) return nome.depois;
   if (ancora === "deitar") return `à noite, ${nome.antes}`;
-  return `${Math.abs(minutos)} min ${nome.antes}`;
+  const antes = Math.abs(minutos);
+  return `${antes < 60 ? `${antes} min` : formatarDuracao(antes)} ${nome.antes}`;
+}
+
+/** A descrição da hora na tela: "horário seu" quando foi ela que escolheu; senão, a do app. */
+export function descreverHorario(s: Supplement, prefs: Preferencias): string | null {
+  return horarioFoiEditado(s, prefs) ? "horário seu" : descreverHorarioPadrao(s);
+}
+
+/**
+ * O selo de hora do item nas telas (Farmácia e tela inicial), ou null sem
+ * horário: "14:30 · horário seu" quando foi ela que escolheu; "Lembrete às
+ * 07:00" no item com linha de lembrete própria — a hora é a do aviso, e quem
+ * manda no horário de tomar é a receita (a de costume, no Mounjaro e na
+ * testosterona); senão, "07:40 · 20 min antes do café".
+ */
+export function seloDoHorario(s: Supplement, prefs: Preferencias): string | null {
+  const hora = horarioDoSuplemento(s, prefs);
+  if (!hora) return null;
+  if (!horarioFoiEditado(s, prefs) && s.lembrete) return `Lembrete às ${hora}`;
+  const como = descreverHorario(s, prefs);
+  return como ? `${hora} · ${como}` : hora;
 }
 
 /** AAAA-MM-DD somando dias, sem fuso: a conta é de calendário. */
@@ -212,8 +324,20 @@ export function tituloDosRemedios(hora: string, ids: string[]): string {
   return `Remédios · ${hora} · ${dia}`;
 }
 
+/**
+ * A linha do item no aviso, sempre uma só (o servidor casa linha e id). Com a
+ * hora que ela escolheu, a linha própria para isso, se o item tiver (a do
+ * Mounjaro vira a da aplicação); senão, a de sempre.
+ */
+function linhaDoLembrete(s: Supplement, prefs: Preferencias): string {
+  if (s.lembreteNoHorario && horarioFoiEditado(s, prefs)) return s.lembreteNoHorario;
+  return s.lembrete ?? `${s.curto} — ${s.dose}`;
+}
+
 function lembretesDeRemedios(prefs: Preferencias, data: string): Lembrete[] {
   const diaSemana = diaDaSemanaDe(data);
+  // Agrupa pela hora de verdade de cada item (a dela ou a do app): o que cai
+  // no mesmo minuto vai num aviso só, mesmo que seja de blocos diferentes.
   const porHora = new Map<string, Supplement[]>();
   for (const s of SUPPLEMENTS) {
     if (!entraNoDia(s, diaSemana) || suplementoEmPausa(s, prefs, data)) continue;
@@ -233,7 +357,7 @@ function lembretesDeRemedios(prefs: Preferencias, data: string): Lembrete[] {
       hora,
       tipo: "remedio",
       titulo: tituloDosRemedios(hora, ids),
-      corpo: itens.map((s) => s.lembrete ?? `${s.curto} — ${s.dose}`).join("\n"),
+      corpo: itens.map((s) => linhaDoLembrete(s, prefs)).join("\n"),
       url: "/rotina",
       suplementos: ids,
     };
