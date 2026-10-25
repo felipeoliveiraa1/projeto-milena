@@ -35,12 +35,18 @@ function valida(valor: unknown): RotinaBloco[] | null {
  * - texto antigo: troca o texto e o detalhe (o detalhe acompanha o texto);
  * - detalhe antigo: troca só o detalhe — ela não edita o detalhe pela tela,
  *   então o que está ali é sempre de fábrica;
- * - opções antigas: troca as opções.
+ * - opções antigas: troca as opções;
+ * - sem campo (`semCampo`): o item antigo ainda não perguntava nada. Só bate
+ *   com o item salvo sem `campo`, e aí o item vem inteiro de fábrica — texto,
+ *   detalhe, campo, opções e placeholder —, porque a pergunta muda o item
+ *   todo. Depois disso o item já tem campo e a versão não bate mais.
  *
  * Só troca o que ainda está igual ao antigo de fábrica — o que ela escreveu
  * com as próprias mãos fica como está.
  */
-type VersaoAntiga = Partial<Pick<RotinaItem, "texto" | "detalhe" | "opcoes">>;
+type VersaoAntiga = Partial<Pick<RotinaItem, "texto" | "detalhe" | "opcoes">> & {
+  semCampo?: true;
+};
 
 const FABRICA_ANTERIOR: Record<string, VersaoAntiga[]> = {
   "r-n-refeicao": [
@@ -63,6 +69,8 @@ const FABRICA_ANTERIOR: Record<string, VersaoAntiga[]> = {
   "r-ac-sintomas": [
     { opcoes: ["Sem sintomas", "Inchaço", "Dor de cabeça", "Intestino preso", "Cansaço", "Azia"] },
   ],
+  // Até 24/10, só o check, sem a pergunta "Evacuou hoje?" e o Sim / Não.
+  "r-m-evacuacao": [{ texto: "Observar a evacuação", semCampo: true }],
 };
 
 const FABRICA_ATUAL = new Map(ROTINA_PADRAO.flatMap((b) => b.itens).map((i) => [i.id, i]));
@@ -73,7 +81,8 @@ function bate(item: RotinaItem, antiga: VersaoAntiga): boolean {
     (antiga.texto === undefined || item.texto === antiga.texto) &&
     (antiga.detalhe === undefined || item.detalhe === antiga.detalhe) &&
     (antiga.opcoes === undefined ||
-      JSON.stringify(item.opcoes) === JSON.stringify(antiga.opcoes))
+      JSON.stringify(item.opcoes) === JSON.stringify(antiga.opcoes)) &&
+    (antiga.semCampo === undefined || item.campo === undefined)
   );
 }
 
@@ -84,6 +93,18 @@ function atualizarItem(item: RotinaItem): RotinaItem {
   if (!atual || !Object.hasOwn(FABRICA_ANTERIOR, item.id)) return item;
   return FABRICA_ANTERIOR[item.id].reduce<RotinaItem>((novo, antiga) => {
     if (!bate(novo, antiga)) return novo;
+    if (antiga.semCampo) {
+      // O item inteiro de fábrica, com cópia das opções: a lista do
+      // ROTINA_PADRAO não pode ir parar na rotina dela.
+      return {
+        ...novo,
+        texto: atual.texto,
+        detalhe: atual.detalhe,
+        campo: atual.campo,
+        opcoes: atual.opcoes && [...atual.opcoes],
+        placeholder: atual.placeholder,
+      };
+    }
     let trocado = novo;
     if (antiga.texto !== undefined) {
       trocado = { ...trocado, texto: atual.texto, detalhe: atual.detalhe };

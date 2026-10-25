@@ -121,5 +121,6 @@ Para voltar, rode a seção 6 da `0007_lembretes.sql` de novo.
 - É uma **notificação com som, não um despertador**: não toca sem parar e não fura o modo silencioso.
 - O aviso pode atrasar um ou dois minutos (o cron roda de minuto em minuto, e a Apple entrega quando o aparelho acorda). Um aviso que não conseguiu sair em meia hora é descartado — não chega um lembrete velho.
 - O lembrete some sozinho se ela **já marcou** no app antes da hora (remédio tomado ou água registrada).
+- **Remédio em pausa não avisa**: os que param antes da cirurgia (pela data em Ajustes) e o que ela pausou na Farmácia — desde 24/10, o psyllium. Para voltar, é tocar em **Retomar o psyllium** no cartão dele, na aba Rotina.
 - **Nenhum lembrete sai antes das 05:00**, a hora em que o dia do app vira: até lá, o que ela marca ainda vai para o dia anterior. Por isso a hora de acordar, o primeiro copo de água e a abertura da janela começam às 05:00, no mínimo, e nenhum remédio é lembrado antes da hora de acordar — a não ser que ela mesma escolha uma hora mais cedo em **Horários dos remédios** (também a partir das 05:00).
 - Se os avisos pararem num aparelho (troca de celular, app reinstalado, notificação desligada nos Ajustes do iPhone): abra o app pelo ícone → Ajustes → **Desativar neste celular** → **Ativar** de novo.

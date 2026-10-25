@@ -11,6 +11,10 @@ import { cn } from "@/lib/utils";
  * digitação salva por dia — usada na gratidão e nos sintomas.
  * O texto salva sozinho, 700 ms depois da última tecla. Quem salva pode
  * devolver `false` quando a gravação não deu — aí o selo "salvo" não aparece.
+ *
+ * Com `campo: "escolha"`, as `opcoes` viram botões embaixo do texto (o Sim e
+ * o Não do "Evacuou hoje?"), gravados pelo mesmo `onSalvarTexto` — ver
+ * EscolhaDoDia. O checkbox sozinho continua só marcando e desmarcando.
  */
 export function RotinaItemRow({
   item,
@@ -46,6 +50,9 @@ export function RotinaItemRow({
   // Um texto que não gravou conta como mexido: ele é que vale e tenta de novo.
   const [mexeu, setMexeu] = useState(naoSalvo !== undefined);
   const textoExterno = texto ?? "";
+  // A caixa e a gravação sozinha são só do "texto": a resposta da "escolha"
+  // grava no toque, e nunca por um temporizador.
+  const ehTexto = item.campo === "texto";
 
   // O erro da gravação chegou depois de a caixa montar: ela passa a mostrar o
   // texto que não gravou (se ela ainda não tinha digitado de novo).
@@ -81,7 +88,7 @@ export function RotinaItemRow({
   useEffect(() => {
     // Igual ao que já está salvo: nada a fazer (inclusive na primeira carga).
     // Travada, também não: o texto do banco ainda não chegou para comparar.
-    if (!salvarRef.current || bloqueado || valor === textoExterno) return;
+    if (!ehTexto || !salvarRef.current || bloqueado || valor === textoExterno) return;
     const t = setTimeout(() => {
       void Promise.resolve(salvarRef.current?.(valor)).then((resultado) => {
         if (resultado === false) return;
@@ -90,16 +97,20 @@ export function RotinaItemRow({
       });
     }, 700);
     return () => clearTimeout(t);
-  }, [valor, textoExterno, bloqueado]);
+  }, [ehTexto, valor, textoExterno, bloqueado]);
 
-  const pendenteRef = useRef<{ valor: string; externo: string }>({ valor, externo: textoExterno });
+  const pendenteRef = useRef<{ valor: string; externo: string; ehTexto: boolean }>({
+    valor,
+    externo: textoExterno,
+    ehTexto,
+  });
   useEffect(() => {
-    pendenteRef.current = { valor, externo: textoExterno };
+    pendenteRef.current = { valor, externo: textoExterno, ehTexto };
   });
   useEffect(
     () => () => {
-      const { valor: ultimo, externo } = pendenteRef.current;
-      if (salvarRef.current && ultimo !== externo) void salvarRef.current(ultimo);
+      const { valor: ultimo, externo, ehTexto: daCaixa } = pendenteRef.current;
+      if (daCaixa && salvarRef.current && ultimo !== externo) void salvarRef.current(ultimo);
     },
     [],
   );
@@ -127,9 +138,20 @@ export function RotinaItemRow({
             {item.detalhe}
           </span>
         )}
+        {item.campo === "escolha" && onSalvarTexto && item.opcoes && item.opcoes.length > 0 && (
+          <EscolhaDoDia
+            opcoes={item.opcoes}
+            pergunta={item.detalhe ?? item.texto}
+            resposta={textoExterno}
+            checked={checked}
+            onToggle={onToggle}
+            onSalvar={onSalvarTexto}
+            bloqueado={bloqueado}
+          />
+        )}
       </CheckRow>
 
-      {item.campo === "texto" && onSalvarTexto && (
+      {ehTexto && onSalvarTexto && (
         <div className="ml-1 space-y-2 border-l-2 border-line pl-3">
           {item.opcoes && item.opcoes.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
@@ -173,6 +195,86 @@ export function RotinaItemRow({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * As respostas de um item com `campo: "escolha"`, um botão para cada uma.
+ * Tocar numa resposta grava o texto do dia e marca o item, se ainda não
+ * estava; tocar de novo na escolhida apaga a resposta e desmarca. O botão
+ * acende na hora e, se a gravação não der, volta ao que está gravado — o
+ * aviso de "não salvou" aparece pela tela que usa o item, como nos checks.
+ */
+function EscolhaDoDia({
+  opcoes,
+  pergunta,
+  resposta,
+  checked,
+  onToggle,
+  onSalvar,
+  bloqueado,
+}: {
+  opcoes: string[];
+  /** Nome do grupo de botões para o leitor de tela ("Evacuou hoje?"). */
+  pergunta: string;
+  /** A resposta gravada no dia; "" sem resposta. */
+  resposta: string;
+  checked: boolean;
+  onToggle: () => void;
+  onSalvar: (valor: string) => void | Promise<boolean | void>;
+  bloqueado: boolean;
+}) {
+  // A resposta do último toque enquanto a gravação não volta. Só o último
+  // toque decide: com a rede lenta, a volta de um toque antigo não apaga a
+  // resposta nova da tela.
+  const [pendente, setPendente] = useState<string | null>(null);
+  const toques = useRef(0);
+  const escolhida = pendente ?? resposta.trim();
+
+  function tocar(opcao: string) {
+    const nova = escolhida === opcao ? "" : opcao;
+    const toque = ++toques.current;
+    setPendente(nova);
+    // Responder marca o item — o "Não" também: ela observou. Apagar a
+    // resposta desmarca. O check que já está como deve ficar não é tocado.
+    if ((nova !== "") !== checked) onToggle();
+    void Promise.resolve(onSalvar(nova)).then(() => {
+      // Gravou: a resposta que volta do banco já é a nova. Não gravou: a
+      // tela volta à resposta gravada.
+      if (toques.current === toque) setPendente(null);
+    });
+  }
+
+  return (
+    <div role="group" aria-label={pergunta} className="mt-2.5 flex flex-wrap gap-2">
+      {opcoes.map((o) => {
+        const ativo = escolhida === o;
+        return (
+          <button
+            key={o}
+            type="button"
+            disabled={bloqueado}
+            aria-pressed={ativo}
+            onClick={(e) => {
+              // O toque é na resposta: sem isto, a linha inteira alternaria o
+              // check junto.
+              e.stopPropagation();
+              tocar(o);
+            }}
+            // 36 px na tela e 44 px para o dedo: o ::after estende o toque
+            // 4 px para cima e para baixo, sem mudar o espaço da linha.
+            className={cn(
+              "relative inline-flex h-9 min-w-16 items-center justify-center rounded-full border px-4 text-sm font-semibold transition after:absolute after:inset-x-0 after:-inset-y-1 after:content-[''] disabled:opacity-50",
+              ativo
+                ? "border-plum bg-plum text-bone"
+                : "border-line bg-surface text-ink-soft hover:border-plum/40 hover:text-ink",
+            )}
+          >
+            {o}
+          </button>
+        );
+      })}
     </div>
   );
 }

@@ -117,6 +117,8 @@ async function disparar(req: NextRequest): Promise<Response> {
         acordar: prefs.horaAcordar,
         dormir: prefs.horaDormir,
         horariosEditados: prefs.horariosRemedios,
+        // O que ela pausou na Farmácia (o psyllium): fica fora da agenda abaixo.
+        pausados: prefs.remediosPausados,
         agenda: agendaDoDia(prefs, agora.data).map((l) => ({ id: l.id, hora: l.hora, titulo: l.titulo })),
       });
     }

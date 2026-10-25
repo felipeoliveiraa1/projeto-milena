@@ -9,6 +9,7 @@ import {
   Droplet,
   Egg,
   GitCompareArrows,
+  Leaf,
   Lightbulb,
   ShieldAlert,
   ShoppingBasket,
@@ -28,6 +29,7 @@ import {
 } from "@/data/meals";
 import {
   ACOMPANHAMENTO,
+  CHAS,
   CRITERIOS_ROTULO,
   EVITAR,
   METAS,
@@ -73,6 +75,7 @@ const ATALHOS = [
   { href: "#jejum", texto: "Jejum" },
   { href: "#plano", texto: "Plano alimentar" },
   { href: "#observacoes", texto: "Observações" },
+  { href: "#chas", texto: "Chás" },
   { href: "#evitar", texto: "O que evitar" },
   { href: "#mudancas", texto: "O que mudou" },
 ];
@@ -244,6 +247,39 @@ export default function DietaPage() {
               </li>
             ))}
           </ul>
+        </CardContent>
+      </Card>
+
+      {/* Chás ------------------------------------------------------------------ */}
+      {/* Logo depois das observações, que liberam os chás. O card da água, na
+          tela inicial, tem o link "Ideias de chá" para cá. */}
+      <Card id="chas" className="scroll-mt-24">
+        <CardHeader>
+          <Eyebrow className="text-brand">Para beber</Eyebrow>
+          <CardTitle className="mt-1.5 flex items-center gap-2">
+            <Leaf className="h-4.5 w-4.5 text-brand" /> {CHAS.titulo}
+          </CardTitle>
+          <CardDescription>{CHAS.resumo}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="rounded-xl2 bg-clay-soft p-3.5 text-xs leading-relaxed font-semibold text-clay-deep">
+            {CHAS.regra}
+          </p>
+          <ul className="space-y-2.5">
+            {CHAS.itens.map((c) => (
+              <li key={c.nome} className="rounded-xl2 border border-line bg-bone/50 p-4">
+                <p className="text-sm font-bold text-ink">{c.nome}</p>
+                <p className="mt-1 text-sm leading-relaxed text-ink-soft">{juntarUnidades(c.texto)}</p>
+                <p className="mt-2 text-xs leading-relaxed text-ink-muted">
+                  <strong className="text-ink-soft">Como fazer:</strong> {juntarUnidades(c.comoFazer)}
+                </p>
+              </li>
+            ))}
+          </ul>
+          <p className="flex gap-2.5 rounded-xl2 bg-gold-soft p-4 text-xs leading-relaxed text-gold">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            <span>{CHAS.cirurgia}</span>
+          </p>
         </CardContent>
       </Card>
 

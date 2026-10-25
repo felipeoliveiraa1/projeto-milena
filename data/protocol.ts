@@ -61,10 +61,15 @@ export type RotinaItem = {
   id: string;
   texto: string;
   detalhe?: string;
-  /** Quando presente, o item ganha uma caixa de digitação salva por dia. */
-  campo?: "texto";
+  /**
+   * O que o item grava no dia, além do check, como texto do dia (txt:<id>):
+   * - "texto": uma caixa de digitação (sintomas, gratidão);
+   * - "escolha": uma resposta entre as `opcoes`, com um toque. Responder já
+   *   marca o item como feito.
+   */
+  campo?: "texto" | "escolha";
   placeholder?: string;
-  /** Atalhos que preenchem a caixa com um toque. */
+  /** No "texto", atalhos que preenchem a caixa; na "escolha", as respostas. */
   opcoes?: string[];
 };
 
@@ -108,7 +113,17 @@ export const ROTINA_PADRAO: RotinaBloco[] = [
       { id: "r-m-luz", texto: "Abrir as cortinas e tomar luz natural" },
       { id: "r-m-oracao", texto: "Fazer oração" },
       { id: "r-m-lingua", texto: "Raspar a língua" },
-      { id: "r-m-evacuacao", texto: "Observar a evacuação" },
+      {
+        // Desde 24/10 o item pergunta e guarda a resposta do dia, para o
+        // histórico mostrar dia a dia. "Não" também marca: ela observou. Quem
+        // salvou a rotina com o item antigo, sem pergunta, recebe este pela
+        // migração de lib/routine.ts.
+        id: "r-m-evacuacao",
+        texto: "Observar a evacuação",
+        detalhe: "Evacuou hoje?",
+        campo: "escolha",
+        opcoes: ["Sim", "Não"],
+      },
       { id: "r-m-agua", texto: "Beber água em jejum" },
       {
         id: "r-m-limao-propolis",

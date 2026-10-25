@@ -1,22 +1,35 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Droplet, Minus, RotateCcw } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, Droplet, Leaf, Minus, RotateCcw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, Eyebrow } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { getDayComErro, setWater, somarAgua } from "@/lib/storage";
+import {
+  MAX_CHA_ML,
+  chaEmMl,
+  getDayComErro,
+  setWater,
+  somarAgua,
+  somarCha,
+} from "@/lib/storage";
 import { usePreferencias } from "@/lib/settings";
 import { coposCobertos, planoDeAgua } from "@/lib/lembretes";
 import { paraMinutos } from "@/lib/janela";
 import { HORA_VIRADA_DO_DIA } from "@/lib/date";
 import { useAgoraVivo } from "@/lib/now";
 import { useDia } from "@/components/day-context";
-import { cn } from "@/lib/utils";
+import { cn, juntarUnidades } from "@/lib/utils";
 
 function formatar(ml: number): string {
   if (ml < 1000) return `${ml} ml`;
   return `${(ml / 1000).toFixed(1).replace(".", ",")} L`;
 }
+
+/** Uma xícara de chá, o passo do "+" e do "−". */
+const XICARA_ML = 200;
+/** O limite de chás da nutricionista, somando todos (data/alimentacao.ts → CHAS). */
+const LIMITE_CHA_ML = 1000;
 
 export function WaterTracker() {
   // Guarda a data junto do valor: assim dá para saber se o que está na tela é
@@ -29,6 +42,13 @@ export function WaterTracker() {
   // certo ou não —, a tela mostra o que o banco tem.
   const confirmado = useRef<Record<string, number>>({});
   const toques = useRef<Record<string, number>>({});
+  // O chá, à parte da água: não entra na meta, na nota do dia nem nos
+  // lembretes. Grava do mesmo jeito (somarXicara, abaixo), com o próprio
+  // total confirmado e a própria contagem de toques.
+  const [cha, setCha] = useState<{ data: string; ml: number } | null>(null);
+  const [chaNaoSalvou, setChaNaoSalvou] = useState<string | null>(null);
+  const chaConfirmado = useRef<Record<string, number>>({});
+  const chaToques = useRef<Record<string, number>>({});
   const { prefs, carregando } = usePreferencias();
   const { data, ehHoje } = useDia();
   const agora = useAgoraVivo();
@@ -38,8 +58,12 @@ export function WaterTracker() {
     let valendo = true;
     getDayComErro(data).then(({ dia: d, erro }) => {
       if (!valendo) return;
-      if (!erro) confirmado.current[data] = d.water;
+      if (!erro) {
+        confirmado.current[data] = d.water;
+        chaConfirmado.current[data] = chaEmMl(d);
+      }
       setCarga({ data, ml: d.water, erro });
+      setCha({ data, ml: chaEmMl(d) });
     });
     return () => {
       valendo = false;
@@ -98,6 +122,38 @@ export function WaterTracker() {
     gravar(data, () => 0, (ml) => ml, setWater(0, data));
   }
 
+  /**
+   * "+ Xícara" e "−" do chá: como a água, mandam a diferença e mostram na
+   * hora. Quando o último toque termina, a tela mostra o total do banco; um
+   * toque que falha sem nada confirmado desfaz só a parte dele.
+   */
+  function somarXicara(delta: number) {
+    const dataDoToque = data;
+    const toque = (chaToques.current[dataDoToque] ?? 0) + 1;
+    chaToques.current[dataDoToque] = toque;
+    const mostrar = (ml: number) =>
+      setCha((c) => (c && c.data === dataDoToque ? { data: dataDoToque, ml } : c));
+    setCha((c) =>
+      c && c.data === dataDoToque ? { ...c, ml: Math.max(0, Math.min(c.ml + delta, MAX_CHA_ML)) } : c,
+    );
+    somarCha(delta, dataDoToque)
+      .then((novo) => {
+        const total = chaEmMl(novo);
+        chaConfirmado.current[dataDoToque] = total;
+        if (chaToques.current[dataDoToque] === toque) mostrar(total);
+        setChaNaoSalvou((d) => (d === dataDoToque ? null : d));
+      })
+      .catch((err) => {
+        console.error(err);
+        const ok = chaConfirmado.current[dataDoToque];
+        if (chaToques.current[dataDoToque] === toque && ok !== undefined) mostrar(ok);
+        else if (ok === undefined) {
+          setCha((c) => (c && c.data === dataDoToque ? { ...c, ml: Math.max(0, c.ml - delta) } : c));
+        }
+        setChaNaoSalvou(dataDoToque);
+      });
+  }
+
   const meta = prefs.aguaMetaMl;
   // O "−" tira a menor porção dos botões.
   const unidade = Math.min(...prefs.aguaPorcoes);
@@ -125,6 +181,8 @@ export function WaterTracker() {
   // Passou de 8, vira duas fileiras — senão as casinhas ficam finas demais no celular.
   const colunas = unidades > 8 ? Math.ceil(unidades / 2) : unidades;
   const bateuMeta = ml >= meta;
+  const chaDoDia = cha?.data === data;
+  const chaMl = chaDoDia ? cha.ml : 0;
 
   return (
     <Card>
@@ -228,6 +286,62 @@ export function WaterTracker() {
         <p className="text-center text-xs text-ink-muted">
           {bateuMeta ? "Meta batida! 💧" : `${pct}% da meta · faltam ${formatar(meta - ml)}`}
         </p>
+
+        {/* Chá: no mesmo card, separado da água. Não soma na meta, na nota do
+            dia nem nos lembretes — é para ela ver o limite de 1 L de chás. */}
+        <div className="space-y-2.5 border-t border-line/70 pt-4">
+          <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-sm text-ink tabular">
+            <Leaf className="h-4 w-4 shrink-0 text-brand-mid" aria-hidden />
+            {/* juntarUnidades: o número nunca fica numa linha e a unidade na outra. */}
+            <span className="font-semibold">
+              {ehHoje ? "Chá hoje" : "Chá no dia"}: {juntarUnidades(formatar(chaMl))}
+            </span>
+            <span className="text-xs text-ink-muted">{juntarUnidades("· até 1 L por dia")}</span>
+          </p>
+          {/* Em 320 px o texto do botão não cabe numa linha: ele quebra em duas,
+              e o "−" guarda os 44 px — sem isto, virava um oval de 30 px. */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => somarXicara(XICARA_ML)}
+              disabled={!chaDoDia}
+              className="h-auto min-h-11 min-w-0 flex-1 whitespace-normal py-2 leading-tight"
+            >
+              {juntarUnidades(`+ Xícara de chá (${XICARA_ML} ml)`)}
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => somarXicara(-Math.min(XICARA_ML, chaMl))}
+              disabled={chaMl === 0}
+              aria-label={`Tirar ${XICARA_ML} ml de chá`}
+              className="shrink-0"
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+          </div>
+          {chaMl > LIMITE_CHA_ML && (
+            <p className="text-xs font-semibold text-gold">
+              {juntarUnidades("Passou de 1 L de chás — o limite da nutricionista.")}
+            </p>
+          )}
+          {chaNaoSalvou === data && (
+            <p role="alert" className="text-xs font-semibold text-danger">
+              Não deu para salvar agora. Confira a internet e tente de novo.
+            </p>
+          )}
+          {/* O link tem 44 px de altura para o dedo; a margem negativa
+              devolve o espaço, para a linha não crescer. */}
+          <p className="flex flex-wrap items-center justify-between gap-x-3 text-xs text-ink-muted">
+            <span>O chá não entra na meta de água.</span>
+            <Link
+              href="/dieta#chas"
+              className="-my-3.5 inline-flex min-h-11 items-center gap-1 font-semibold text-brand-mid transition hover:text-ink"
+            >
+              Ideias de chá <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </p>
+        </div>
       </CardContent>
     </Card>
   );

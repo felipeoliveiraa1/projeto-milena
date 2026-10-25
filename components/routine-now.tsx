@@ -163,11 +163,12 @@ export function RoutineNow() {
 
   // Hoje: os remédios de todo dia cuja hora cai no período — a hora que ela
   // escolheu em Ajustes ou a do app — e os semanais do dia que ainda estavam
-  // pendentes. Dia que já passou: tudo o que era daquele dia. Em pausa antes
-  // da cirurgia não aparece — nem para marcar —, e a lista segue a ordem das
-  // horas. Enquanto as preferências carregam, ainda não se sabe a data da
-  // cirurgia: o que pode estar em pausa fica de fora até elas chegarem, para
-  // não ser marcado à toa.
+  // pendentes. Dia que já passou: tudo o que era daquele dia. Em pausa — antes
+  // da cirurgia ou pausado por ela na Farmácia, como o psyllium — não aparece,
+  // nem para marcar, e a lista segue a ordem das horas. Enquanto as
+  // preferências carregam, ainda não se sabe a data da cirurgia nem o que ela
+  // pausou: o que pode estar em pausa fica de fora até elas chegarem, para não
+  // ser marcado à toa.
   const diaSemana = diaDaSemana(new Date(`${data}T00:00:00`));
   const hora = (s: Supplement) => horarioDoSuplemento(s, prefs) ?? "99:99";
   const remedios = (
@@ -179,7 +180,7 @@ export function RoutineNow() {
         )
       : suplementosDoDia(diaSemana)
   )
-    .filter((s) => !(carregandoPrefs && s.pausaAntesDaCirurgiaDias))
+    .filter((s) => !(carregandoPrefs && (s.pausaAntesDaCirurgiaDias || s.pausavel)))
     .filter((s) => !suplementoEmPausa(s, prefs, data))
     .sort((a, b) => hora(a).localeCompare(hora(b)));
   const remediosFeitos = dia ? remedios.filter((s) => dia.supplements[s.id] === true).length : 0;
@@ -232,7 +233,12 @@ export function RoutineNow() {
               checked={!!dia && dia.supplements[it.id] === true}
               onToggle={() => alternar(it.id, toggleRotina)}
               texto={dia ? getTextoDoDia(dia, it.id) : ""}
-              onSalvarTexto={it.campo === "texto" ? (v) => handleTexto(it.id, v) : undefined}
+              // A resposta da "escolha" (o Sim / Não) grava pelo mesmo caminho do texto.
+              onSalvarTexto={
+                it.campo === "texto" || it.campo === "escolha"
+                  ? (v) => handleTexto(it.id, v)
+                  : undefined
+              }
               bloqueado={!atual || atual.erro}
               naoSalvo={it.campo === "texto" ? textoNaoSalvo(data, it.id) : undefined}
             />

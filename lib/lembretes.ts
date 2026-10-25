@@ -11,6 +11,10 @@
  * lanche saem da janela de comer. Mudou a janela ou a hora de acordar, todos
  * os lembretes andam junto — menos o remédio cuja hora ela mesma escolheu em
  * Ajustes (Preferencias.horariosRemedios): esse fica na hora dela.
+ *
+ * Remédio em pausa não entra na agenda: nem pela data da cirurgia, nem
+ * pausado por ela na Farmácia (Preferencias.remediosPausados) — ver
+ * suplementoEmPausa.
  */
 
 import { formatarDuracao, horariosDaJanela, paraHHMM, paraMinutos } from "./janela";
@@ -234,13 +238,66 @@ export function inicioDaPausa(prefs: Preferencias, s: Supplement): string | null
 }
 
 /**
- * O item está em pausa nesse dia? A pausa não acaba sozinha depois da
- * cirurgia: volta só quando o médico liberar — ela tira a marca "É a data da
- * cirurgia" ou a data da contagem, em Ajustes.
+ * Em pausa pela data da cirurgia nesse dia? A pausa não acaba sozinha depois
+ * da cirurgia: volta só quando o médico liberar — ela tira a marca "É a data
+ * da cirurgia" ou a data da contagem, em Ajustes.
  */
-export function suplementoEmPausa(s: Supplement, prefs: Preferencias, data: string): boolean {
+function emPausaPelaCirurgia(s: Supplement, prefs: Preferencias, data: string): boolean {
   const inicio = inicioDaPausa(prefs, s);
   return inicio !== null && data >= inicio;
+}
+
+/**
+ * Ela pausou o item pela Farmácia? Só vale para os itens `pausavel`: um id de
+ * remédio do médico gravado na lista (à mão, por engano) não pausa nada —
+ * esse só para com quem receitou.
+ */
+export function pausadoPorVoce(s: Supplement, prefs: Preferencias): boolean {
+  return s.pausavel === true && prefs.remediosPausados.includes(s.id);
+}
+
+/**
+ * O item está em pausa nesse dia — pela cirurgia ou porque ela pausou? Em
+ * pausa, sai dos lembretes, da tela inicial e da lista do dia.
+ */
+export function suplementoEmPausa(s: Supplement, prefs: Preferencias, data: string): boolean {
+  return emPausaPelaCirurgia(s, prefs, data) || pausadoPorVoce(s, prefs);
+}
+
+/**
+ * Por que o item está em pausa nesse dia, ou null. A da cirurgia ganha: ela
+ * só acaba com a liberação do médico, e o "Retomar" da Farmácia não pode
+ * passar por cima dela.
+ */
+export function motivoDaPausa(
+  s: Supplement,
+  prefs: Preferencias,
+  data: string,
+): "cirurgia" | "voce" | null {
+  if (emPausaPelaCirurgia(s, prefs, data)) return "cirurgia";
+  if (pausadoPorVoce(s, prefs)) return "voce";
+  return null;
+}
+
+/**
+ * Os itens que pausam e voltam junto com `s`: os `pausavel` do mesmo
+ * `grupoPausa` (os dois psyllium) ou, sem grupo, só ele.
+ */
+export function grupoDaPausa(s: Supplement): Supplement[] {
+  if (!s.pausavel) return [];
+  return SUPPLEMENTS.filter(
+    (x) => x.pausavel === true && (x.id === s.id || (!!s.grupoPausa && x.grupoPausa === s.grupoPausa)),
+  );
+}
+
+/**
+ * A lista de pausados com o grupo de `s` pausado (`pausar`) ou retomado. O
+ * resto da lista fica como está, sem repetir id; e não mexe na de entrada.
+ */
+export function comGrupoPausado(prefs: Preferencias, s: Supplement, pausar: boolean): string[] {
+  const grupo = grupoDaPausa(s).map((x) => x.id);
+  const outros = prefs.remediosPausados.filter((id) => !grupo.includes(id));
+  return pausar ? [...outros, ...grupo] : outros;
 }
 
 /**

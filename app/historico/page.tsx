@@ -12,6 +12,7 @@ import {
   Minus,
   NotebookPen,
   Pencil,
+  Sunrise,
   Utensils,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, Eyebrow } from "@/components/ui/card";
@@ -315,6 +316,8 @@ function Detalhe({
 
   const sintomas = getTextoDoDia(dia, "r-ac-sintomas");
   const gratidao = getTextoDoDia(dia, "r-n-gratidao");
+  // A resposta do "Evacuou hoje?" (desde 24/10): "Sim" ou "Não".
+  const evacuacao = getTextoDoDia(dia, "r-m-evacuacao").trim();
   // Item que entrou na rotina depois desse dia não aparece como "não feito".
   const idsRotina = idsRotinaDoDia(
     blocosAtuais.flatMap((b) => b.itens.map((i) => i.id)),
@@ -441,6 +444,15 @@ function Detalhe({
             ))}
           </div>
         </div>
+      )}
+
+      {evacuacao && (
+        <p className="flex items-center gap-1.5 rounded-xl2 bg-bone-deep/60 px-3.5 py-2.5 text-sm text-ink-soft">
+          <Sunrise className="h-3.5 w-3.5 shrink-0 text-plum" />
+          <span>
+            Evacuação: <strong className="font-semibold text-ink">{evacuacao}</strong>
+          </span>
+        </p>
       )}
 
       {sintomas && (

@@ -54,6 +54,13 @@ export type Preferencias = {
    * pela receita, pela janela e pelos horários dela (lib/lembretes.ts).
    */
   horariosRemedios: Record<string, string>;
+  /**
+   * Os remédios que ela pausou pela Farmácia, pelo id (data/supplements.ts).
+   * Só vale para os itens `pausavel` (lib/lembretes.ts → pausadoPorVoce):
+   * pausado sai dos lembretes, da tela inicial e da lista do dia até ela
+   * tocar em "Retomar".
+   */
+  remediosPausados: string[];
 };
 
 export const PREFERENCIAS_PADRAO: Preferencias = {
@@ -76,6 +83,10 @@ export const PREFERENCIAS_PADRAO: Preferencias = {
   lembretesRemedios: true,
   lembretesAgua: true,
   horariosRemedios: {},
+  // Desde 24/10 o psyllium começa em pausa. As preferências gravadas antes
+  // não têm o campo e recebem este padrão (normalizaPreferencias): é assim
+  // que a pausa chega a ela sem mexer no banco. Retomou, grava a lista vazia.
+  remediosPausados: ["psyllium-almoco", "psyllium-lanche"],
 };
 
 /**
@@ -203,6 +214,23 @@ function horariosRemediosValidos(valor: unknown): Record<string, string> {
   return horariosEmOrdem(certos.slice(0, MAX_HORARIOS_REMEDIOS));
 }
 
+/** A mesma folga dos horários: mais que isso é lixo gravado. */
+const MAX_REMEDIOS_PAUSADOS = 40;
+
+/**
+ * Os ids pausados que servem: textos de 1 a 40 letras, sem repetir, no máximo
+ * 40. Lista vazia é escolha dela (retomou tudo) e fica vazia. Sem o campo —
+ * gravado antes de 24/10 — ou com outra coisa no lugar, vale uma cópia do
+ * padrão.
+ */
+function remediosPausadosValidos(valor: unknown): string[] {
+  if (!Array.isArray(valor)) return [...PREFERENCIAS_PADRAO.remediosPausados];
+  const ids = valor.filter(
+    (id): id is string => typeof id === "string" && id.length > 0 && id.length <= MAX_ID_REMEDIO,
+  );
+  return [...new Set(ids)].slice(0, MAX_REMEDIOS_PAUSADOS);
+}
+
 /** AAAA-MM-DD de uma data que existe no calendário. */
 export function ehDataValida(v: unknown): v is string {
   if (typeof v !== "string" || !DATA.test(v)) return false;
@@ -256,6 +284,7 @@ export function normalizaPreferencias(valor: unknown): Preferencias | null {
     lembretesAgua: typeof p.lembretesAgua === "boolean" ? p.lembretesAgua : P.lembretesAgua,
     // Gravado antes de 22/10 não tem o campo: nenhum horário escolhido.
     horariosRemedios: horariosRemediosValidos(p.horariosRemedios),
+    remediosPausados: remediosPausadosValidos(p.remediosPausados),
   };
 }
 
@@ -279,5 +308,6 @@ export function clonarPadrao(): Preferencias {
     aguaPorcoes: [...PREFERENCIAS_PADRAO.aguaPorcoes],
     contagem: { ...PREFERENCIAS_PADRAO.contagem },
     horariosRemedios: { ...PREFERENCIAS_PADRAO.horariosRemedios },
+    remediosPausados: [...PREFERENCIAS_PADRAO.remediosPausados],
   };
 }

@@ -266,6 +266,42 @@ export async function somarAgua(delta: number, date: string = hojeKey()): Promis
 }
 
 /**
+ * O chá do dia, em ml. Fica como texto do dia (supplements["txt:cha-ml"]), do
+ * mesmo jeito da opção da refeição: sem coluna nova no banco. Não entra na
+ * água, na nota do dia nem nos lembretes de água — é só para ela ver o limite
+ * de 1 litro de chás por dia (data/alimentacao.ts → CHAS).
+ */
+const ID_CHA = "cha-ml";
+/**
+ * O teto do chá gravado num dia: o dobro do limite de 1 L, para o que passa
+ * dele continuar gravado — é aí que a tela mostra o aviso.
+ */
+export const MAX_CHA_ML = 2000;
+
+/** O chá gravado no dia, em ml (0 a 2.000). Texto torto, negativo ou sem nada conta 0. */
+export function chaEmMl(dia: DayCheck): number {
+  const valor = getTextoDoDia(dia, ID_CHA).trim();
+  const ml = valor === "" ? NaN : Number(valor);
+  if (!Number.isFinite(ml) || ml <= 0) return 0;
+  return Math.min(Math.round(ml), MAX_CHA_ML);
+}
+
+/**
+ * Soma (ou tira, com número negativo) chá ao que está gravado, como a água:
+ * na fila do dia, lendo antes de gravar e mandando a diferença — com a tela
+ * ainda carregando, mandar o total trocaria 600 ml por 200.
+ */
+export async function somarCha(delta: number, date: string = hojeKey()): Promise<DayCheck> {
+  const passo = Number.isFinite(delta) ? delta : 0;
+  return naFila(date, async () => {
+    const current = await lerDiaParaGravar(date);
+    const ml = Math.max(0, Math.min(Math.round(chaEmMl(current) + passo), MAX_CHA_ML));
+    const supplements = { ...current.supplements, [`txt:${ID_CHA}`]: String(ml) };
+    return upsertDay(date, { supplements }, current);
+  });
+}
+
+/**
  * Textos que não gravaram, por "dia:id". Vive no módulo, não na tela: se ela
  * digitou e saiu da página (ou trocou de dia) com a gravação falhando, a caixa
  * volta com o que ela escreveu e o aviso — em vez de o texto sumir calado.

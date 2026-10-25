@@ -15,6 +15,7 @@ import {
   PauseCircle,
   Pencil,
   Pill,
+  PlayCircle,
   Plus,
   RotateCcw,
   ShieldAlert,
@@ -67,9 +68,12 @@ import {
 import { setInicio, statusPlano, useInicio } from "@/lib/protocol";
 import {
   blocoDoSuplemento,
+  comGrupoPausado,
   dataCurtaDe,
   horarioDoSuplemento,
   inicioDaPausa,
+  motivoDaPausa,
+  pausadoPorVoce,
   seloDoHorario,
   suplementoEmPausa,
 } from "@/lib/lembretes";
@@ -110,6 +114,9 @@ const CLASSE_STATUS: Record<StatusSuplemento, string> = {
   suplemento: "bg-brand-soft text-brand",
 };
 
+// Como cada grupo de pausa aparece nos botões: "Pausar o psyllium".
+const NOME_DA_PAUSA: Record<string, string> = { psyllium: "o psyllium" };
+
 // Os que saíram pelo mesmo motivo ficam juntos, para não repetir a frase.
 const FORA_POR_MOTIVO = Object.entries(
   FORA_DA_LISTA.reduce<Record<string, string[]>>((acc, f) => {
@@ -132,8 +139,17 @@ export default function RotinaPage() {
   const novaData = rascunhoData ?? inicio;
   const { blocos, origem, carregando, salvar, restaurar } = useRotina();
   const { data, ehHoje } = useDia();
-  // Horários dos remédios e pausa antes da cirurgia saem das preferências.
-  const { prefs, carregando: carregandoPrefs } = usePreferencias();
+  // Horários dos remédios e as pausas (a da cirurgia e a que ela escolhe aqui)
+  // saem das preferências.
+  const { prefs, carregando: carregandoPrefs, salvar: salvarPrefs } = usePreferencias();
+  /**
+   * A pausa da Farmácia que está gravando, ou a que não gravou, pelo grupo
+   * ("psyllium"): os cartões do grupo inteiro mostram o mesmo estado.
+   */
+  const [gravacaoPausa, setGravacaoPausa] = useState<{
+    grupo: string;
+    estado: "salvando" | "erro";
+  } | null>(null);
   // O último valor que o banco confirmou para cada item e o número do último
   // toque nele (chave: dia + item). Se um toque não grava, a marca volta para o
   // confirmado — e só se ele foi o último: dois toques sem internet não deixam
@@ -217,6 +233,47 @@ export default function RotinaPage() {
   }
 
   const falhou = (id: string) => naoSalvou?.data === data && naoSalvou.id === id;
+
+  /** O grupo de pausa do item; sem grupo, ele mesmo. */
+  const grupoDe = (s: Supplement) => s.grupoPausa ?? s.id;
+
+  /**
+   * Pausa ou retoma o grupo inteiro do item (os dois psyllium) e grava na
+   * hora. O cartão muda no toque; se não chegar à nuvem — de onde o servidor
+   * dos lembretes lê, e de onde vem a próxima leitura —, tudo volta ao que
+   * estava, com o aviso, como as marcas que não gravam.
+   */
+  async function alternarPausa(s: Supplement) {
+    const grupo = grupoDe(s);
+    const antes = prefs;
+    setGravacaoPausa({ grupo, estado: "salvando" });
+    const onde = await salvarPrefs({
+      ...prefs,
+      remediosPausados: comGrupoPausado(prefs, s, !pausadoPorVoce(s, prefs)),
+    });
+    if (onde === "nuvem") {
+      setGravacaoPausa(null);
+      return;
+    }
+    await salvarPrefs(antes);
+    setGravacaoPausa({ grupo, estado: "erro" });
+  }
+
+  /** O botão de pausa do cartão, só nos itens que ela pode pausar. */
+  function controleDaPausa(s: Supplement, pausado: boolean): ControlePausa | undefined {
+    if (!s.pausavel) return undefined;
+    const estado = gravacaoPausa?.grupo === grupoDe(s) ? gravacaoPausa.estado : null;
+    return {
+      pausado,
+      nome: NOME_DA_PAUSA[grupoDe(s)] ?? s.curto,
+      onAlternar: () => void alternarPausa(s),
+      // Antes das preferências chegarem, não se sabe se está pausado. E um
+      // toque por vez: o segundo gravaria por cima do primeiro.
+      desativado: carregandoPrefs || gravacaoPausa?.estado === "salvando",
+      salvando: estado === "salvando",
+      erro: estado === "erro",
+    };
+  }
 
   function salvarData() {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(novaData)) return;
@@ -452,8 +509,11 @@ export default function RotinaPage() {
                       checked={!!dia && dia.supplements[it.id] === true}
                       onToggle={() => alternar(it.id, toggleRotina)}
                       texto={dia ? getTextoDoDia(dia, it.id) : ""}
+                      // A resposta da "escolha" (o Sim / Não) grava pelo mesmo caminho do texto.
                       onSalvarTexto={
-                        it.campo === "texto" ? (v) => handleTexto(it.id, v) : undefined
+                        it.campo === "texto" || it.campo === "escolha"
+                          ? (v) => handleTexto(it.id, v)
+                          : undefined
                       }
                       bloqueado={!dia || erroAoCarregar}
                       naoSalvo={it.campo === "texto" ? textoNaoSalvo(data, it.id) : undefined}
@@ -497,8 +557,9 @@ export default function RotinaPage() {
         // O semanal só se marca no dia dele. Nos outros dias ele continua
         // aqui, com a data da próxima vez — as orientações do Mounjaro (e o
         // que fazer se esqueceu) valem a semana inteira.
-        // Em pausa antes da cirurgia: aparece, com o aviso, mas não se marca
-        // nem conta. O que já foi marcado antes continua no histórico.
+        // Em pausa — antes da cirurgia, ou pausado por ela aqui —: aparece,
+        // com o aviso, mas não se marca nem conta. O que já foi marcado antes
+        // continua no histórico.
         const doDia = doBloco
           .filter((s) => entraNoDia(s, diaDaSemanaAtual))
           .sort(ordemDaHora);
@@ -538,8 +599,10 @@ export default function RotinaPage() {
                       horario={horarioDe(s)}
                       avisoPausa={pausa && "aviso" in pausa ? pausa.aviso : undefined}
                       // Sem as preferências ainda não se sabe se a data da
-                      // cirurgia já pausou este item: até carregar, sem checkbox.
-                      aguardando={carregandoPrefs && !!s.pausaAntesDaCirurgiaDias}
+                      // cirurgia — ou ela — já pausou este item: até
+                      // carregar, sem checkbox.
+                      aguardando={carregandoPrefs && (!!s.pausaAntesDaCirurgiaDias || !!s.pausavel)}
+                      pausa={controleDaPausa(s, false)}
                     />
                     {falhou(s.id) && <NaoSalvou />}
                   </Fragment>
@@ -547,12 +610,15 @@ export default function RotinaPage() {
               })}
               {emPausa.map((s) => {
                 const pausa = pausaDe(s);
+                // A pausa da cirurgia ganha: com ela, o "Retomar" não aparece.
+                const porEla = motivoDaPausa(s, prefs, data) === "voce";
                 return (
                   // Sem a hora: em pausa, não há horário para tomar.
                   <RemedioCard
                     key={s.id}
                     s={s}
-                    emPausa={pausa && "ativa" in pausa ? pausa.ativa : "Em pausa."}
+                    emPausa={porEla ? undefined : pausa && "ativa" in pausa ? pausa.ativa : "Em pausa."}
+                    pausa={porEla ? controleDaPausa(s, true) : undefined}
                   />
                 );
               })}
@@ -631,6 +697,11 @@ export default function RotinaPage() {
  *
  * Em pausa antes da cirurgia, o cartão fica fechado, sem checkbox e sem hora:
  * o item só volta quando o médico liberar.
+ *
+ * Pausado por ela (`pausa.pausado`, só nos itens `pausavel`), também fica sem
+ * checkbox e sem hora, mas com as orientações abertas — é lendo que ela
+ * decide quando voltar — e com o "Retomar" em destaque. Ativo, o item que ela
+ * pode pausar leva no fim do cartão um "Pausar" discreto.
  */
 function RemedioCard({
   s,
@@ -641,6 +712,7 @@ function RemedioCard({
   emPausa,
   avisoPausa,
   aguardando = false,
+  pausa,
 }: {
   s: Supplement;
   checked?: boolean;
@@ -655,11 +727,14 @@ function RemedioCard({
   avisoPausa?: string;
   /** Ainda não dá para saber se está em pausa: mostra tudo, mas sem checkbox. */
   aguardando?: boolean;
+  /** O botão de pausar e retomar, nos itens que ela pode pausar. */
+  pausa?: ControlePausa;
 }) {
   const [aberto, setAberto] = useState(false);
-  const pausado = emPausa !== undefined;
+  const pausadoPorEla = pausa?.pausado === true;
+  const pausado = emPausa !== undefined || pausadoPorEla;
   const ehDoDia = outroDia === undefined && !pausado;
-  const mostrarTudo = ehDoDia || aberto;
+  const mostrarTudo = ehDoDia || aberto || pausadoPorEla;
   const selo = frequencia(s);
 
   return (
@@ -687,7 +762,10 @@ function RemedioCard({
             className="mt-0.5"
           />
         ) : pausado ? (
-          <PauseCircle className="mt-0.5 h-5 w-5 shrink-0 text-gold" aria-hidden />
+          <PauseCircle
+            className={cn("mt-0.5 h-5 w-5 shrink-0", pausadoPorEla ? "text-ink-muted" : "text-gold")}
+            aria-hidden
+          />
         ) : (
           <CalendarClock className="mt-0.5 h-5 w-5 shrink-0 text-ink-muted" aria-hidden />
         )}
@@ -702,6 +780,11 @@ function RemedioCard({
             {juntarUnidades(s.nome)}
           </p>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {pausadoPorEla && (
+              <span className="rounded-full bg-line-soft px-2 py-0.5 text-[0.625rem] font-bold text-ink-muted">
+                Pausado
+              </span>
+            )}
             {horario && !pausado && (
               <span className="rounded-full bg-clay-soft px-2 py-0.5 text-[0.625rem] font-bold text-clay-deep tabular">
                 {horario}
@@ -725,7 +808,7 @@ function RemedioCard({
           {outroDia !== undefined && !pausado && (
             <p className="mt-1 text-xs text-ink-muted">{outroDia}</p>
           )}
-          {pausado && (
+          {emPausa !== undefined && (
             <p className="mt-2 rounded-xl bg-gold-soft p-3 text-xs leading-relaxed font-semibold text-gold">
               {emPausa}
             </p>
@@ -736,7 +819,8 @@ function RemedioCard({
             </p>
           )}
 
-          {!ehDoDia && (
+          {/* Pausado por ela, as orientações já estão abertas: sem o "Como usar". */}
+          {!ehDoDia && !pausadoPorEla && (
             // 44 px de altura para o dedo acertar — é por aqui que entra a dose
             // atrasada do Mounjaro. A margem negativa come parte do respiro
             // que a altura extra criaria no cartão.
@@ -773,6 +857,26 @@ function RemedioCard({
           )}
         </div>
       </div>
+
+      {/* Pausado por ela: o aviso e o "Retomar" na largura toda do cartão —
+          na coluna recuada, o botão passava da borda em 320 px. */}
+      {pausadoPorEla && pausa && (
+        <div className="mt-3 space-y-2.5">
+          <p className="text-xs leading-relaxed text-ink-muted">
+            Pausado por você. Quando for voltar, toque em Retomar.
+          </p>
+          <Button
+            onClick={pausa.onAlternar}
+            disabled={pausa.desativado}
+            aria-busy={pausa.salvando}
+            className="w-full"
+          >
+            <PlayCircle className="h-4 w-4" />
+            {pausa.salvando ? "Salvando…" : `Retomar ${pausa.nome}`}
+          </Button>
+          {pausa.erro && <NaoSalvou />}
+        </div>
+      )}
 
       {/* As orientações usam a largura toda do cartão: recuadas sob o
           checkbox, os avisos de segurança ficavam numa coluna de 190 px. */}
@@ -826,9 +930,41 @@ function RemedioCard({
           )}
         </div>
       )}
+
+      {/* Ativo, o "Pausar" fica no fim do cartão, discreto e longe do
+          checkbox: um toque sem querer não pode tirar o item do dia. */}
+      {pausa && !pausadoPorEla && (
+        <div className="mt-3 space-y-2">
+          <Button
+            variant="outline"
+            onClick={pausa.onAlternar}
+            disabled={pausa.desativado}
+            aria-busy={pausa.salvando}
+            className="text-xs text-ink-muted"
+          >
+            <PauseCircle className="h-4 w-4" />
+            {pausa.salvando ? "Salvando…" : `Pausar ${pausa.nome}`}
+          </Button>
+          {pausa.erro && <NaoSalvou />}
+        </div>
+      )}
     </div>
   );
 }
+
+/** O botão de pausa de um item `pausavel` e o estado da gravação. */
+type ControlePausa = {
+  /** Pausado por ela: o cartão fica sem checkbox e sem hora, com o "Retomar". */
+  pausado: boolean;
+  /** Como o grupo aparece nos botões ("o psyllium"). */
+  nome: string;
+  onAlternar: () => void;
+  /** As preferências ainda carregam, ou uma gravação da pausa está em andamento. */
+  desativado: boolean;
+  salvando: boolean;
+  /** A última gravação não chegou à nuvem e tudo voltou ao que estava. */
+  erro: boolean;
+};
 
 /** Aparece logo abaixo do item quando o toque (ou o texto) não foi gravado. */
 function NaoSalvou() {

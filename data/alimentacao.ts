@@ -132,6 +132,83 @@ export const JEJUM = {
 };
 
 /* -------------------------------------------------------------------------- */
+/* Chás                                                                       */
+/* -------------------------------------------------------------------------- */
+
+export type Cha = {
+  nome: string;
+  texto: string;
+  comoFazer: string;
+};
+
+/**
+ * Os chás da lista da nutricionista, mais o gengibre com abacaxi — que não
+ * está na lista, e o texto dele diz isso —, com o que os estudos mostram de
+ * cada um. Sem promessa de emagrecer: o efeito no peso é pequeno, e o resumo
+ * diz isso primeiro. O limite de 1 litro por dia vem das observações da
+ * nutricionista (OBSERVACOES_NUTRI, em data/meals.ts). A seção fica na aba
+ * Dieta (#chas), e o card da água registra as xícaras do dia sem contar na
+ * meta de água (lib/storage.ts → somarCha). O nome é a key na tela: não pode
+ * repetir.
+ */
+export const CHAS: {
+  titulo: string;
+  resumo: string;
+  regra: string;
+  itens: Cha[];
+  cirurgia: string;
+} = {
+  titulo: "Chás",
+  resumo:
+    "Nenhum chá acelera o metabolismo a ponto de fazer diferença na balança: nos estudos, o efeito é pequeno — no máximo umas dezenas de calorias por dia, e só com o resto do plano em dia. O ganho real é outro: hidratar, trocar bebida doce e, no caso do gengibre, aliviar o enjoo do Mounjaro.",
+  regra:
+    "Até 1 litro por dia somando todos os chás, sempre sem açúcar — orientação da nutricionista. No jejum da noite, só os sem fruta e sem cafeína.",
+  itens: [
+    {
+      nome: "Chá verde",
+      texto:
+        "É o mais estudado: as catequinas e a cafeína aumentam um pouco o gasto de energia, e nos estudos a perda de peso a mais foi pequena. Tem cafeína: tome até o meio da tarde.",
+      comoFazer:
+        "1 sachê (ou 1 colher de chá de folhas) em 200 ml de água quente, sem ferver; 3 minutos.",
+    },
+    {
+      nome: "Gengibre",
+      texto:
+        "Num estudo pequeno, deu um pouco mais de saciedade depois do café da manhã. E ajuda no enjoo — bom nos dias do Mounjaro.",
+      comoFazer:
+        "3 ou 4 fatias finas da raiz (uns 3 cm) em 500 ml de água; ferva de 5 a 10 minutos e coe.",
+    },
+    {
+      nome: "Gengibre com abacaxi",
+      texto:
+        "O abacaxi dá sabor; o que tem algum efeito é o gengibre. A fruta tem um pouco de açúcar: tome dentro da janela, não no jejum da noite. O abacaxi não está na lista da nutricionista — vale confirmar com ela.",
+      comoFazer:
+        "A casca de 1 abacaxi bem lavada (ou 2 rodelas) e 3 cm de gengibre em 1 litro de água; ferva 10 minutos, coe e tome quente ou gelado, sem açúcar.",
+    },
+    {
+      nome: "Canela",
+      texto:
+        "Pode ajudar um pouco no açúcar do sangue. Prefira a canela-do-ceilão: a cássia, a mais comum no mercado, tem cumarina, que em excesso pesa no fígado. 1 pau por chá, sem exagero.",
+      comoFazer: "1 pau de canela em 500 ml de água; ferva 5 minutos.",
+    },
+    {
+      nome: "Hibisco",
+      texto:
+        "Num estudo, 3 xícaras por dia baixaram um pouco a pressão. Se sentir tontura ao levantar, diminua. No peso, o efeito é fraco.",
+      comoFazer: "1 colher de sopa da flor seca em 500 ml de água quente; 5 minutos.",
+    },
+    {
+      nome: "Cavalinha e dente-de-leão",
+      texto:
+        "São diuréticos: fazem perder água, não gordura. Com o Mounjaro, mantenha a meta de água; a cavalinha também pode baixar o potássio — fique no limite de chás.",
+      comoFazer: "1 colher de sopa da erva seca em 500 ml de água quente; de 5 a 10 minutos.",
+    },
+  ],
+  cirurgia:
+    "Na reta final antes da cirurgia, conte ao cirurgião quais chás você toma: alguns, como o gengibre em quantidade, podem mexer na coagulação.",
+};
+
+/* -------------------------------------------------------------------------- */
 /* Sugestões do app                                                           */
 /* -------------------------------------------------------------------------- */
 

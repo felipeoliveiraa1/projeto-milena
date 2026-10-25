@@ -53,6 +53,7 @@ import {
   horarioPadraoDoSuplemento,
   inicioDaPausa,
   inicioDosExames,
+  pausadoPorVoce,
   planoDeAgua,
   suplementoEmPausa,
 } from "@/lib/lembretes";
@@ -381,9 +382,14 @@ export default function AjustesPage() {
                   key={s.id}
                   s={s}
                   prefs={atual}
-                  // Em pausa pela data da cirurgia: continua aqui, para a hora
-                  // já estar certa quando o médico liberar.
-                  emPausa={hoje !== null && dataOk && suplementoEmPausa(s, atual, hoje)}
+                  // Em pausa pela data da cirurgia ou pausado por ela na
+                  // Farmácia (o psyllium): continua aqui e editável, para a
+                  // hora já estar certa quando voltar. A pausa dela não
+                  // depende do dia, então aparece mesmo antes do relógio.
+                  emPausa={
+                    pausadoPorVoce(s, atual) ||
+                    (hoje !== null && dataOk && suplementoEmPausa(s, atual, hoje))
+                  }
                   desativado={carregando}
                   onMudar={(hora) =>
                     editar({ horariosRemedios: comHorarioDoRemedio(atual, s, hora) })

@@ -133,20 +133,30 @@ export function usePreferencias() {
     };
   }, []);
 
-  const salvar = useCallback(async (novas: Preferencias) => {
+  // Devolve onde gravou: quem precisa saber se chegou à nuvem (o botão de
+  // pausa da Farmácia, que o servidor dos lembretes também lê) confere.
+  const salvar = useCallback(async (novas: Preferencias): Promise<OrigemPreferencias> => {
     const limpo = normaliza(novas) ?? clonarPadrao();
     setPrefs(limpo);
-    setOrigem(await salvarPreferencias(limpo));
+    const onde = await salvarPreferencias(limpo);
+    setOrigem(onde);
+    return onde;
   }, []);
 
   // "Padrão" volta as metas e horários de fábrica — os dos remédios também, que
   // voltam a ser os calculados pelo app —, mas não apaga a data da contagem:
-  // ela é da vida dela, não um ajuste.
+  // ela é da vida dela, não um ajuste. O mesmo vale para o que ela pausou ou
+  // retomou na Farmácia: voltar os ajustes não pode pausar de novo, calado, o
+  // psyllium que ela voltou a tomar.
   const restaurar = useCallback(async () => {
-    const padrao = { ...clonarPadrao(), contagem: { ...prefs.contagem } };
+    const padrao = {
+      ...clonarPadrao(),
+      contagem: { ...prefs.contagem },
+      remediosPausados: [...prefs.remediosPausados],
+    };
     setPrefs(padrao);
     setOrigem(await salvarPreferencias(padrao));
-  }, [prefs.contagem]);
+  }, [prefs.contagem, prefs.remediosPausados]);
 
   return { prefs, origem, carregando, salvar, restaurar };
 }
