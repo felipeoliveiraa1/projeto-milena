@@ -316,8 +316,14 @@ function Detalhe({
 
   const sintomas = getTextoDoDia(dia, "r-ac-sintomas");
   const gratidao = getTextoDoDia(dia, "r-n-gratidao");
-  // A resposta do "Evacuou hoje?" (desde 24/10): "Sim" ou "Não".
-  const evacuacao = getTextoDoDia(dia, "r-m-evacuacao").trim();
+  // A resposta do "Evacuou hoje?" (desde 24/10): "Sim" ou "Não". O item pode
+  // ser o de fábrica ou um que ela recriou com outro id — vale o que tiver
+  // pergunta de escolha na rotina dela.
+  const idsEscolha = [
+    "r-m-evacuacao",
+    ...blocosAtuais.flatMap((b) => b.itens.filter((i) => i.campo === "escolha").map((i) => i.id)),
+  ];
+  const evacuacao = idsEscolha.map((id) => getTextoDoDia(dia, id).trim()).find(Boolean) ?? "";
   // Item que entrou na rotina depois desse dia não aparece como "não feito".
   const idsRotina = idsRotinaDoDia(
     blocosAtuais.flatMap((b) => b.itens.map((i) => i.id)),

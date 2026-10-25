@@ -86,11 +86,41 @@ function bate(item: RotinaItem, antiga: VersaoAntiga): boolean {
   );
 }
 
+/** "Observar a Evacuação " → "observar a evacuacao": compara texto sem acento, caixa e espaço. */
+function textoComparavel(texto: unknown): string {
+  return typeof texto === "string"
+    ? texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase()
+    : "";
+}
+
+/**
+ * Itens de fábrica que ganharam uma pergunta e que ela pode ter recriado à
+ * mão, com outro id (24/10: a dela é "r-5a0c7156"). Esses são achados pelo
+ * texto: ganham a pergunta e mantêm o id dela, para as marcas dos dias
+ * antigos continuarem valendo.
+ */
+const PERGUNTA_PELO_TEXTO: Record<string, string> = {
+  "observar a evacuacao": "r-m-evacuacao",
+};
+
+function ganharPergunta(item: RotinaItem): RotinaItem {
+  if (item.campo !== undefined) return item;
+  const idFabrica = PERGUNTA_PELO_TEXTO[textoComparavel(item.texto)];
+  const fabrica = idFabrica ? FABRICA_ATUAL.get(idFabrica) : undefined;
+  if (!fabrica?.campo) return item;
+  return {
+    ...item,
+    detalhe: item.detalhe ?? fabrica.detalhe,
+    campo: fabrica.campo,
+    opcoes: fabrica.opcoes && [...fabrica.opcoes],
+  };
+}
+
 function atualizarItem(item: RotinaItem): RotinaItem {
   // A rotina vem do banco: um item torto passa adiante sem derrubar a leitura.
   if (!item || typeof item !== "object") return item;
   const atual = FABRICA_ATUAL.get(item.id);
-  if (!atual || !Object.hasOwn(FABRICA_ANTERIOR, item.id)) return item;
+  if (!atual || !Object.hasOwn(FABRICA_ANTERIOR, item.id)) return ganharPergunta(item);
   return FABRICA_ANTERIOR[item.id].reduce<RotinaItem>((novo, antiga) => {
     if (!bate(novo, antiga)) return novo;
     if (antiga.semCampo) {
