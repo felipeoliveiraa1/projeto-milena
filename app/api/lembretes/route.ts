@@ -104,7 +104,23 @@ async function disparar(req: NextRequest): Promise<Response> {
     // servidor enxerga, sem gravar nem mandar nada. Serve para conferir de
     // fora por que um lembrete não chegou.
     if (req.nextUrl.searchParams.get("agenda") === "1") {
+      // A rotina salva, só ids, textos e tipo de campo: para ver se um item
+      // novo de fábrica chegou à rotina dela.
+      const { data: comRotina } = await db.from("app_config").select("rotina").eq("id", 1).maybeSingle();
+      const rotina = Array.isArray(comRotina?.rotina)
+        ? (comRotina.rotina as { id?: unknown; itens?: unknown }[]).map((b) => ({
+            bloco: b.id,
+            itens: Array.isArray(b.itens)
+              ? (b.itens as { id?: unknown; texto?: unknown; campo?: unknown }[]).map((i) => ({
+                  id: i.id,
+                  texto: i.texto,
+                  campo: i.campo ?? null,
+                }))
+              : [],
+          }))
+        : null;
       return resposta(200, {
+        rotina,
         agora: { data: agora.data, hora: agora.hora },
         lembretes: { remedios: prefs.lembretesRemedios, agua: prefs.lembretesAgua },
         agua: {
