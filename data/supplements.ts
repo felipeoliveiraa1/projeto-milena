@@ -435,13 +435,12 @@ export const SUPPLEMENTS: Supplement[] = [
     id: "b12",
     nome: "Vitamina B12 Dozi 1.000 mcg",
     curto: "B12",
-    dose: "1 comprimido sublingual por semana, na quinta, à noite",
-    bloco: "semanal",
-    dias: [4], // quinta-feira (era todo dia até 12/11)
+    dose: "1 comprimido sublingual à noite",
+    bloco: "noite",
     funcao:
       "Ajuda a formar o sangue e a manter os nervos funcionando — falta de B12 dá cansaço.",
     comoUsar: ["Deixe dissolver embaixo da língua, sem engolir inteiro nem mastigar."],
-    antes: "Era todo dia, à noite. Desde 13/11, 1 vez por semana, na quinta.",
+    antes: "Estava de manhã. A lista de 29/09 diz à noite — vale a lista.",
     status: "prescricao",
     horario: { ancora: "deitar", minutos: -30 },
   },
@@ -513,14 +512,14 @@ export const SUPPLEMENTS: Supplement[] = [
     id: "vitd",
     nome: "Vitamina D3 Doss 50.000 UI",
     curto: "Vitamina D3",
-    dose: "1 cápsula por semana, no domingo, depois do café da manhã",
+    dose: "1 cápsula por semana, na quinta, depois do café da manhã",
     bloco: "semanal",
-    dias: [0], // domingo
+    dias: [4], // quinta-feira (era domingo até 12/11)
     horario: { ancora: "cafe", minutos: 20 },
     funcao: "Ajuda o corpo a aproveitar o cálcio e a cuidar dos ossos. A dose é a que o médico passou.",
     observacao:
       "Vitamina D se dissolve em gordura: depois do café da manhã, que tem ovo, azeite ou pasta de amendoim, o corpo aproveita melhor.",
-    antes: "Era na segunda. A lista de 29/09 passou para o domingo.",
+    antes: "Era no domingo (e, antes da lista de 29/09, na segunda). Em 12/11, passou para a quinta.",
     status: "prescricao",
   },
 ];
