@@ -820,7 +820,7 @@ function LinhaHorarioRemedio({
 }) {
   const id = useId();
   const padrao = horarioPadraoDoSuplemento(s, prefs);
-  const comoPadrao = descreverHorarioPadrao(s);
+  const comoPadrao = descreverHorarioPadrao(s, prefs);
   // O valor do rascunho como ela deixou — até vazio ou antes das 05:00 —,
   // para o campo mostrar o que ela pôs, com o erro embaixo.
   const escolhido = prefs.horariosRemedios[s.id] as string | undefined;

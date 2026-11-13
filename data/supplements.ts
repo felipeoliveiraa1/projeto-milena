@@ -113,6 +113,11 @@ export type Supplement = {
    */
   horario?: { ancora: Ancora; minutos: number };
   /**
+   * Horário enquanto o psyllium está em uso (não pausado): fica longe dele,
+   * com o ok da nutricionista (22/10). Pausado o psyllium, vale `horario`.
+   */
+  horarioComPsyllium?: { ancora: Ancora; minutos: number };
+  /**
    * Quantos dias antes da cirurgia o item para. Só vale quando a data da
    * contagem regressiva é a da cirurgia; a pausa continua depois dela, até o
    * médico liberar (ver lib/lembretes.ts → suplementoEmPausa).
@@ -324,6 +329,7 @@ export const SUPPLEMENTS: Supplement[] = [
     comoUsar: [
       "Misture em 200–300 ml de água e beba logo, antes de engrossar.",
       "15 a 20 minutos antes da refeição.",
+      "A fórmula e a curcumina ficam 2 h depois dele, com o ok da nutricionista (22/10). O ômega-3 continua junto do almoço, porque precisa da gordura da refeição."
     ],
     alertas: [ALERTA_PSYLLIUM],
     status: "nutricionista",
@@ -358,9 +364,11 @@ export const SUPPLEMENTS: Supplement[] = [
     funcao: "Vitaminas e minerais da fórmula de sempre.",
     comoUsar: [
       "Na fórmula: metilfolato 1 mg, piridoxal-5-fosfato (vitamina B6) 25 mg, biotina 5 mg, niacina (B3) 50 mg, cobre 1 mg, selênio 50 mcg e zinco quelato 10 mg.",
+      "Com o psyllium em uso, fica 2 h depois do psyllium do almoço — a fibra pode atrasar a absorção do que vai junto (ok da nutricionista, 22/10).",
     ],
     status: "prescricao",
     horario: { ancora: "almoco", minutos: 30 },
+    horarioComPsyllium: { ancora: "almoco", minutos: 100 },
     lembrete: "Fórmula — 1 dose após o almoço",
   },
   {
@@ -370,10 +378,14 @@ export const SUPPLEMENTS: Supplement[] = [
     dose: "500 mg, depois do almoço",
     bloco: "almoco",
     funcao: "Antioxidante e anti-inflamatório.",
-    comoUsar: ["Depois do almoço, que tem gordura."],
+    comoUsar: [
+      "Depois do almoço, que tem gordura.",
+      "Com o psyllium em uso, fica 2 h depois do psyllium do almoço (ok da nutricionista, 22/10).",
+    ],
     alertas: [ALERTA_PAUSA_CIRURGIA],
     status: "nutricionista",
     horario: { ancora: "almoco", minutos: 30 },
+    horarioComPsyllium: { ancora: "almoco", minutos: 100 },
     pausaAntesDaCirurgiaDias: 30,
   },
 
@@ -382,14 +394,18 @@ export const SUPPLEMENTS: Supplement[] = [
     id: "mio-lanche",
     nome: "Mio-inositol",
     curto: "Mio-inositol (tarde)",
-    dose: "2 g — 20 min antes do lanche da tarde",
+    dose: "2 g — antes do lanche da tarde (com o psyllium em uso, 1 h antes dele)",
     bloco: "tarde",
     funcao: "Ajuda o corpo a usar melhor o açúcar do sangue.",
-    comoUsar: ["Misture o pó em um pouco de água."],
+    comoUsar: [
+      "Misture o pó em um pouco de água.",
+      "Com o psyllium em uso, vem 1 h antes do psyllium da tarde, para os dois não se atrapalharem (ok da nutricionista, 22/10). Psyllium pausado: 20 min antes do lanche.",
+    ],
     observacao:
       "Na receita está 'antes do jantar'. Como no seu plano a última refeição é o lanche da tarde, o app pôs antes dele — confirme com a nutricionista.",
     status: "nutricionista",
     horario: { ancora: "lanche", minutos: -20 },
+    horarioComPsyllium: { ancora: "lanche", minutos: -80 },
   },
   {
     id: "psyllium-lanche",
@@ -402,6 +418,7 @@ export const SUPPLEMENTS: Supplement[] = [
     comoUsar: [
       "Misture em 200–300 ml de água e beba logo, antes de engrossar.",
       "15 a 20 minutos antes da refeição.",
+      "O mio-inositol da tarde vem 1 h antes dele, com o ok da nutricionista (22/10)."
     ],
     observacao:
       "Na receita está 'antes do jantar'. Como no seu plano a última refeição é o lanche da tarde, o app pôs antes dele — confirme com a nutricionista.",
@@ -418,12 +435,13 @@ export const SUPPLEMENTS: Supplement[] = [
     id: "b12",
     nome: "Vitamina B12 Dozi 1.000 mcg",
     curto: "B12",
-    dose: "1 comprimido sublingual à noite",
-    bloco: "noite",
+    dose: "1 comprimido sublingual por semana, na quinta, à noite",
+    bloco: "semanal",
+    dias: [4], // quinta-feira (era todo dia até 12/11)
     funcao:
       "Ajuda a formar o sangue e a manter os nervos funcionando — falta de B12 dá cansaço.",
     comoUsar: ["Deixe dissolver embaixo da língua, sem engolir inteiro nem mastigar."],
-    antes: "Estava de manhã. A lista de 29/09 diz à noite — vale a lista.",
+    antes: "Era todo dia, à noite. Desde 13/11, 1 vez por semana, na quinta.",
     status: "prescricao",
     horario: { ancora: "deitar", minutos: -30 },
   },
@@ -443,22 +461,23 @@ export const SUPPLEMENTS: Supplement[] = [
     id: "mounjaro",
     nome: "Mounjaro 2,5 mg",
     curto: "Mounjaro",
-    dose: "1 aplicação por semana, na quinta",
+    dose: "1 aplicação por semana, na sexta",
     bloco: "semanal",
-    dias: [4], // quinta-feira
+    dias: [5], // sexta-feira (era quinta até 12/11)
     // A bula deixa a qualquer hora do dia: o lembrete chega cedo e só avisa
     // que é o dia — a hora continua a de costume.
     horario: { ancora: "acordar", minutos: 0 },
     lembrete: "Dia do Mounjaro: aplique hoje, no horário de costume.",
     // Com a hora que ela escolheu em Ajustes, o aviso já é o da aplicação.
     lembreteNoHorario: "Mounjaro — hora da aplicação de hoje.",
+    antes: "Era na quinta. Desde 13/11, a aplicação é na sexta.",
     pausaAntesDaCirurgiaDias: 30,
     funcao:
       "Tirzepatida: diminui a fome e deixa a digestão mais lenta — é por causa dele que comer à noite pesa. Na bula, 2,5 mg é a dose de início; se e quando sobe, quem decide é o médico.",
     comoUsar: [
-      "Na quinta, a qualquer hora do dia, com ou sem comida.",
+      "Na sexta, a qualquer hora do dia, com ou sem comida.",
       "Troque o local a cada semana: barriga, coxa ou — se outra pessoa aplicar — a parte de trás do braço.",
-      "Esqueceu? Aplique assim que lembrar, em até 4 dias (96 h) depois da quinta. Passou disso, pule essa dose e siga na quinta seguinte. Nunca duas doses com menos de 3 dias entre elas.",
+      "Esqueceu? Aplique assim que lembrar, em até 4 dias (96 h) depois da sexta. Passou disso, pule essa dose e siga na sexta seguinte. Nunca duas doses com menos de 3 dias entre elas.",
       "Enjoo, diarreia, intestino preso e pouca fome são os efeitos mais comuns. Aparecem mais no começo e a cada aumento de dose, e diminuem com o tempo. Para o enjoo, o fabricante sugere refeições menores, parar quando estiver satisfeita e evitar comida gordurosa.",
     ],
     // Do mais urgente para o que é só conversa com o médico.

@@ -119,7 +119,30 @@ async function disparar(req: NextRequest): Promise<Response> {
               : [],
           }))
         : null;
+      // O que saiu nos últimos dias e o estado de cada celular (sem chaves e
+      // sem o endereço inteiro): mostra se o agendador está chegando aqui e se
+      // o envio dá certo.
+      const { data: envios } = await db
+        .from("push_envios")
+        .select("chave, enviado_em")
+        .order("enviado_em", { ascending: false })
+        .limit(20);
+      const { data: celulares } = await db
+        .from("push_subscriptions")
+        .select("endpoint, created_at, updated_at");
       return resposta(200, {
+        enviosRecentes: envios ?? [],
+        celulares: (celulares ?? []).map((c: { endpoint: string; created_at: string; updated_at: string }) => ({
+          servico: (() => {
+            try {
+              return new URL(c.endpoint).host;
+            } catch {
+              return "?";
+            }
+          })(),
+          criado: c.created_at,
+          atualizado: c.updated_at,
+        })),
         rotina,
         agora: { data: agora.data, hora: agora.hora },
         lembretes: { remedios: prefs.lembretesRemedios, agua: prefs.lembretesAgua },

@@ -71,9 +71,24 @@ export function horaDaAncora(prefs: Preferencias, ancora: Ancora): string {
  * de "20 min antes do café" cairia com ela ainda dormindo — aí o aviso vem na
  * hora de acordar. E fica sempre dentro do mesmo dia.
  */
+/** O psyllium está em uso — algum dos dois não está pausado? */
+export function psylliumEmUso(prefs: Preferencias): boolean {
+  return SUPPLEMENTS.some((s) => s.grupoPausa === "psyllium" && !prefs.remediosPausados.includes(s.id));
+}
+
+/**
+ * A regra de horário que vale: com o psyllium em uso, a que fica longe dele
+ * (`horarioComPsyllium`, ok da nutricionista em 22/10); senão, a de sempre.
+ * Assim, pausar ou retomar o psyllium leva os outros junto, sem mexer à mão.
+ */
+function regraDoHorario(s: Supplement, prefs?: Preferencias) {
+  return s.horarioComPsyllium && prefs && psylliumEmUso(prefs) ? s.horarioComPsyllium : s.horario;
+}
+
 export function horarioPadraoDoSuplemento(s: Supplement, prefs: Preferencias): string | null {
-  if (!s.horario) return null;
-  const m = paraMinutos(horaDaAncora(prefs, s.horario.ancora)) + s.horario.minutos;
+  const regra = regraDoHorario(s, prefs);
+  if (!regra) return null;
+  const m = paraMinutos(horaDaAncora(prefs, regra.ancora)) + regra.minutos;
   const acordar = paraMinutos(prefs.horaAcordar);
   return paraHHMM(Math.max(acordar, Math.min(ULTIMO_MINUTO_DO_DIA, Math.round(m))));
 }
@@ -183,9 +198,10 @@ const NOME_ANCORA: Record<Ancora, { antes: string; junto: string; depois: string
  * noite, antes de deitar": a B12 veio só "à noite", e a dose de cada item,
  * logo abaixo na tela, diz o resto.
  */
-export function descreverHorarioPadrao(s: Supplement): string | null {
-  if (!s.horario) return null;
-  const { ancora, minutos } = s.horario;
+export function descreverHorarioPadrao(s: Supplement, prefs?: Preferencias): string | null {
+  const regra = regraDoHorario(s, prefs);
+  if (!regra) return null;
+  const { ancora, minutos } = regra;
   const nome = NOME_ANCORA[ancora];
   if (minutos === 0) return nome.junto;
   if (minutos > 0) return nome.depois;
@@ -196,7 +212,7 @@ export function descreverHorarioPadrao(s: Supplement): string | null {
 
 /** A descrição da hora na tela: "horário seu" quando foi ela que escolheu; senão, a do app. */
 export function descreverHorario(s: Supplement, prefs: Preferencias): string | null {
-  return horarioFoiEditado(s, prefs) ? "horário seu" : descreverHorarioPadrao(s);
+  return horarioFoiEditado(s, prefs) ? "horário seu" : descreverHorarioPadrao(s, prefs);
 }
 
 /**
@@ -403,7 +419,7 @@ function lembretesDeRemedios(prefs: Preferencias, data: string): Lembrete[] {
     porHora.set(hora, [...(porHora.get(hora) ?? []), s]);
   }
   return [...porHora.entries()].map(([hora, todos]): Lembrete => {
-    // O semanal primeiro: na quinta, a primeira linha do aviso das 07:00 é a
+    // O semanal primeiro: no dia do Mounjaro, a primeira linha do aviso é a
     // do Mounjaro — a que a tela bloqueada mostra quando corta o resto. O
     // resto fica na ordem da lista. As linhas e os ids saem da mesma lista
     // ordenada: o servidor casa a linha i com o id i (app/api/lembretes).
