@@ -86,7 +86,11 @@ export function LembretesPush() {
     void enviarTeste()
       .then((msg) => {
         setErro(msg);
-        if (!msg) setAviso("Teste enviado — deve chegar em alguns segundos.");
+        if (!msg) {
+          setAviso(
+            "Teste enviado — deve chegar em alguns segundos. Se não aparecer: no iPhone, Ajustes → Notificações → Mais Leve (Permitir, Sons e Tela Bloqueada ligados); confira também se um Foco ou o Resumo Agendado não está segurando os avisos.",
+          );
+        }
       })
       .catch(() => setErro("Não deu para mandar o teste. Tente de novo."))
       .finally(() => setOcupado(null));

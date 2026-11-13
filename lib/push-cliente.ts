@@ -86,6 +86,34 @@ function chaveEmBytes(base64: string): Uint8Array<ArrayBuffer> {
   return bytes;
 }
 
+/** Inscreve este aparelho com a chave de hoje. A permissão já precisa estar dada. */
+function inscrever(reg: ServiceWorkerRegistration): Promise<PushSubscription> {
+  return reg.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: chaveEmBytes(CHAVE_PUBLICA.trim()),
+  });
+}
+
+/** Marca deste celular: ela tocou em "Desativar" aqui. Sem ela, o app refaz a inscrição perdida. */
+const CHAVE_DESLIGADO = "mais-leve-lembretes-desligados";
+
+function desligouNesteCelular(): boolean {
+  try {
+    return window.localStorage.getItem(CHAVE_DESLIGADO) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function marcarDesligado(desligado: boolean): void {
+  try {
+    if (desligado) window.localStorage.setItem(CHAVE_DESLIGADO, "1");
+    else window.localStorage.removeItem(CHAVE_DESLIGADO);
+  } catch {
+    // sem armazenamento: só não lembra a escolha
+  }
+}
+
 /** A inscrição foi feita com a chave de hoje? Se a chave do servidor mudou, ela não recebe mais nada. */
 function mesmaChave(sub: PushSubscription): boolean {
   const usada = sub.options?.applicationServerKey;
@@ -171,10 +199,7 @@ export async function ativarPush(): Promise<string | null> {
       await getSupabase().from("push_subscriptions").delete().eq("endpoint", antiga);
       sub = null;
     }
-    sub ??= await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: chaveEmBytes(CHAVE_PUBLICA.trim()),
-    });
+    sub ??= await inscrever(reg);
 
     const erro = await salvarInscricao(sub);
     if (erro) {
@@ -183,6 +208,7 @@ export async function ativarPush(): Promise<string | null> {
       await sub.unsubscribe().catch(() => {});
       return `Não deu para guardar este celular no servidor (${erro}). Tente de novo.`;
     }
+    marcarDesligado(false);
     return null;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
@@ -192,6 +218,8 @@ export async function ativarPush(): Promise<string | null> {
 
 /** Cancela a inscrição deste aparelho e tira a linha do banco. Devolve a mensagem de erro, ou null. */
 export async function desativarPush(): Promise<string | null> {
+  // Antes de tudo: desligado de propósito, a abertura do app não religa.
+  marcarDesligado(true);
   try {
     const sub = await inscricaoAtual();
     if (!sub) return null;
@@ -207,7 +235,13 @@ export async function desativarPush(): Promise<string | null> {
   }
 }
 
-/** Manda um aviso de teste só para este aparelho. Devolve a mensagem de erro, ou null. */
+/**
+ * Manda um aviso de teste só para este aparelho. Devolve a mensagem de erro, ou null.
+ *
+ * O teste vai direto ao endereço deste celular, mas os lembretes saem da lista
+ * do banco. Por isso regrava o celular na lista antes: teste que chega quer
+ * dizer lembrete que chega.
+ */
 export async function enviarTeste(): Promise<string | null> {
   try {
     const { data } = await getSupabase().auth.getSession();
@@ -215,6 +249,10 @@ export async function enviarTeste(): Promise<string | null> {
     if (!token) return "Entre no app de novo para mandar o teste.";
     const sub = await inscricaoAtual();
     if (!sub) return "Este celular não está inscrito. Ative os lembretes primeiro.";
+    const erroAoGuardar = await salvarInscricao(sub);
+    if (erroAoGuardar) {
+      return `Este celular não ficou guardado no servidor (${erroAoGuardar}). Desative e ative de novo.`;
+    }
 
     const resposta = await fetch("/api/lembretes/teste", {
       method: "POST",
@@ -237,6 +275,11 @@ let jaRessalvou = false;
  * pode trocar o endereço dela, e o banco precisa acompanhar. Nunca pede
  * permissão: só age se ela já ativou antes e está com login.
  *
+ * O iPhone às vezes perde a inscrição com a permissão ainda dada (atualização
+ * do iOS, por exemplo). O servidor segue mandando para o endereço velho, o
+ * serviço da Apple aceita e nada aparece. Aí refaz a inscrição aqui, sem
+ * perguntar nada — a não ser que ela tenha desligado neste celular.
+ *
  * A marca de "já fez" só vale depois que achou a sessão: aberto antes do
  * login, a chamada seguinte (já logada) ainda regrava.
  */
@@ -247,7 +290,8 @@ export async function ressalvarInscricao(): Promise<void> {
     const { data } = await getSupabase().auth.getSession();
     if (!data.session) return;
     jaRessalvou = true;
-    const sub = await inscricaoAtual();
+    let sub = await inscricaoAtual();
+    if (!sub && !desligouNesteCelular()) sub = await inscrever(await navigator.serviceWorker.ready);
     if (sub && mesmaChave(sub)) await salvarInscricao(sub);
   } catch {
     // em silêncio: a tela de Ajustes mostra o estado de verdade
